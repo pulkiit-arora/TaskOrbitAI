@@ -231,13 +231,44 @@ const App: React.FC = () => {
     });
   };
 
-  const handleToggleDone = (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-        const newStatus = task.status === Status.DONE ? Status.TODO : Status.DONE;
-        updateTaskStatus(taskId, newStatus);
-    }
-  };
+  const handleToggleDone = (taskId: string, onDate?: string) => {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  const togglingToDone = task.status !== Status.DONE;
+
+  // If toggling a specific recurring occurrence (from MonthView), materialize history and roll base forward
+  if (onDate && togglingToDone && task.recurrence !== Recurrence.NONE) {
+    const occurrenceISO = onDate;
+    const nextDue = calculateNextDueDate(occurrenceISO, task.recurrence);
+
+    setTasks(prev => {
+      const base = prev.find(t => t.id === taskId);
+      if (!base) return prev;
+
+      const history: Task = {
+        ...base,
+        id: crypto.randomUUID(),
+        status: Status.DONE,
+        dueDate: occurrenceISO,
+        createdAt: Date.now(),
+      };
+
+      const updatedBase: Task = {
+        ...base,
+        status: Status.TODO,
+        dueDate: nextDue.toISOString(),
+      };
+
+      return prev.map(t => t.id === taskId ? updatedBase : t).concat(history);
+    });
+    return;
+  }
+
+  // Default toggle for non-recurring or no specific date provided
+  const newStatus = task.status === Status.DONE ? Status.TODO : Status.DONE;
+  updateTaskStatus(taskId, newStatus);
+};
 
   const handleArchiveTask = (taskId: string) => {
     updateTaskStatus(taskId, Status.ARCHIVED);
@@ -315,6 +346,7 @@ const App: React.FC = () => {
       case Recurrence.WEEKLY: date.setDate(date.getDate() + 7); break;
       case Recurrence.MONTHLY: date.setMonth(date.getMonth() + 1); break;
       case Recurrence.QUARTERLY: date.setMonth(date.getMonth() + 3); break;
+      case Recurrence.YEARLY: date.setFullYear(date.getFullYear() + 1); break;
     }
     return date;
   };

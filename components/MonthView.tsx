@@ -6,7 +6,7 @@ interface MonthViewProps {
   currentDate: Date;
   tasks: Task[];
   onEditTask: (task: Task) => void;
-  onToggleDone: (taskId: string) => void;
+  onToggleDone: (taskId: string, onDate?: string) => void;
 }
 
 export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEditTask, onToggleDone }) => {
@@ -77,7 +77,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
   const getTasksForDay = (day: number) => {
     const date = new Date(year, month, day);
-    const dayTasks: { task: Task; isVirtual: boolean }[] = [];
+    const dayTasks: { task: Task; isVirtual: boolean; baseTaskId: string; occurrenceISO: string }[] = [];
 
     tasks.forEach(task => {
         if (task.status === Status.ARCHIVED) return;
@@ -96,16 +96,34 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 return;
             }
 
+            const baseTaskId = task.id;
+            const occurrenceISO = date.toISOString();
+
+            // If a DONE history exists for this same date (same title match heuristic), skip projecting a virtual copy
+            if (!isRealInstance) {
+              const occStart = new Date(occurrenceISO); occStart.setHours(0,0,0,0);
+              const hasDoneHistory = tasks.some(tt => {
+                if (tt.status !== Status.DONE || !tt.dueDate) return false;
+                const dd = new Date(tt.dueDate); dd.setHours(0,0,0,0);
+                return dd.getTime() === occStart.getTime() && tt.title === task.title;
+              });
+              if (hasDoneHistory) {
+                return; // skip adding virtual duplicate
+              }
+            }
+
             const displayTask = isRealInstance ? task : {
                 ...task,
                 id: `${task.id}-virtual-${date.getTime()}`,
-                dueDate: date.toISOString(),
+                dueDate: occurrenceISO,
                 status: Status.TODO
             };
 
             dayTasks.push({
                 task: displayTask,
-                isVirtual: !isRealInstance
+                isVirtual: !isRealInstance,
+                baseTaskId,
+                occurrenceISO
             });
         }
     });
@@ -150,7 +168,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               </div>
               
               <div className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar max-h-[120px]">
-                {dayTasks.map(({ task, isVirtual }) => {
+                {dayTasks.map(({ task, isVirtual, baseTaskId, occurrenceISO }) => {
                   const isDone = task.status === Status.DONE;
                   return (
                     <div
@@ -163,11 +181,15 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                       <button 
                         onClick={(e) => { 
                             e.stopPropagation(); 
-                            if (!isVirtual) onToggleDone(task.id); 
+                            // Allow toggling even for virtual occurrences by targeting the base task id
+                            if (isVirtual) {
+                              onToggleDone(baseTaskId, occurrenceISO);
+                            } else {
+                              onToggleDone(task.id);
+                            }
                         }}
-                        disabled={isVirtual}
                         className={`flex-shrink-0 transition-colors 
-                            ${isVirtual ? 'text-gray-300 cursor-default' : 'text-gray-400 hover:text-green-600 cursor-pointer'}
+                            ${isVirtual ? 'text-gray-300 hover:text-green-600 cursor-pointer' : 'text-gray-400 hover:text-green-600 cursor-pointer'}
                             ${isDone ? 'text-green-600' : ''}`}
                       >
                          {isDone ? <Check size={14} className="stroke-[3]" /> : <Circle size={14} />}

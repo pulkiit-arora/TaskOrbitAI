@@ -112,6 +112,19 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 return;
             }
 
+            // If a DONE history exists for this same date (same title heuristic), skip projecting a virtual duplicate
+            if (!isRealInstance) {
+                const occStart = new Date(date); occStart.setHours(0,0,0,0);
+                const hasDoneHistory = tasks.some(tt => {
+                    if (tt.status !== Status.DONE || !tt.dueDate) return false;
+                    const dd = new Date(tt.dueDate); dd.setHours(0,0,0,0);
+                    return dd.getTime() === occStart.getTime() && tt.title === task.title;
+                });
+                if (hasDoneHistory) {
+                    return; // skip adding virtual duplicate
+                }
+            }
+
             // Create a display copy
             const displayTask = isRealInstance ? task : {
                 ...task,
