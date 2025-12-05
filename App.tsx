@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { BoardColumn } from './components/BoardColumn';
 import { TaskModal } from './components/TaskModal';
 import { Button } from './components/Button';
@@ -213,7 +213,9 @@ const App: React.FC = () => {
   const updateTaskStatus = (taskId: string, newStatus: Status) => {
     setTasks(prev => {
       const task = prev.find(t => t.id === taskId);
-      if (!task) return prev;      if (task.status === Status.DONE && newStatus !== Status.DONE && task.recurrence !== Recurrence.NONE) {
+      if (!task) return prev;
+
+      if (task.status === Status.DONE && newStatus !== Status.DONE && task.recurrence !== Recurrence.NONE) {
         const baseDueISO = task.dueDate || new Date().toISOString();
         const expectedNextDue = calculateNextDueDate(baseDueISO, task.recurrence).toISOString();
 
@@ -253,12 +255,6 @@ const App: React.FC = () => {
 
         return pruned.map(t => t.id === taskId ? ({ ...t, status: newStatus }) : t);
       }
-return true;
-        });
-
-        return pruned.map(t => t.id === taskId ? ({ ...t, status: newStatus }) : t);
-      }
-
 
       if (newStatus === Status.DONE && task.recurrence !== Recurrence.NONE && task.status !== Status.DONE) {
         const nextDueDate = calculateNextDueDate(task.dueDate || new Date().toISOString(), task.recurrence);
@@ -272,11 +268,9 @@ return true;
         return [...prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t), nextTask];
       }
 
-      return prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t);
+      return prev.map(t => t.id === taskId ? ({ ...t, status: newStatus }) : t);
     });
-  };
-
-  const handleToggleDone = (taskId: string, onDate?: string) => {
+  };  const handleToggleDone = (taskId: string, onDate?: string) => {
   const task = tasks.find(t => t.id === taskId);
   if (!task) return;
 
