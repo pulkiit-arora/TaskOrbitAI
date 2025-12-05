@@ -1,0 +1,5 @@
+{
+  "name": "TaskOrbit AI",
+  "description": "A smart personal task tracker with Kanban boards, recurring tasks, priority management, and AI-powered goal breakdown.",
+  "requestFramePermissions": []
+}
