@@ -1,5 +1,6 @@
 {
   "name": "taskorbit-ai",
+  "homepage": "https://pulkiit-arora.github.io/TaskOrbitAI",
   "private": true,
   "version": "0.0.0",
   "type": "module",
