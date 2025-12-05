@@ -1,8 +1,9 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { AISuggestion, Priority } from "../types";
 
-// Initialize Gemini client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize Gemini client - handle missing API key gracefully
+const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 const suggestionSchema: Schema = {
   type: Type.ARRAY,
@@ -18,13 +19,13 @@ const suggestionSchema: Schema = {
 };
 
 export const generateTaskSuggestions = async (goal: string): Promise<AISuggestion[]> => {
-  if (!process.env.API_KEY) {
-    console.warn("Gemini API Key is missing.");
+  if (!ai || !apiKey) {
+    console.warn("Gemini API Key is missing. AI suggestions will be disabled.");
     return [];
   }
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await ai!.models.generateContent({
       model: "gemini-2.5-flash",
       contents: `Break down the following personal goal or activity into 3-5 concrete, manageable steps: "${goal}".
       Return them as a JSON list. Keep descriptions concise. Assign reasonable priorities based on urgency and impact.`,
