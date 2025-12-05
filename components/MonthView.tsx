@@ -67,6 +67,9 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
         case Recurrence.QUARTERLY:
             const monthDiff = (checkDate.getFullYear() - startAnchor.getFullYear()) * 12 + (checkDate.getMonth() - startAnchor.getMonth());
             return checkDate.getDate() === startAnchor.getDate() && (monthDiff % 3 === 0);
+        case Recurrence.YEARLY:
+            return checkDate.getDate() === startAnchor.getDate() && 
+                   checkDate.getMonth() === startAnchor.getMonth();
         default:
             return false;
       }

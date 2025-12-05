@@ -16,7 +16,8 @@ export enum Recurrence {
   DAILY = 'DAILY',
   WEEKLY = 'WEEKLY',
   MONTHLY = 'MONTHLY',
-  QUARTERLY = 'QUARTERLY'
+  QUARTERLY = 'QUARTERLY',
+  YEARLY = 'YEARLY'
 }
 
 export interface Task {
