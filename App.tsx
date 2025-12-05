@@ -215,6 +215,33 @@ const App: React.FC = () => {
       const task = prev.find(t => t.id === taskId);
       if (!task) return prev;
 
+      if (task.status === Status.DONE && newStatus !== Status.DONE && task.recurrence !== Recurrence.NONE) {
+        const baseDueISO = task.dueDate || new Date().toISOString();
+        const expectedNextDue = calculateNextDueDate(baseDueISO, task.recurrence).toISOString();
+
+        let removed = false;
+        const pruned = prev.filter(t => {
+          if (removed) return true;
+          const isAutoNext = (
+            t.id !== task.id &&
+            t.status === Status.TODO &&
+            t.recurrence === task.recurrence &&
+            t.title === task.title &&
+            t.description === task.description &&
+            t.priority === task.priority &&
+            t.dueDate === expectedNextDue
+          );
+          if (isAutoNext) {
+            removed = true;
+            return false;
+          }
+          return true;
+        });
+
+        return pruned.map(t => t.id === taskId ? ({ ...t, status: newStatus }) : t);
+      }
+
+
       if (newStatus === Status.DONE && task.recurrence !== Recurrence.NONE && task.status !== Status.DONE) {
         const nextDueDate = calculateNextDueDate(task.dueDate || new Date().toISOString(), task.recurrence);
         const nextTask: Task = {
