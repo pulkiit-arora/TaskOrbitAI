@@ -213,14 +213,12 @@ const App: React.FC = () => {
   const updateTaskStatus = (taskId: string, newStatus: Status) => {
     setTasks(prev => {
       const task = prev.find(t => t.id === taskId);
-      if (!task) return prev;
-
-      if (task.status === Status.DONE && newStatus !== Status.DONE && task.recurrence !== Recurrence.NONE) {
+      if (!task) return prev;      if (task.status === Status.DONE && newStatus !== Status.DONE && task.recurrence !== Recurrence.NONE) {
         const baseDueISO = task.dueDate || new Date().toISOString();
         const expectedNextDue = calculateNextDueDate(baseDueISO, task.recurrence).toISOString();
 
         let removed = false;
-        const pruned = prev.filter(t => {
+        let pruned = prev.filter(t => {
           if (removed) return true;
           const isAutoNext = (
             t.id !== task.id &&
@@ -229,13 +227,33 @@ const App: React.FC = () => {
             t.title === task.title &&
             t.description === task.description &&
             t.priority === task.priority &&
-            t.dueDate === expectedNextDue
+            (task.dueDate ? t.dueDate === expectedNextDue : true)
           );
           if (isAutoNext) {
             removed = true;
             return false;
           }
           return true;
+        });
+
+        if (!removed && !task.dueDate) {
+          const candidates = prev.filter(t => (
+            t.id !== task.id &&
+            t.status === Status.TODO &&
+            t.recurrence === task.recurrence &&
+            t.title === task.title &&
+            t.description === task.description &&
+            t.priority === task.priority
+          ));
+          if (candidates.length > 0) {
+            const toRemove = candidates.sort((a, b) => b.createdAt - a.createdAt)[0];
+            pruned = prev.filter(t => t.id !== toRemove.id);
+          }
+        }
+
+        return pruned.map(t => t.id === taskId ? ({ ...t, status: newStatus }) : t);
+      }
+return true;
         });
 
         return pruned.map(t => t.id === taskId ? ({ ...t, status: newStatus }) : t);
