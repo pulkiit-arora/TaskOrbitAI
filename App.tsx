@@ -55,6 +55,8 @@ const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  console.log('App component rendered, isLoading:', isLoading, 'tasks:', tasks.length);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{isOpen: boolean, taskId: string | null}>({
@@ -87,9 +89,11 @@ const App: React.FC = () => {
   // 1. Load from DB on Mount
   useEffect(() => {
     const initData = async () => {
+        console.log('initData starting...');
         setIsLoading(true);
         try {
             const loadedTasks = await loadTasksFromDB();
+            console.log('loadedTasks:', loadedTasks);
             const hasInitialized = localStorage.getItem('lifeflow-initialized');
 
             if (hasInitialized) {
@@ -114,6 +118,7 @@ const App: React.FC = () => {
             // On error, better to show nothing than to overwrite or crash
             setTasks([]); 
         } finally {
+            console.log('initData finished, setting isLoading to false');
             setIsLoading(false);
         }
     };

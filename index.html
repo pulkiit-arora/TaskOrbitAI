@@ -11,6 +11,12 @@
       body {
         font-family: 'Inter', sans-serif;
         background-color: #f3f4f6;
+        margin: 0;
+        padding: 0;
+      }
+      #root {
+        width: 100%;
+        height: 100%;
       }
       /* Custom scrollbar for columns */
       .custom-scrollbar::-webkit-scrollbar {
@@ -26,6 +32,10 @@
     </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #666;">
+        <p>Loading TaskOrbit AI...</p>
+      </div>
+    </div>
   </body>
 </html>
