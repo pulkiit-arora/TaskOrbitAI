@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Task, Priority, Recurrence, Status, AISuggestion } from '../types';
 import { X, Sparkles, Plus, ChevronDown } from 'lucide-react';
 import { Button } from './Button';
@@ -248,6 +248,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                             <option value={Recurrence.WEEKLY}>Weekly</option>
                             <option value={Recurrence.MONTHLY}>Monthly</option>
                             <option value={Recurrence.QUARTERLY}>Quarterly</option>
+                            <option value={Recurrence.YEARLY}>Yearly</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
                             <ChevronDown size={16} />
