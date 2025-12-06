@@ -147,6 +147,19 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
     <div className="flex h-full gap-4 overflow-x-auto min-w-[1000px]">
       {weekDays.map(day => {
         const dayTasks = getTasksForDay(day);
+        const sortedDayTasks = dayTasks.slice().sort((a, b) => {
+          const aDone = a.task.status === Status.DONE ? 1 : 0;
+          const bDone = b.task.status === Status.DONE ? 1 : 0;
+          if (aDone !== bDone) return aDone - bDone;
+          const priorityWeight: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+          const pw = (t: typeof a.task) => priorityWeight[t.priority];
+          const pDiff = pw(b.task) - pw(a.task);
+          if (pDiff !== 0) return pDiff;
+          const ad = a.task.dueDate ? new Date(a.task.dueDate).getTime() : Infinity;
+          const bd = b.task.dueDate ? new Date(b.task.dueDate).getTime() : Infinity;
+          if (ad !== bd) return ad - bd;
+          return b.task.createdAt - a.task.createdAt;
+        });
         const isToday = new Date().toDateString() === day.toDateString();
         
         return (
@@ -161,18 +174,25 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             </div>
             
             <div className="flex-1 p-2 overflow-y-auto custom-scrollbar space-y-2">
-              {dayTasks.map(({ task, isVirtual }) => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  onEdit={onEditTask} 
-                  onMove={onMoveTask} 
-                  onArchive={onArchiveTask} 
-                  onDelete={onDeleteTask}
-                  isVirtual={isVirtual}
-                />
+              {sortedDayTasks.map(({ task, isVirtual }) => (
+                <div key={task.id} className="flex items-start gap-2">
+                  <span
+                    className={`mt-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium
+                      ${task.status === Status.DONE ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}
+                  >
+                    {task.status === Status.DONE ? 'Done' : 'Open'}
+                  </span>
+                  <TaskCard 
+                    task={task} 
+                    onEdit={onEditTask} 
+                    onMove={onMoveTask} 
+                    onArchive={onArchiveTask} 
+                    onDelete={onDeleteTask}
+                    isVirtual={isVirtual}
+                  />
+                </div>
               ))}
-              {dayTasks.length === 0 && (
+              {sortedDayTasks.length === 0 && (
                 <div className="h-full flex items-center justify-center">
                     <span className="text-xs text-gray-300 italic">No tasks</span>
                 </div>
