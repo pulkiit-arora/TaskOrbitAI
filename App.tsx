@@ -82,7 +82,13 @@ const App: React.FC = () => {
     } catch { return 'board'; }
   });
 
-  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const [boardSort, setBoardSort] = useState<'priority' | 'dueDate'>(() => {
+    try {
+      const saved = localStorage.getItem('lifeflow-board-sort');
+      return saved === 'dueDate' ? 'dueDate' : 'priority';
+    } catch { return 'priority'; }
+  });  const [currentDate, setCurrentDate] = useState(new Date());
 
   // --- Persistence Logic ---
 
@@ -157,6 +163,9 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('lifeflow-show-archived', String(showArchived));
   }, [showArchived]);
+  useEffect(() => {
+    localStorage.setItem('lifeflow-board-sort', boardSort);
+  }, [boardSort]);
 
   // -------------------------
 
@@ -408,16 +417,25 @@ const App: React.FC = () => {
     [Priority.LOW]: 1
   };
 
-  const sortTasks = (taskList: Task[]) => {
+    const sortTasks = (taskList: Task[]) => {
     return taskList.sort((a, b) => {
-        const pDiff = priorityWeight[b.priority] - priorityWeight[a.priority];
+      if (boardSort === 'priority') {
+        const priorityWeightLocal: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+        const pDiff = priorityWeightLocal[b.priority] - priorityWeightLocal[a.priority];
         if (pDiff !== 0) return pDiff;
-        if (a.dueDate && b.dueDate) {
-            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-        }
-        if (a.dueDate) return -1;
-        if (b.dueDate) return 1;
+        const aDue = a.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
+        const bDue = b.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
+        if (aDue !== bDue) return aDue - bDue;
         return b.createdAt - a.createdAt;
+      } else {
+        const aDue = a.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
+        const bDue = b.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
+        if (aDue !== bDue) return aDue - bDue;
+        const priorityWeightLocal: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+        const pDiff = priorityWeightLocal[b.priority] - priorityWeightLocal[a.priority];
+        if (pDiff !== 0) return pDiff;
+        return b.createdAt - a.createdAt;
+      }
     });
   };
 
@@ -506,6 +524,19 @@ const App: React.FC = () => {
         
         {/* Right Section: Actions */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+          {viewMode === 'board' && (
+            <div className="hidden md:flex items-center gap-2 border-r border-gray-200 pr-4 mr-2">
+              <span className="text-xs text-gray-500">Sort</span>
+              <select
+                value={boardSort}
+                onChange={(e) => setBoardSort(e.target.value as 'priority' | 'dueDate')}
+                className="text-sm border border-gray-200 rounded-md px-2 py-1 bg-white"
+              >
+                <option value="priority">Priority</option>
+                <option value="dueDate">Due Date</option>
+              </select>
+            </div>
+          )}
           {/* Backup Controls */}
           <div className="hidden lg:flex items-center mr-2 border-r border-gray-200 pr-4 gap-2">
             <button 
