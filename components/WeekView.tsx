@@ -46,6 +46,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
   const dueThisWeekTasks = tasks.filter(t => {
     if (!t.dueDate || !isOpen(t)) return false;
     const d = new Date(t.dueDate);
+    d.setHours(0, 0, 0, 0);
     return d >= weekStart && d <= weekEnd;
   });
   const dueThisWeekCount = dueThisWeekTasks.length;
@@ -329,10 +330,15 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             
             <div className="flex-1 p-2 overflow-y-auto custom-scrollbar space-y-2">
               {sortedDayTasks.map(({ task, isVirtual, baseTask }) => (
-                <div key={task.id} className="space-y-1" style={{ contain: 'layout style paint' }}>
-                  {task.status === Status.DONE && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 border border-green-200">Done</span>
-                  )}
+                <div key={task.id} className="space-y-1 overflow-visible">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {task.status === Status.DONE && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 border border-green-200">Done</span>
+                    )}
+                    {task.status === Status.IN_PROGRESS && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 border border-blue-200">In Progress</span>
+                    )}
+                  </div>
                   <div className={`${task.status === Status.DONE ? 'line-through text-gray-500' : ''}`}>
                     <TaskCard 
                       task={task} 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Task, Priority, Status, Recurrence } from '../types';
-import { Check, Circle, Plus } from 'lucide-react';
+import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -50,6 +50,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
   const dueThisWeekTasks = tasks.filter(t => {
     if (!t.dueDate || !isOpen(t)) return false;
     const d = new Date(t.dueDate);
+    d.setHours(0,0,0,0);
     return d >= weekStart && d <= weekEnd;
   });
   const missingDueTasks = tasks.filter(t => !t.dueDate && isOpen(t));
@@ -348,12 +349,14 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               <div className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar max-h-[120px]">
                 {dayTasks.map(({ task, isVirtual, baseTaskId, baseTask, occurrenceISO }) => {
                   const isDone = task.status === Status.DONE;
+                  const isInProgress = task.status === Status.IN_PROGRESS;
                   return (
                     <div
                       key={task.id}
                       className={`group flex items-center gap-2 px-1.5 py-1 rounded border transition-all 
                         ${isDone ? 'bg-gray-100 border-gray-100 opacity-60' : priorityColor[task.priority]} 
                         ${isVirtual ? 'opacity-60 border-dashed bg-white' : 'hover:shadow-sm'}
+                        ${isInProgress ? 'border-blue-300 bg-blue-50/30' : ''}
                       `}
                     >
                       <button 
@@ -368,19 +371,46 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                         }}
                         className={`flex-shrink-0 transition-colors 
                             ${isVirtual ? 'text-gray-300 hover:text-green-600 cursor-pointer' : 'text-gray-400 hover:text-green-600 cursor-pointer'}
-                            ${isDone ? 'text-green-600' : ''}`}
+                            ${isDone ? 'text-green-600' : ''}
+                            ${isInProgress ? 'text-blue-600' : ''}`}
                       >
                          {isDone ? <Check size={14} className="stroke-[3]" /> : <Circle size={14} />}
                       </button>
                       
-                      <button 
-                        onClick={() => onEditTask(isVirtual ? baseTask : task)}
-                        className={`text-left text-xs truncate flex-1 font-medium cursor-pointer
-                            ${isDone ? 'line-through text-gray-500' : ''}
-                        `}
-                      >
-                        {task.title}
-                      </button>
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <button 
+                          onClick={() => onEditTask(isVirtual ? baseTask : task)}
+                          className={`text-left text-xs truncate flex-1 font-medium cursor-pointer flex items-center gap-1
+                              ${isDone ? 'line-through text-gray-500' : ''}
+                          `}
+                        >
+                          {task.priority === Priority.HIGH && (
+                            <ArrowUp 
+                              size={12} 
+                              className="text-red-500 flex-shrink-0" 
+                              title={`Priority: ${task.priority}`}
+                            />
+                          )}
+                          {task.priority === Priority.MEDIUM && (
+                            <Minus 
+                              size={12} 
+                              className="text-yellow-500 flex-shrink-0" 
+                              title={`Priority: ${task.priority}`}
+                            />
+                          )}
+                          {task.priority === Priority.LOW && (
+                            <ArrowDown 
+                              size={12} 
+                              className="text-blue-500 flex-shrink-0" 
+                              title={`Priority: ${task.priority}`}
+                            />
+                          )}
+                          <span className="truncate">{task.title}</span>
+                        </button>
+                        {isInProgress && (
+                          <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0">In Progress</span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

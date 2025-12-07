@@ -134,7 +134,43 @@ const App: React.FC = () => {
       return;
     }
 
+    // If toggling a recurring task to DONE without a specific date (e.g., from Board),
+    // materialize a DONE history for the current occurrence and roll the base forward.
+    if (!onDate && togglingToDone && task.recurrence !== Recurrence.NONE) {
+      const occurrenceISO = task.dueDate || new Date().toISOString();
+      const nextDue = calculateNextDueDate(occurrenceISO, task.recurrence);
+
+      setTasks(prev => {
+        const base = prev.find(t => t.id === taskId);
+        if (!base) return prev;
+
+        const history: Task = {
+          ...base,
+          id: crypto.randomUUID(),
+          status: Status.DONE,
+          dueDate: occurrenceISO,
+          createdAt: Date.now(),
+        };
+
+        const updatedBase: Task = {
+          ...base,
+          status: Status.TODO,
+          dueDate: nextDue.toISOString(),
+        };
+
+        return prev.map(t => t.id === taskId ? updatedBase : t).concat(history);
+      });
+      return;
+    }
+
     const newStatus = task.status === Status.DONE ? Status.TODO : Status.DONE;
+    // If toggling to DONE and task has no dueDate, anchor it to today so Week/Month can display it
+    if (newStatus === Status.DONE && !task.dueDate) {
+      const today = new Date();
+      today.setHours(12, 0, 0, 0);
+      const iso = today.toISOString();
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, dueDate: iso } : t));
+    }
     updateTaskStatus(taskId, newStatus);
   };
 

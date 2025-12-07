@@ -1,6 +1,6 @@
 import React from 'react';
 import { Task, Priority, Recurrence } from '../types';
-import { Calendar, RefreshCw, MoreVertical, Archive, ArrowRight, ArrowLeft, Trash2 } from 'lucide-react';
+import { Calendar, RefreshCw, MoreVertical, Archive, ArrowRight, ArrowLeft, Trash2, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -49,24 +49,39 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
         ${task.status === 'ARCHIVED' ? 'opacity-75' : ''}
       `}
     >
-      <div className="flex justify-between items-start mb-2">
-        <span className={`px-2 py-1 rounded-md text-xs font-semibold border ${priorityColor[task.priority]}`}>
-          {task.priority}
-        </span>
-        {task.recurrence !== Recurrence.NONE && (
-          <span className="text-gray-400" title={`Recurs ${task.recurrence}`}>
-            <RefreshCw size={14} />
-          </span>
-        )}
-      </div>
-
       <h3 
-        className={`font-semibold text-gray-800 mb-1 leading-tight transition-colors duration-200 cursor-pointer group-hover:text-blue-600`} 
+        className={`font-semibold text-gray-800 mb-1 leading-tight transition-colors duration-200 cursor-pointer group-hover:text-blue-600 flex items-center gap-1.5`} 
         onClick={(e) => handleButtonClick(e, () => onEdit(task))}
         onMouseDown={handleButtonMouseDown}
       >
-        {task.title}
-        {isVirtual && <span className="ml-2 text-[10px] font-normal text-gray-400 bg-gray-100 px-1 rounded">(Future)</span>}
+        {task.priority === Priority.HIGH && (
+          <ArrowUp 
+            size={14} 
+            className="text-red-500 flex-shrink-0" 
+            title={`Priority: ${task.priority}`}
+          />
+        )}
+        {task.priority === Priority.MEDIUM && (
+          <Minus 
+            size={14} 
+            className="text-yellow-500 flex-shrink-0" 
+            title={`Priority: ${task.priority}`}
+          />
+        )}
+        {task.priority === Priority.LOW && (
+          <ArrowDown 
+            size={14} 
+            className="text-blue-500 flex-shrink-0" 
+            title={`Priority: ${task.priority}`}
+          />
+        )}
+        <span className="flex-1">{task.title}</span>
+        {task.recurrence !== Recurrence.NONE && (
+          <span className="text-gray-400 flex-shrink-0" title={`Recurs ${task.recurrence}`}>
+            <RefreshCw size={14} />
+          </span>
+        )}
+        {isVirtual && <span className="ml-2 text-[10px] font-normal text-gray-400 bg-gray-100 px-1 rounded flex-shrink-0">(Future)</span>}
       </h3>
       
       {task.description && (
