@@ -34,6 +34,31 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
       totalSlots = [...totalSlots, ...Array(remainingSlots).fill(null)];
   }
 
+  // Summary: overdue and due-this-week (relative to the week of currentDate)
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const weekStart = new Date(currentDate);
+  weekStart.setHours(0,0,0,0);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  weekEnd.setHours(23,59,59,999);
+
+  const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Status.ARCHIVED;
+  const overdueTasks = tasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today);
+  const dueThisWeekTasks = tasks.filter(t => {
+    if (!t.dueDate || !isOpen(t)) return false;
+    const d = new Date(t.dueDate);
+    return d >= weekStart && d <= weekEnd;
+  });
+  const missingDueTasks = tasks.filter(t => !t.dueDate && isOpen(t));
+
+  // Filter mode for Month view
+  const [filterMode, setFilterMode] = React.useState<'all' | 'overdue' | 'week' | 'nodue'>('all');
+  const toggleOverdue = () => setFilterMode(m => (m === 'overdue' ? 'all' : 'overdue'));
+  const toggleWeek = () => setFilterMode(m => (m === 'week' ? 'all' : 'week'));
+  const toggleNoDue = () => setFilterMode(m => (m === 'nodue' ? 'all' : 'nodue'));
+
   const doesTaskOccurOnDate = (task: Task, date: Date): boolean => {
       const checkDate = new Date(date);
       checkDate.setHours(0,0,0,0);
@@ -138,7 +163,143 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
   return (
     <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="mb-3 flex items-center gap-2 px-3 pt-3">
+        <span className="text-sm text-gray-600 font-medium">Summary</span>
+        <button
+          type="button"
+          onClick={toggleOverdue}
+          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'}`}
+        >
+          Overdue: {overdueTasks.length}
+        </button>
+        <button
+          type="button"
+          onClick={toggleWeek}
+          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'week' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+        >
+          Due this week: {dueThisWeekTasks.length}
+        </button>
+        <button
+          type="button"
+          onClick={toggleNoDue}
+          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+        >
+          No due date: {missingDueTasks.length}
+        </button>
+      </div>
+
+      {filterMode === 'overdue' && (
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3 space-y-2">
+          {overdueTasks.length === 0 && (
+            <div className="text-xs text-gray-400 italic px-1">No overdue tasks 🎉</div>
+          )}
+          {overdueTasks
+            .slice()
+            .sort((a, b) => {
+              const ad = a.dueDate ? new Date(a.dueDate).getTime() : -Infinity;
+              const bd = b.dueDate ? new Date(b.dueDate).getTime() : -Infinity;
+              if (ad !== bd) return ad - bd;
+              const pw: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+              const pDiff = pw[b.priority] - pw[a.priority];
+              if (pDiff !== 0) return pDiff;
+              return b.createdAt - a.createdAt;
+            })
+            .map(task => (
+              <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]}`}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleDone(task.id); }}
+                  className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''}`}
+                  title="Toggle done"
+                >
+                  {task.status === Status.DONE ? <Check size={14} className="stroke-[3]" /> : <Circle size={14} />}
+                </button>
+                <button
+                  onClick={() => onEditTask(task)}
+                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE ? 'line-through text-gray-500' : ''}`}
+                >
+                  {task.title}
+                </button>
+                {task.dueDate && (
+                  <span className="text-[10px] text-gray-500">{new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
+
+      {filterMode === 'nodue' && (
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3 space-y-2">
+          {missingDueTasks.length === 0 && (
+            <div className="text-xs text-gray-400 italic px-1">No tasks without due date</div>
+          )}
+          {missingDueTasks
+            .slice()
+            .sort((a, b) => {
+              const pw: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+              const pDiff = pw[b.priority] - pw[a.priority];
+              if (pDiff !== 0) return pDiff;
+              return b.createdAt - a.createdAt;
+            })
+            .map(task => (
+              <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]}`}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleDone(task.id); }}
+                  className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''}`}
+                  title="Toggle done"
+                >
+                  {task.status === Status.DONE ? <Check size={14} className="stroke-[3]" /> : <Circle size={14} />}
+                </button>
+                <button
+                  onClick={() => onEditTask(task)}
+                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE ? 'line-through text-gray-500' : ''}`}
+                >
+                  {task.title}
+                </button>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {filterMode === 'week' && (
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3 space-y-2">
+          {dueThisWeekTasks.length === 0 && (
+            <div className="text-xs text-gray-400 italic px-1">No tasks due this week 🎉</div>
+          )}
+          {dueThisWeekTasks
+            .slice()
+            .sort((a, b) => {
+              const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+              const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+              if (ad !== bd) return ad - bd;
+              const pw: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+              const pDiff = pw[b.priority] - pw[a.priority];
+              if (pDiff !== 0) return pDiff;
+              return b.createdAt - a.createdAt;
+            })
+            .map(task => (
+              <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]}`}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleDone(task.id); }}
+                  className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''}`}
+                  title="Toggle done"
+                >
+                  {task.status === Status.DONE ? <Check size={14} className="stroke-[3]" /> : <Circle size={14} />}
+                </button>
+                <button
+                  onClick={() => onEditTask(task)}
+                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE ? 'line-through text-gray-500' : ''}`}
+                >
+                  {task.title}
+                </button>
+                {task.dueDate && (
+                  <span className="text-[10px] text-gray-500">{new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
       {/* Weekday Headers */}
+      {filterMode === 'all' && (
       <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
           <div key={day} className="py-2 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">
@@ -146,8 +307,10 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           </div>
         ))}
       </div>
+      )}
 
       {/* Calendar Grid */}
+      {filterMode === 'all' && (
       <div className="grid grid-cols-7 auto-rows-fr flex-1 bg-gray-200 gap-[1px]">
         {totalSlots.map((day, index) => {
           if (day === null) {
@@ -213,6 +376,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           );
         })}
       </div>
+      )}
     </div>
   );
 };

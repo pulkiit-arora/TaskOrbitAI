@@ -89,6 +89,7 @@ const App: React.FC = () => {
       return saved === 'dueDate' ? 'dueDate' : 'priority';
     } catch { return 'priority'; }
   });  const [currentDate, setCurrentDate] = useState(new Date());
+  
 
   // --- Persistence Logic ---
 
@@ -410,7 +411,45 @@ const App: React.FC = () => {
   };
 
   const filteredTasks = tasks.filter(t => showArchived ? true : t.status !== Status.ARCHIVED);
+    // Board quick filters: 'all' | 'overdue' | 'week' | 'nodue'
+  const [boardFilter, setBoardFilter] = useState<'all' | 'overdue' | 'week' | 'nodue'>('all');
 
+  // Board filter calculations (relative to current week)
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const boardWeekStart = new Date(today);
+  boardWeekStart.setDate(boardWeekStart.getDate() - boardWeekStart.getDay());
+  boardWeekStart.setHours(0,0,0,0);
+  const boardWeekEnd = new Date(boardWeekStart);
+  boardWeekEnd.setDate(boardWeekEnd.getDate() + 6);
+  boardWeekEnd.setHours(23,59,59,999);
+
+  const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Status.ARCHIVED;
+
+  const overdueTasks = filteredTasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today);
+  const dueThisWeekTasks = filteredTasks.filter(t => {
+    if (!t.dueDate || !isOpen(t)) return false;
+    const d = new Date(t.dueDate);
+    return d >= boardWeekStart && d <= boardWeekEnd;
+  });
+  const missingDueTasks = filteredTasks.filter(t => !t.dueDate && isOpen(t));
+
+  const applyBoardFilter = (list: Task[]) => {
+    switch (boardFilter) {
+      case 'overdue':
+        return list.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today);
+      case 'week':
+        return list.filter(t => {
+          if (!t.dueDate || !isOpen(t)) return false;
+          const d = new Date(t.dueDate);
+          return d >= boardWeekStart && d <= boardWeekEnd;
+        });
+      case 'nodue':
+        return list.filter(t => !t.dueDate && isOpen(t));
+      default:
+        return list;
+    }
+  };
   const priorityWeight = {
     [Priority.HIGH]: 3,
     [Priority.MEDIUM]: 2,
@@ -525,17 +564,18 @@ const App: React.FC = () => {
         {/* Right Section: Actions */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
           {viewMode === 'board' && (
+            
             <div className="hidden md:flex items-center gap-2 border-r border-gray-200 pr-4 mr-2">
-              <span className="text-xs text-gray-500">Sort</span>
-              <select
-                value={boardSort}
-                onChange={(e) => setBoardSort(e.target.value as 'priority' | 'dueDate')}
-                className="text-sm border border-gray-200 rounded-md px-2 py-1 bg-white"
-              >
-                <option value="priority">Priority</option>
-                <option value="dueDate">Due Date</option>
-              </select>
-            </div>
+                <span className="text-xs text-gray-500">Sort</span>
+                <select
+                  value={boardSort}
+                  onChange={(e) => setBoardSort(e.target.value as 'priority' | 'dueDate')}
+                  className="text-sm border border-gray-200 rounded-md px-2 py-1 bg-white"
+                >
+                  <option value="priority">Priority</option>
+                  <option value="dueDate">Due Date</option>
+                </select>
+              </div>
           )}
           {/* Backup Controls */}
           <div className="hidden lg:flex items-center mr-2 border-r border-gray-200 pr-4 gap-2">
@@ -575,10 +615,34 @@ const App: React.FC = () => {
       <main className="flex-1 overflow-hidden bg-gray-50 p-4 md:p-6">
         {viewMode === 'board' && (
           <div className="h-full overflow-x-auto">
+            <div className="mb-3 flex items-center gap-2 px-1">
+              <span className="text-sm text-gray-600 font-medium">Summary</span>
+              <button
+                type="button"
+                onClick={() => setBoardFilter(f => f === 'overdue' ? 'all' : 'overdue')}
+                className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${boardFilter === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'}`}
+              >
+                Overdue: {overdueTasks.length}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBoardFilter(f => f === 'week' ? 'all' : 'week')}
+                className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${boardFilter === 'week' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+              >
+                Due this week: {dueThisWeekTasks.length}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBoardFilter(f => f === 'nodue' ? 'all' : 'nodue')}
+                className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${boardFilter === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+              >
+                No due date: {missingDueTasks.length}
+              </button>
+            </div>
             <div className="h-full flex flex-col md:flex-row gap-6 min-w-[320px] md:min-w-0">
               <BoardColumn 
                 status={Status.TODO} 
-                tasks={sortTasks(filteredTasks.filter(t => t.status === Status.TODO))}
+                tasks={sortTasks(applyBoardFilter(filteredTasks.filter(t => t.status === Status.TODO)))}
                 onEditTask={handleEditTask}
                 onMoveTask={handleMoveTask}
                 onArchiveTask={handleArchiveTask}
@@ -587,7 +651,7 @@ const App: React.FC = () => {
               />
               <BoardColumn 
                 status={Status.IN_PROGRESS} 
-                tasks={sortTasks(filteredTasks.filter(t => t.status === Status.IN_PROGRESS))}
+                tasks={sortTasks(applyBoardFilter(filteredTasks.filter(t => t.status === Status.IN_PROGRESS)))}
                 onEditTask={handleEditTask}
                 onMoveTask={handleMoveTask}
                 onArchiveTask={handleArchiveTask}
@@ -596,7 +660,7 @@ const App: React.FC = () => {
               />
               <BoardColumn 
                 status={Status.DONE} 
-                tasks={sortTasks(filteredTasks.filter(t => t.status === Status.DONE))}
+                tasks={sortTasks(applyBoardFilter(filteredTasks.filter(t => t.status === Status.DONE)))}
                 onEditTask={handleEditTask}
                 onMoveTask={handleMoveTask}
                 onArchiveTask={handleArchiveTask}
@@ -607,7 +671,7 @@ const App: React.FC = () => {
               {showArchived && (
                  <BoardColumn 
                     status={Status.ARCHIVED} 
-                    tasks={sortTasks(filteredTasks.filter(t => t.status === Status.ARCHIVED))}
+                    tasks={sortTasks(applyBoardFilter(filteredTasks.filter(t => t.status === Status.ARCHIVED)))}
                     onEditTask={handleEditTask}
                     onMoveTask={handleMoveTask}
                     onArchiveTask={handleArchiveTask}

@@ -29,6 +29,33 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
     return d;
   });
 
+  // Summary: overdue and due-this-week
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const weekStart = new Date(startOfWeek);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Status.ARCHIVED;
+  const overdueTasks = tasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today);
+  const overdueCount = overdueTasks.length;
+  const dueThisWeekTasks = tasks.filter(t => {
+    if (!t.dueDate || !isOpen(t)) return false;
+    const d = new Date(t.dueDate);
+    return d >= weekStart && d <= weekEnd;
+  });
+  const dueThisWeekCount = dueThisWeekTasks.length;
+  const missingDueTasks = tasks.filter(t => !t.dueDate && isOpen(t));
+  const missingDueCount = missingDueTasks.length;
+
+  // Filter mode: 'all' | 'overdue' | 'week' | 'nodue'
+  const [filterMode, setFilterMode] = React.useState<'all' | 'overdue' | 'week' | 'nodue'>('all');
+  const toggleOverdue = () => setFilterMode(m => (m === 'overdue' ? 'all' : 'overdue'));
+  const toggleWeek = () => setFilterMode(m => (m === 'week' ? 'all' : 'week'));
+  const toggleNoDue = () => setFilterMode(m => (m === 'nodue' ? 'all' : 'nodue'));
+
   const doesTaskOccurOnDate = (task: Task, date: Date): boolean => {
       // 1. Basic filtering: Archived tasks are hidden unless we want them? (Usually handled by parent)
       // Assuming parent filters 'ARCHIVED' based on toggle, but we still check for 'DONE' behavior.
@@ -144,7 +171,118 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
   };
 
   return (
-    <div className="flex h-full gap-4 overflow-x-auto min-w-[1000px]">
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="mb-3 flex items-center gap-2 px-1">
+        <span className="text-sm text-gray-600 font-medium">Summary</span>
+        <button
+          type="button"
+          onClick={toggleOverdue}
+          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'}`}
+        >
+          Overdue: {overdueCount}
+        </button>
+        <button
+          type="button"
+          onClick={toggleWeek}
+          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'week' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+        >
+          Due this week: {dueThisWeekCount}
+        </button>
+        <button
+          type="button"
+          onClick={toggleNoDue}
+          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+        >
+          No due date: {missingDueCount}
+        </button>
+      </div>
+
+      {filterMode === 'overdue' && (
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+          {overdueTasks.length === 0 && (
+            <div className="text-xs text-gray-400 italic px-1">No overdue tasks 🎉</div>
+          )}
+          {overdueTasks
+            .slice()
+            .sort((a, b) => {
+              const ad = a.dueDate ? new Date(a.dueDate).getTime() : -Infinity;
+              const bd = b.dueDate ? new Date(b.dueDate).getTime() : -Infinity;
+              if (ad !== bd) return ad - bd; // oldest overdue first
+              const pw: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+              const pDiff = pw[b.priority] - pw[a.priority];
+              if (pDiff !== 0) return pDiff;
+              return b.createdAt - a.createdAt;
+            })
+            .map(task => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onEdit={onEditTask}
+                onMove={onMoveTask}
+                onArchive={onArchiveTask}
+                onDelete={onDeleteTask}
+              />
+            ))}
+        </div>
+      )}
+
+      {filterMode === 'week' && (
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+          {dueThisWeekTasks.length === 0 && (
+            <div className="text-xs text-gray-400 italic px-1">No tasks due this week 🎉</div>
+          )}
+          {dueThisWeekTasks
+            .slice()
+            .sort((a, b) => {
+              const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+              const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+              if (ad !== bd) return ad - bd; // soonest first
+              const pw: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+              const pDiff = pw[b.priority] - pw[a.priority];
+              if (pDiff !== 0) return pDiff;
+              return b.createdAt - a.createdAt;
+            })
+            .map(task => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onEdit={onEditTask}
+                onMove={onMoveTask}
+                onArchive={onArchiveTask}
+                onDelete={onDeleteTask}
+              />
+            ))}
+        </div>
+      )}
+
+      {filterMode === 'nodue' && (
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+          {missingDueTasks.length === 0 && (
+            <div className="text-xs text-gray-400 italic px-1">No tasks without due date</div>
+          )}
+          {missingDueTasks
+            .slice()
+            .sort((a, b) => {
+              const pw: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+              const pDiff = pw[b.priority] - pw[a.priority];
+              if (pDiff !== 0) return pDiff;
+              return b.createdAt - a.createdAt;
+            })
+            .map(task => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onEdit={onEditTask}
+                onMove={onMoveTask}
+                onArchive={onArchiveTask}
+                onDelete={onDeleteTask}
+              />
+            ))}
+        </div>
+      )}
+
+      {filterMode !== 'overdue' && filterMode !== 'week' && filterMode !== 'nodue' && (
+        <div className="flex gap-4 overflow-x-auto min-w-[1000px]">
       {weekDays.map(day => {
         const dayTasks = getTasksForDay(day);
         const sortedDayTasks = dayTasks.slice().sort((a, b) => {
@@ -201,6 +339,8 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
           </div>
         );
       })}
+      </div>
+      )}
     </div>
   );
 };
