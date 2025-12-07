@@ -7,6 +7,7 @@ import { WeekView } from './components/WeekView';
 import { Task, Status, Priority, Recurrence } from './types';
 import { loadTasksFromDB, saveTasksToDB } from './services/storage';
 import { Plus, Archive, CheckSquare, Layout, Calendar, ChevronLeft, ChevronRight, Grid, Loader2, Download, Upload } from 'lucide-react';
+import { Tour } from './components/Tour';
 
 const INITIAL_TASKS: Task[] = [
   {
@@ -66,7 +67,8 @@ const App: React.FC = () => {
   
   // File input ref for importing data
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+  // First-time tour state
+  const [isTourOpen, setIsTourOpen] = useState(false);
   // UI Preferences remain in LocalStorage for instant visual readiness
   const [showArchived, setShowArchived] = useState(() => {
     try {
@@ -74,7 +76,13 @@ const App: React.FC = () => {
         return saved === 'true';
     } catch { return false; }
   });
-  
+  // Show onboarding tour on first visit
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem('lifeflow-tour-seen');
+      if (!seen) setIsTourOpen(true);
+    } catch {}
+  }, []);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     try {
         const saved = localStorage.getItem('lifeflow-view-mode');
@@ -385,7 +393,10 @@ const App: React.FC = () => {
     };
     reader.readAsText(file);
   };
-
+  const handleCloseTour = () => {
+    try { localStorage.setItem('lifeflow-tour-seen', 'true'); } catch {}
+    setIsTourOpen(false);
+  };
   // ---------------------------------
 
   const calculateNextDueDate = (currentDate: string, recurrence: Recurrence): Date => {
@@ -575,6 +586,14 @@ const App: React.FC = () => {
                   <option value="priority">Priority</option>
                   <option value="dueDate">Due Date</option>
                 </select>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hidden md:flex"
+                  onClick={() => setIsTourOpen(true)}
+                >
+                  Tour
+                </Button>
               </div>
           )}
           {/* Backup Controls */}
@@ -703,6 +722,18 @@ const App: React.FC = () => {
           />
         )}
       </main>
+      
+      <Tour 
+        isOpen={isTourOpen}
+        onClose={handleCloseTour}
+        steps={[
+          { title: 'Welcome to TaskOrbit AI', description: 'Capture tasks, prioritize, and track across Board, Week, and Month views.' },
+          { title: 'Switch Views', description: 'Use the buttons at the top to switch between Board, Week, and Month.' },
+          { title: 'Quick Filters', description: 'Use Summary filters to focus on Overdue, Due this week, or No due date.' },
+          { title: 'Manage Tasks', description: 'Click Add Task to create. Drag between columns or use arrows to change status.' },
+          { title: 'Recurring Tasks', description: 'Mark a recurring task Done to auto-schedule the next occurrence.' },
+        ]}
+      />
 
       <TaskModal 
         isOpen={isModalOpen}
@@ -727,6 +758,7 @@ const App: React.FC = () => {
         </div>
       )}
     </div>
+    
   );
 };
 

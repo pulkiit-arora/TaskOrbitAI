@@ -282,7 +282,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
       )}
 
       {filterMode !== 'overdue' && filterMode !== 'week' && filterMode !== 'nodue' && (
-        <div className="flex gap-4 overflow-x-auto min-w-[1000px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 overflow-y-auto">
       {weekDays.map(day => {
         const dayTasks = getTasksForDay(day);
         const sortedDayTasks = dayTasks.slice().sort((a, b) => {
@@ -301,7 +301,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
         const isToday = new Date().toDateString() === day.toDateString();
         
         return (
-          <div key={day.toISOString()} className={`flex-1 flex flex-col min-w-[200px] rounded-xl border ${isToday ? 'border-blue-300 bg-blue-50/20' : 'border-gray-200 bg-gray-50'}`}>
+          <div key={day.toISOString()} className={`flex flex-col rounded-xl border ${isToday ? 'border-blue-300 bg-blue-50/20' : 'border-gray-200 bg-gray-50'}`}>
             <div className={`p-3 border-b ${isToday ? 'border-blue-200 bg-blue-100/50' : 'border-gray-200 bg-gray-100/50'} rounded-t-xl`}>
               <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 {day.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -313,21 +313,20 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             
             <div className="flex-1 p-2 overflow-y-auto custom-scrollbar space-y-2">
               {sortedDayTasks.map(({ task, isVirtual }) => (
-                <div key={task.id} className="flex items-start gap-2">
-                  <span
-                    className={`mt-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium
-                      ${task.status === Status.DONE ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}
-                  >
-                    {task.status === Status.DONE ? 'Done' : 'Open'}
-                  </span>
-                  <TaskCard 
-                    task={task} 
-                    onEdit={onEditTask} 
-                    onMove={onMoveTask} 
-                    onArchive={onArchiveTask} 
-                    onDelete={onDeleteTask}
-                    isVirtual={isVirtual}
-                  />
+                <div key={task.id} className="space-y-1">
+                  {task.status === Status.DONE && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 border border-green-200">Done</span>
+                  )}
+                  <div className={`${task.status === Status.DONE ? 'line-through text-gray-500' : ''}`}>
+                    <TaskCard 
+                      task={task} 
+                      onEdit={onEditTask} 
+                      onMove={onMoveTask} 
+                      onArchive={onArchiveTask} 
+                      onDelete={onDeleteTask}
+                      isVirtual={isVirtual}
+                    />
+                  </div>
                 </div>
               ))}
               {sortedDayTasks.length === 0 && (
