@@ -113,7 +113,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
   };
 
   const getTasksForDay = (date: Date) => {
-    const dayTasks: { task: Task; isVirtual: boolean }[] = [];
+    const dayTasks: { task: Task; isVirtual: boolean; baseTask: Task }[] = [];
 
     tasks.forEach(task => {
         // Skip archived in calendar views typically, unless explicitly desired. 
@@ -164,7 +164,8 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
 
             dayTasks.push({
                 task: displayTask,
-                isVirtual: !isRealInstance
+                isVirtual: !isRealInstance,
+                baseTask: task // Store the original task for editing
             });
         }
     });
@@ -327,7 +328,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             </div>
             
             <div className="flex-1 p-2 overflow-y-auto custom-scrollbar space-y-2">
-              {sortedDayTasks.map(({ task, isVirtual }) => (
+              {sortedDayTasks.map(({ task, isVirtual, baseTask }) => (
                 <div key={task.id} className="space-y-1" style={{ contain: 'layout style paint' }}>
                   {task.status === Status.DONE && (
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 border border-green-200">Done</span>
@@ -335,7 +336,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                   <div className={`${task.status === Status.DONE ? 'line-through text-gray-500' : ''}`}>
                     <TaskCard 
                       task={task} 
-                      onEdit={onEditTask} 
+                      onEdit={() => onEditTask(isVirtual ? baseTask : task)} 
                       onMove={onMoveTask} 
                       onArchive={onArchiveTask} 
                       onDelete={onDeleteTask}

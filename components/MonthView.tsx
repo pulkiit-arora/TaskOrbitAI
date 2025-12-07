@@ -103,7 +103,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
   const getTasksForDay = (day: number) => {
     const date = new Date(year, month, day);
-    const dayTasks: { task: Task; isVirtual: boolean; baseTaskId: string; occurrenceISO: string }[] = [];
+    const dayTasks: { task: Task; isVirtual: boolean; baseTaskId: string; baseTask: Task; occurrenceISO: string }[] = [];
 
     tasks.forEach(task => {
         if (task.status === Status.ARCHIVED) return;
@@ -149,6 +149,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 task: displayTask,
                 isVirtual: !isRealInstance,
                 baseTaskId,
+                baseTask: task, // Store the original task for editing
                 occurrenceISO
             });
         }
@@ -345,7 +346,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               </div>
               
               <div className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar max-h-[120px]">
-                {dayTasks.map(({ task, isVirtual, baseTaskId, occurrenceISO }) => {
+                {dayTasks.map(({ task, isVirtual, baseTaskId, baseTask, occurrenceISO }) => {
                   const isDone = task.status === Status.DONE;
                   return (
                     <div
@@ -373,11 +374,9 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                       </button>
                       
                       <button 
-                        onClick={() => !isVirtual && onEditTask(task)}
-                        disabled={isVirtual}
-                        className={`text-left text-xs truncate flex-1 font-medium 
+                        onClick={() => onEditTask(isVirtual ? baseTask : task)}
+                        className={`text-left text-xs truncate flex-1 font-medium cursor-pointer
                             ${isDone ? 'line-through text-gray-500' : ''}
-                            ${isVirtual ? 'cursor-default' : 'cursor-pointer'}
                         `}
                       >
                         {task.title}

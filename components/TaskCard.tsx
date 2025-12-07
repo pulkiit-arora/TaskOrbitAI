@@ -61,8 +61,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
       </div>
 
       <h3 
-        className={`font-semibold text-gray-800 mb-1 leading-tight transition-colors duration-200 ${!isVirtual ? 'cursor-pointer group-hover:text-blue-600' : ''}`} 
-        onClick={(e) => !isVirtual && handleButtonClick(e, () => onEdit(task))}
+        className={`font-semibold text-gray-800 mb-1 leading-tight transition-colors duration-200 cursor-pointer group-hover:text-blue-600`} 
+        onClick={(e) => handleButtonClick(e, () => onEdit(task))}
         onMouseDown={handleButtonMouseDown}
       >
         {task.title}
@@ -85,71 +85,71 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
           )}
         </div>
 
-        {!isVirtual && (
-            <div className="flex items-center gap-1 relative z-10">
-            {/* Controls */}
-            {task.status !== 'TODO' && task.status !== 'ARCHIVED' && (
-                <button 
-                    type="button"
-                    onMouseDown={handleButtonMouseDown}
-                    onPointerDown={handleButtonMouseDown}
-                    onClick={(e) => handleButtonClick(e, () => onMove(task.id, 'prev'))}
-                    className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
-                    title="Move Back"
-                >
-                    <ArrowLeft size={14} className="pointer-events-none" />
-                </button>
-            )}
-            
+        <div className="flex items-center gap-1 relative z-10">
+          {/* Controls - show edit button for all tasks, other controls only for non-virtual */}
+          {!isVirtual && task.status !== 'TODO' && task.status !== 'ARCHIVED' && (
             <button 
-                type="button"
-                onMouseDown={handleButtonMouseDown}
-                onPointerDown={handleButtonMouseDown}
-                onClick={(e) => handleButtonClick(e, () => onEdit(task))}
-                className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
-                title="Edit"
+              type="button"
+              onMouseDown={handleButtonMouseDown}
+              onPointerDown={handleButtonMouseDown}
+              onClick={(e) => handleButtonClick(e, () => onMove(task.id, 'prev'))}
+              className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
+              title="Move Back"
             >
-                <MoreVertical size={14} className="pointer-events-none" />
+              <ArrowLeft size={14} className="pointer-events-none" />
             </button>
+          )}
+          
+          <button 
+            type="button"
+            onMouseDown={handleButtonMouseDown}
+            onPointerDown={handleButtonMouseDown}
+            onClick={(e) => handleButtonClick(e, () => onEdit(task))}
+            className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
+            title="Edit"
+          >
+            <MoreVertical size={14} className="pointer-events-none" />
+          </button>
 
-            {task.status !== 'DONE' && task.status !== 'ARCHIVED' && (
-                <button 
-                type="button"
-                onMouseDown={handleButtonMouseDown}
-                onPointerDown={handleButtonMouseDown}
-                onClick={(e) => handleButtonClick(e, () => onMove(task.id, 'next'))}
-                className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
-                title="Move Forward"
-                >
-                <ArrowRight size={14} className="pointer-events-none" />
-                </button>
-            )}
-            
-            {task.status === 'DONE' && (
-                <button 
-                    type="button"
-                    onMouseDown={handleButtonMouseDown}
-                    onPointerDown={handleButtonMouseDown}
-                    onClick={(e) => handleButtonClick(e, () => onArchive(task.id))}
-                    className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
-                    title="Archive"
-                >
-                    <Archive size={14} className="pointer-events-none" />
-                </button>
-            )}
-
+          {!isVirtual && task.status !== 'DONE' && task.status !== 'ARCHIVED' && (
             <button 
-                type="button"
-                onMouseDown={handleButtonMouseDown}
-                onPointerDown={handleButtonMouseDown}
-                onClick={(e) => handleButtonClick(e, () => onDelete(task.id))}
-                className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition-colors duration-150 cursor-pointer" 
-                title="Delete"
+              type="button"
+              onMouseDown={handleButtonMouseDown}
+              onPointerDown={handleButtonMouseDown}
+              onClick={(e) => handleButtonClick(e, () => onMove(task.id, 'next'))}
+              className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
+              title="Move Forward"
             >
-                <Trash2 size={14} className="pointer-events-none" />
+              <ArrowRight size={14} className="pointer-events-none" />
             </button>
-            </div>
-        )}
+          )}
+          
+          {!isVirtual && task.status === 'DONE' && (
+            <button 
+              type="button"
+              onMouseDown={handleButtonMouseDown}
+              onPointerDown={handleButtonMouseDown}
+              onClick={(e) => handleButtonClick(e, () => onArchive(task.id))}
+              className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
+              title="Archive"
+            >
+              <Archive size={14} className="pointer-events-none" />
+            </button>
+          )}
+
+          {!isVirtual && (
+            <button 
+              type="button"
+              onMouseDown={handleButtonMouseDown}
+              onPointerDown={handleButtonMouseDown}
+              onClick={(e) => handleButtonClick(e, () => onDelete(task.id))}
+              className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition-colors duration-150 cursor-pointer" 
+              title="Delete"
+            >
+              <Trash2 size={14} className="pointer-events-none" />
+            </button>
+          )}
+        </div>
       </div>
       
       {isOverdue && (
