@@ -44,7 +44,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
     <div 
       draggable={!isVirtual && task.status !== 'ARCHIVED'}
       onDragStart={handleDragStart}
-      className={`group relative bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all 
+      className={`group relative bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200
         ${!isVirtual ? 'cursor-grab active:cursor-grabbing' : 'opacity-60 border-dashed'}
         ${task.status === 'ARCHIVED' ? 'opacity-75' : ''}
       `}
@@ -61,7 +61,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
       </div>
 
       <h3 
-        className={`font-semibold text-gray-800 mb-1 leading-tight transition-colors ${!isVirtual ? 'cursor-pointer group-hover:text-blue-600' : ''}`} 
+        className={`font-semibold text-gray-800 mb-1 leading-tight transition-colors duration-200 ${!isVirtual ? 'cursor-pointer group-hover:text-blue-600' : ''}`} 
         onClick={(e) => !isVirtual && handleButtonClick(e, () => onEdit(task))}
         onMouseDown={handleButtonMouseDown}
       >
@@ -94,7 +94,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
                     onMouseDown={handleButtonMouseDown}
                     onPointerDown={handleButtonMouseDown}
                     onClick={(e) => handleButtonClick(e, () => onMove(task.id, 'prev'))}
-                    className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors cursor-pointer" 
+                    className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
                     title="Move Back"
                 >
                     <ArrowLeft size={14} className="pointer-events-none" />
@@ -106,7 +106,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
                 onMouseDown={handleButtonMouseDown}
                 onPointerDown={handleButtonMouseDown}
                 onClick={(e) => handleButtonClick(e, () => onEdit(task))}
-                className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors cursor-pointer" 
+                className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
                 title="Edit"
             >
                 <MoreVertical size={14} className="pointer-events-none" />
@@ -118,7 +118,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
                 onMouseDown={handleButtonMouseDown}
                 onPointerDown={handleButtonMouseDown}
                 onClick={(e) => handleButtonClick(e, () => onMove(task.id, 'next'))}
-                className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors cursor-pointer" 
+                className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
                 title="Move Forward"
                 >
                 <ArrowRight size={14} className="pointer-events-none" />
@@ -131,7 +131,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
                     onMouseDown={handleButtonMouseDown}
                     onPointerDown={handleButtonMouseDown}
                     onClick={(e) => handleButtonClick(e, () => onArchive(task.id))}
-                    className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors cursor-pointer" 
+                    className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors duration-150 cursor-pointer" 
                     title="Archive"
                 >
                     <Archive size={14} className="pointer-events-none" />
@@ -143,7 +143,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
                 onMouseDown={handleButtonMouseDown}
                 onPointerDown={handleButtonMouseDown}
                 onClick={(e) => handleButtonClick(e, () => onDelete(task.id))}
-                className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition-colors cursor-pointer" 
+                className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition-colors duration-150 cursor-pointer" 
                 title="Delete"
             >
                 <Trash2 size={14} className="pointer-events-none" />

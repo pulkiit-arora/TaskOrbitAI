@@ -328,7 +328,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             
             <div className="flex-1 p-2 overflow-y-auto custom-scrollbar space-y-2">
               {sortedDayTasks.map(({ task, isVirtual }) => (
-                <div key={task.id} className="space-y-1">
+                <div key={task.id} className="space-y-1" style={{ contain: 'layout style paint' }}>
                   {task.status === Status.DONE && (
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 border border-green-200">Done</span>
                   )}

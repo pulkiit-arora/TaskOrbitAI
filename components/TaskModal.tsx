@@ -124,7 +124,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-          <h2 className="text-lg font-bold text-gray-800">{task ? 'Edit Task' : 'New Task'}</h2>
+          <h2 className="text-lg font-bold text-gray-800">{task?.id ? 'Edit Task' : 'New Task'}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
           </button>
@@ -142,7 +142,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                   placeholder="e.g., Plan summer vacation"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
-                 { !task && (
+                 { !task?.id && (
                     <Button 
                         type="button" 
                         variant="secondary" 
@@ -157,7 +157,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                  )}
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                 {!task && "Tip: Enter a personal goal (e.g. \"Get fit\") and click the sparkle icon to let AI break it down."}
+                 {!task?.id && "Tip: Enter a personal goal (e.g. \"Get fit\") and click the sparkle icon to let AI break it down."}
               </p>
             </div>
 
