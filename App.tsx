@@ -59,7 +59,7 @@ const App: React.FC = () => {
   console.log('App component rendered, isLoading:', isLoading, 'tasks:', tasks.length);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
+  const [editingTask, setEditingTask] = useState<Partial<Task> | undefined>(undefined);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{isOpen: boolean, taskId: string | null}>({
     isOpen: false,
     taskId: null
@@ -180,6 +180,16 @@ const App: React.FC = () => {
 
   const handleAddTask = () => {
     setEditingTask(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleAddTaskForDate = (date: Date) => {
+    // Create a partial task with the due date pre-filled
+    const dateStr = date.toISOString().split('T')[0];
+    const taskWithDate: Partial<Task> = {
+      dueDate: new Date(`${dateStr}T12:00:00`).toISOString(),
+    };
+    setEditingTask(taskWithDate);
     setIsModalOpen(true);
   };
 
@@ -575,26 +585,14 @@ const App: React.FC = () => {
         {/* Right Section: Actions */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-end">
           {viewMode === 'board' && (
-            
-            <div className="hidden md:flex items-center gap-2 border-r border-gray-200 pr-4 mr-2">
-                <span className="text-xs text-gray-500">Sort</span>
-                <select
-                  value={boardSort}
-                  onChange={(e) => setBoardSort(e.target.value as 'priority' | 'dueDate')}
-                  className="text-sm border border-gray-200 rounded-md px-2 py-1 bg-white"
-                >
-                  <option value="priority">Priority</option>
-                  <option value="dueDate">Due Date</option>
-                </select>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="hidden md:flex"
-                  onClick={() => setIsTourOpen(true)}
-                >
-                  Tour
-                </Button>
-              </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="hidden md:flex"
+              onClick={() => setIsTourOpen(true)}
+            >
+              Tour
+            </Button>
           )}
           {/* Backup Controls */}
           <div className="hidden lg:flex items-center mr-2 border-r border-gray-200 pr-4 gap-2">
@@ -634,7 +632,7 @@ const App: React.FC = () => {
       <main className="flex-1 overflow-hidden bg-gray-50 p-4 md:p-6">
         {viewMode === 'board' && (
           <div className="h-full overflow-x-auto">
-            <div className="mb-3 flex items-center gap-2 px-1">
+            <div className="mb-3 flex items-center gap-2 flex-wrap px-1">
               <span className="text-sm text-gray-600 font-medium">Summary</span>
               <button
                 type="button"
@@ -657,6 +655,18 @@ const App: React.FC = () => {
               >
                 No due date: {missingDueTasks.length}
               </button>
+              <div className="h-5 w-px bg-gray-300 mx-1"></div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Sort</span>
+                <select
+                  value={boardSort}
+                  onChange={(e) => setBoardSort(e.target.value as 'priority' | 'dueDate')}
+                  className="text-sm border border-gray-200 rounded-md px-2 py-1 bg-white"
+                >
+                  <option value="priority">Priority</option>
+                  <option value="dueDate">Due Date</option>
+                </select>
+              </div>
             </div>
             <div className="h-full flex flex-col md:flex-row gap-6 min-w-[320px] md:min-w-0">
               <BoardColumn 
@@ -708,6 +718,7 @@ const App: React.FC = () => {
             tasks={filteredTasks} 
             onEditTask={handleEditTask}
             onToggleDone={handleToggleDone}
+            onAddTask={handleAddTaskForDate}
           />
         )}
 
@@ -719,6 +730,7 @@ const App: React.FC = () => {
             onMoveTask={handleMoveTask}
             onArchiveTask={handleArchiveTask}
             onDeleteTask={handleDeleteTask}
+            onAddTask={handleAddTaskForDate}
           />
         )}
       </main>

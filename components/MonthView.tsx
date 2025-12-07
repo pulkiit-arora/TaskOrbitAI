@@ -1,15 +1,16 @@
 import React from 'react';
 import { Task, Priority, Status, Recurrence } from '../types';
-import { Check, Circle } from 'lucide-react';
+import { Check, Circle, Plus } from 'lucide-react';
 
 interface MonthViewProps {
   currentDate: Date;
   tasks: Task[];
   onEditTask: (task: Task) => void;
   onToggleDone: (taskId: string, onDate?: string) => void;
+  onAddTask?: (date: Date) => void;
 }
 
-export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEditTask, onToggleDone }) => {
+export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEditTask, onToggleDone, onAddTask }) => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -323,11 +324,24 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                          new Date().getFullYear() === year;
 
           return (
-            <div key={`day-${day}`} className={`min-h-[100px] bg-white p-2 flex flex-col gap-1 transition-colors hover:bg-gray-50`}>
+            <div key={`day-${day}`} className={`group min-h-[100px] bg-white p-2 flex flex-col gap-1 transition-colors hover:bg-gray-50`}>
               <div className="flex justify-between items-center mb-1">
                 <span className={`text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full ${isToday ? 'bg-blue-600 text-white' : 'text-gray-700'}`}>
                   {day}
                 </span>
+                {onAddTask && (
+                  <button
+                    onClick={() => {
+                      const date = new Date(year, month, day);
+                      date.setHours(12, 0, 0, 0);
+                      onAddTask(date);
+                    }}
+                    className="p-1 rounded-md hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors opacity-60 group-hover:opacity-100"
+                    title="Add task"
+                  >
+                    <Plus size={14} />
+                  </button>
+                )}
               </div>
               
               <div className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar max-h-[120px]">

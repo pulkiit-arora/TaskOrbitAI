@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="orbitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="url(#orbitGradient)"/>
+  
+  <!-- Orbit path -->
+  <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="2.5" opacity="0.3"/>
+  <circle cx="50" cy="50" r="28" fill="none" stroke="white" stroke-width="2" opacity="0.2"/>
+  
+  <!-- Checkmark (task completion) -->
+  <path d="M 30 50 L 42 62 L 70 34" 
+        fill="none" 
+        stroke="white" 
+        stroke-width="6" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Small accent dots on orbit -->
+  <circle cx="85" cy="50" r="2.5" fill="white" opacity="0.6"/>
+  <circle cx="15" cy="50" r="2.5" fill="white" opacity="0.6"/>
+</svg>
+

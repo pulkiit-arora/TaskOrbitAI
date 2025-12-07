@@ -1,6 +1,7 @@
 import React from 'react';
 import { Task, Priority, Status, Recurrence } from '../types';
 import { TaskCard } from './TaskCard';
+import { Plus } from 'lucide-react';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -9,9 +10,10 @@ interface WeekViewProps {
   onMoveTask: (taskId: string, direction: 'prev' | 'next') => void;
   onArchiveTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onAddTask?: (date: Date) => void;
 }
 
-export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTask, onMoveTask, onArchiveTask, onDeleteTask }) => {
+export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTask, onMoveTask, onArchiveTask, onDeleteTask, onAddTask }) => {
   const getStartOfWeek = (date: Date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -303,11 +305,24 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
         return (
           <div key={day.toISOString()} className={`flex flex-col rounded-xl border ${isToday ? 'border-blue-300 bg-blue-50/20' : 'border-gray-200 bg-gray-50'}`}>
             <div className={`p-3 border-b ${isToday ? 'border-blue-200 bg-blue-100/50' : 'border-gray-200 bg-gray-100/50'} rounded-t-xl`}>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                {day.toLocaleDateString('en-US', { weekday: 'short' })}
-              </div>
-              <div className={`text-lg font-bold ${isToday ? 'text-blue-700' : 'text-gray-800'}`}>
-                {day.getDate()} <span className="text-sm font-normal text-gray-400">{day.toLocaleDateString('en-US', { month: 'short' })}</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex-1">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </div>
+                  <div className={`text-lg font-bold ${isToday ? 'text-blue-700' : 'text-gray-800'}`}>
+                    {day.getDate()} <span className="text-sm font-normal text-gray-400">{day.toLocaleDateString('en-US', { month: 'short' })}</span>
+                  </div>
+                </div>
+                {onAddTask && (
+                  <button
+                    onClick={() => onAddTask(day)}
+                    className="p-1.5 rounded-md hover:bg-gray-200/50 text-gray-500 hover:text-blue-600 transition-colors"
+                    title="Add task"
+                  >
+                    <Plus size={16} />
+                  </button>
+                )}
               </div>
             </div>
             

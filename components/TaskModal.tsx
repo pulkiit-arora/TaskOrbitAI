@@ -10,7 +10,7 @@ interface TaskModalProps {
   onSave: (task: Partial<Task>) => void;
   onSaveMultiple?: (tasks: Partial<Task>[]) => void;
   onDelete?: (taskId: string) => void;
-  task?: Task;
+  task?: Partial<Task>;
 }
 
 export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, onDelete, task }) => {
@@ -27,10 +27,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
 
   useEffect(() => {
     if (task) {
-      setTitle(task.title);
-      setDescription(task.description);
-      setPriority(task.priority);
-      setRecurrence(task.recurrence);
+      setTitle(task.title || '');
+      setDescription(task.description || '');
+      setPriority(task.priority || Priority.MEDIUM);
+      setRecurrence(task.recurrence || Recurrence.NONE);
       setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
       setRecurrenceStart(task.recurrenceStart ? new Date(task.recurrenceStart).toISOString().split('T')[0] : '');
       setRecurrenceEnd(task.recurrenceEnd ? new Date(task.recurrenceEnd).toISOString().split('T')[0] : '');
