@@ -21,6 +21,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   const [dueDate, setDueDate] = useState('');
   const [recurrenceStart, setRecurrenceStart] = useState('');
   const [recurrenceEnd, setRecurrenceEnd] = useState('');
+  const [recurrenceInterval, setRecurrenceInterval] = useState<number>(1);
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([]);
+  const [recurrenceMonthDay, setRecurrenceMonthDay] = useState<number | undefined>(undefined);
+  const [recurrenceMonthNth, setRecurrenceMonthNth] = useState<number | undefined>(undefined);
+  const [recurrenceMonthWeekday, setRecurrenceMonthWeekday] = useState<number | undefined>(undefined);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
@@ -31,6 +36,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       setDescription(task.description || '');
       setPriority(task.priority || Priority.MEDIUM);
       setRecurrence(task.recurrence || Recurrence.NONE);
+      setRecurrenceInterval(task.recurrenceInterval || 1);
+      setRecurrenceWeekdays(task.recurrenceWeekdays || []);
+    setRecurrenceMonthDay(task.recurrenceMonthDay);
+    setRecurrenceMonthNth(task.recurrenceMonthNth);
+    setRecurrenceMonthWeekday(task.recurrenceMonthWeekday);
       setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
       setRecurrenceStart(task.recurrenceStart ? new Date(task.recurrenceStart).toISOString().split('T')[0] : '');
       setRecurrenceEnd(task.recurrenceEnd ? new Date(task.recurrenceEnd).toISOString().split('T')[0] : '');
@@ -47,6 +57,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setDueDate('');
     setRecurrenceStart('');
     setRecurrenceEnd('');
+    setRecurrenceInterval(1);
+    setRecurrenceWeekdays([]);
+    setRecurrenceMonthDay(undefined);
+    setRecurrenceMonthNth(undefined);
+    setRecurrenceMonthWeekday(undefined);
     setSuggestions([]);
   };
 
@@ -72,6 +87,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       description,
       priority,
       recurrence,
+      recurrenceInterval,
+      recurrenceWeekdays,
+      recurrenceMonthDay,
+      recurrenceMonthNth,
+      recurrenceMonthWeekday,
       dueDate: isoDate,
       recurrenceStart: isoRecurrenceStart,
       recurrenceEnd: isoRecurrenceEnd,
@@ -277,6 +297,103 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                             </div>
                         </div>
                     )}
+
+          {recurrence !== Recurrence.NONE && (
+            <div className="mt-3 grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Every</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    value={recurrenceInterval}
+                    onChange={(e) => setRecurrenceInterval(Math.max(1, Number(e.target.value) || 1))}
+                    className="w-20 px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                  />
+                  <span className="text-xs text-gray-600">
+                    {recurrence === Recurrence.DAILY ? 'day(s)' : recurrence === Recurrence.WEEKLY ? 'week(s)' : recurrence === Recurrence.MONTHLY ? 'month(s)' : recurrence === Recurrence.QUARTERLY ? 'quarter(s)' : 'year(s)'}
+                  </span>
+                </div>
+              </div>
+
+              {recurrence === Recurrence.WEEKLY && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Days of week</label>
+                  <div className="flex gap-1 flex-wrap">
+                    {['S','M','T','W','T','F','S'].map((label, idx) => {
+                      const active = recurrenceWeekdays.includes(idx);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setRecurrenceWeekdays(prev => prev.includes(idx) ? prev.filter(d => d !== idx) : [...prev, idx]);
+                          }}
+                          className={`px-2 py-1 rounded text-xs border ${active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {recurrence === Recurrence.MONTHLY && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Day of month (optional)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={recurrenceMonthDay ?? ''}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setRecurrenceMonthDay(Number.isNaN(v) ? undefined : Math.min(31, Math.max(1, Math.floor(v))));
+                    }}
+                    placeholder="e.g., 15"
+                    className="w-28 px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Leave empty to use task's existing day or the due date's day.</p>
+                </div>
+              )}
+              {recurrence === Recurrence.MONTHLY && (
+                <div className="mt-2">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Or: Nth weekday of month</label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <select
+                      value={recurrenceMonthNth ?? ''}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        setRecurrenceMonthNth(Number.isNaN(v) ? undefined : v);
+                      }}
+                      className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+                    >
+                      <option value="">Select</option>
+                      <option value={1}>First</option>
+                      <option value={2}>Second</option>
+                      <option value={3}>Third</option>
+                      <option value={4}>Fourth</option>
+                      <option value={-1}>Last</option>
+                    </select>
+
+                    <div className="flex gap-1">
+                      {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((label, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setRecurrenceMonthWeekday(prev => prev === idx ? undefined : idx)}
+                          className={`px-2 py-1 rounded text-xs border ${recurrenceMonthWeekday === idx ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400 ml-2">(e.g., Last Sat)</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
                 </div>
             </div>
 

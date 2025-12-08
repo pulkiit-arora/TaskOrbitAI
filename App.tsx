@@ -109,7 +109,17 @@ const App: React.FC = () => {
 
     if (onDate && togglingToDone && task.recurrence !== Recurrence.NONE) {
       const occurrenceISO = onDate;
-      const nextDue = calculateNextDueDate(occurrenceISO, task.recurrence);
+      const anchorISO = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
+      const nextDue = calculateNextDueDate(
+        occurrenceISO,
+        task.recurrence,
+        task.recurrenceInterval || 1,
+        task.recurrenceWeekdays,
+        task.recurrenceMonthDay,
+        anchorISO,
+        task.recurrenceMonthNth,
+        task.recurrenceMonthWeekday
+      );
 
       setTasks(prev => {
         const base = prev.find(t => t.id === taskId);
@@ -138,7 +148,17 @@ const App: React.FC = () => {
     // materialize a DONE history for the current occurrence and roll the base forward.
     if (!onDate && togglingToDone && task.recurrence !== Recurrence.NONE) {
       const occurrenceISO = task.dueDate || new Date().toISOString();
-      const nextDue = calculateNextDueDate(occurrenceISO, task.recurrence);
+      const anchorISO2 = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
+      const nextDue = calculateNextDueDate(
+        occurrenceISO,
+        task.recurrence,
+        task.recurrenceInterval || 1,
+        task.recurrenceWeekdays,
+        task.recurrenceMonthDay,
+        anchorISO2,
+        task.recurrenceMonthNth,
+        task.recurrenceMonthWeekday
+      );
 
       setTasks(prev => {
         const base = prev.find(t => t.id === taskId);

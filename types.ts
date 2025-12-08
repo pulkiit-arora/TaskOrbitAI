@@ -28,6 +28,15 @@ export interface Task {
   priority: Priority;
   dueDate?: string; // ISO Date string
   recurrence: Recurrence;
+  // Interval for recurrence (e.g., every 2 months). Defaults to 1 when not provided.
+  recurrenceInterval?: number;
+  // For weekly recurrence: array of weekdays to occur on (0 = Sunday, 6 = Saturday).
+  recurrenceWeekdays?: number[];
+  // For monthly recurrence: specific day of month (1-31). If absent, the original dueDate's day is used.
+  recurrenceMonthDay?: number;
+  // For monthly-by-weekday rules: nth (1..4 or -1 for last) and weekday (0=Sun..6=Sat)
+  recurrenceMonthNth?: number; // e.g., 1 = first, 2 = second, -1 = last
+  recurrenceMonthWeekday?: number; // 0..6
   recurrenceStart?: string; // ISO Date string
   recurrenceEnd?: string; // ISO Date string
   createdAt: number;

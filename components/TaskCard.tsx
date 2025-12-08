@@ -1,5 +1,7 @@
 import React from 'react';
 import { Task, Priority, Recurrence } from '../types';
+import { formatRecurrenceSummary } from '../utils/taskUtils';
+import Tooltip from './Tooltip';
 import { Calendar, RefreshCw, MoreVertical, Archive, ArrowRight, ArrowLeft, Trash2, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 interface TaskCardProps {
@@ -76,13 +78,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
           />
         )}
         <span className="flex-1">{task.title}</span>
-        {task.recurrence !== Recurrence.NONE && (
-          <span className="text-gray-400 flex-shrink-0" title={`Recurs ${task.recurrence}`}>
-            <RefreshCw size={14} />
-          </span>
-        )}
+            {task.recurrence !== Recurrence.NONE && (
+              <Tooltip content={formatRecurrenceSummary(task)}>
+                <span className="text-gray-400 flex-shrink-0">
+                  <RefreshCw size={14} />
+                </span>
+              </Tooltip>
+            )}
         {isVirtual && <span className="ml-2 text-[10px] font-normal text-gray-400 bg-gray-100 px-1 rounded flex-shrink-0">(Future)</span>}
       </h3>
+      {/* recurrence summary shown on hover tooltip only */}
       
       {task.description && (
         <p className="text-gray-500 text-xs line-clamp-2 mb-3 pointer-events-none">

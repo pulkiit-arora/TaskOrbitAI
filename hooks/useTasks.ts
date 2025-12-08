@@ -108,7 +108,17 @@ export const useTasks = () => {
 
       if (task.status === Status.DONE && newStatus !== Status.DONE && task.recurrence !== Recurrence.NONE) {
         const baseDueISO = task.dueDate || new Date().toISOString();
-        const expectedNextDue = calculateNextDueDate(baseDueISO, task.recurrence).toISOString();
+        const anchorISO = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
+        const expectedNextDue = calculateNextDueDate(
+          baseDueISO,
+          task.recurrence,
+          task.recurrenceInterval || 1,
+          task.recurrenceWeekdays,
+          task.recurrenceMonthDay,
+          anchorISO,
+          task.recurrenceMonthNth,
+          task.recurrenceMonthWeekday
+        ).toISOString();
 
         let removed = false;
         let pruned = prev.filter(t => {
@@ -117,6 +127,9 @@ export const useTasks = () => {
             t.id !== task.id &&
             t.status === Status.TODO &&
             t.recurrence === task.recurrence &&
+            (t.recurrenceInterval || 1) === (task.recurrenceInterval || 1) &&
+            JSON.stringify(t.recurrenceWeekdays || []) === JSON.stringify(task.recurrenceWeekdays || []) &&
+            (t.recurrenceMonthDay || null) === (task.recurrenceMonthDay || null) &&
             t.title === task.title &&
             t.description === task.description &&
             t.priority === task.priority &&
@@ -134,6 +147,9 @@ export const useTasks = () => {
             t.id !== task.id &&
             t.status === Status.TODO &&
             t.recurrence === task.recurrence &&
+            (t.recurrenceInterval || 1) === (task.recurrenceInterval || 1) &&
+            JSON.stringify(t.recurrenceWeekdays || []) === JSON.stringify(task.recurrenceWeekdays || []) &&
+            (t.recurrenceMonthDay || null) === (task.recurrenceMonthDay || null) &&
             t.title === task.title &&
             t.description === task.description &&
             t.priority === task.priority
@@ -148,12 +164,27 @@ export const useTasks = () => {
       }
 
       if (newStatus === Status.DONE && task.recurrence !== Recurrence.NONE && task.status !== Status.DONE) {
-        const nextDueDate = calculateNextDueDate(task.dueDate || new Date().toISOString(), task.recurrence);
+        const anchorISO2 = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
+        const nextDueDate = calculateNextDueDate(
+          task.dueDate || new Date().toISOString(),
+          task.recurrence,
+          task.recurrenceInterval || 1,
+          task.recurrenceWeekdays,
+          task.recurrenceMonthDay,
+          anchorISO2,
+          task.recurrenceMonthNth,
+          task.recurrenceMonthWeekday
+        );
         const nextTask: Task = {
           ...task,
           id: crypto.randomUUID(),
           status: Status.TODO,
           dueDate: nextDueDate.toISOString(),
+          recurrenceInterval: task.recurrenceInterval,
+          recurrenceWeekdays: task.recurrenceWeekdays,
+          recurrenceMonthDay: task.recurrenceMonthDay,
+          recurrenceMonthNth: task.recurrenceMonthNth,
+          recurrenceMonthWeekday: task.recurrenceMonthWeekday,
           createdAt: Date.now()
         };
         return [...prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t), nextTask];
