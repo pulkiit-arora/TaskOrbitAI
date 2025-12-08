@@ -313,6 +313,7 @@ const App: React.FC = () => {
             onArchiveTask={handleArchiveTask}
             onDeleteTask={handleDeleteTask}
             onDropTask={handleDropTask}
+            onDeleteAll={() => setTasks([])}
           />
         )}
 

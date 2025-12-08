@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BoardColumn } from './BoardColumn';
 import { Task, Status } from '../types';
 import { sortTasks, isOpen } from '../utils/taskUtils';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
 interface BoardViewProps {
   tasks: Task[];
@@ -15,6 +16,7 @@ interface BoardViewProps {
   onArchiveTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onDropTask: (taskId: string, newStatus: Status) => void;
+  onDeleteAll?: () => void;
 }
 
 export const BoardView: React.FC<BoardViewProps> = ({
@@ -29,7 +31,13 @@ export const BoardView: React.FC<BoardViewProps> = ({
   onArchiveTask,
   onDeleteTask,
   onDropTask
+  , onDeleteAll
 }) => {
+  const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
+  const confirmDeleteAll = () => {
+    if (onDeleteAll) onDeleteAll();
+    setIsDeleteAllOpen(false);
+  };
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const boardWeekStart = new Date(today);
@@ -100,6 +108,22 @@ export const BoardView: React.FC<BoardViewProps> = ({
             <option value="priority">Priority</option>
             <option value="dueDate">Due Date</option>
           </select>
+          <div className="h-5 w-px bg-gray-300 mx-1"></div>
+          <button
+            type="button"
+            onClick={() => setIsDeleteAllOpen(true)}
+            className="text-xs ml-2 px-2 py-1 rounded border border-red-200 text-red-700 bg-red-50 hover:bg-red-100"
+            title="Delete all tasks"
+          >
+            Delete All
+          </button>
+          <DeleteConfirmationModal
+            isOpen={isDeleteAllOpen}
+            onConfirm={confirmDeleteAll}
+            onCancel={() => setIsDeleteAllOpen(false)}
+            title="Delete all tasks?"
+            message="This will permanently delete ALL tasks in your workspace. This action cannot be undone."
+          />
         </div>
       </div>
       <div className="h-full flex flex-col md:flex-row gap-6 min-w-[320px] md:min-w-0">

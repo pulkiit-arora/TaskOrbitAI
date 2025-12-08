@@ -29,6 +29,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
+  // Progress comments
+  const [comments, setComments] = useState<{ id: string; text: string; createdAt: number }[]>([]);
+  const [newCommentText, setNewCommentText] = useState('');
 
   useEffect(() => {
     if (task) {
@@ -44,6 +47,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
       setRecurrenceStart(task.recurrenceStart ? new Date(task.recurrenceStart).toISOString().split('T')[0] : '');
       setRecurrenceEnd(task.recurrenceEnd ? new Date(task.recurrenceEnd).toISOString().split('T')[0] : '');
+      setComments(task.comments || []);
     } else {
       resetForm();
     }
@@ -62,6 +66,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setRecurrenceMonthDay(undefined);
     setRecurrenceMonthNth(undefined);
     setRecurrenceMonthWeekday(undefined);
+    setComments([]);
+    setNewCommentText('');
     setSuggestions([]);
   };
 
@@ -95,6 +101,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       dueDate: isoDate,
       recurrenceStart: isoRecurrenceStart,
       recurrenceEnd: isoRecurrenceEnd,
+      comments,
       status: task?.status || Status.TODO,
       createdAt: task?.createdAt || Date.now(),
     });
@@ -223,6 +230,55 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
               />
             </div>
+
+            {/* Progress comments section */}
+            
+              <div className="border-t border-gray-100 pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Progress Comments</label>
+                <div className="space-y-2">
+                  {comments.length === 0 && (
+                    <div className="text-xs text-gray-400 italic">No comments yet. Add progress notes here.</div>
+                  )}
+                  {comments.map(c => (
+                    <div key={c.id} className="flex items-start gap-2 bg-gray-50 p-2 rounded">
+                      <div className="text-xs text-gray-500">{new Date(c.createdAt).toLocaleString()}</div>
+                      <div className="text-sm text-gray-800 flex-1">{c.text}</div>
+                      <button
+                        onClick={() => setComments(prev => prev.filter(x => x.id !== c.id))}
+                        className="text-xs text-red-600 hover:underline"
+                        type="button"
+                      >Delete</button>
+                    </div>
+                  ))}
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Add a progress comment..."
+                      value={newCommentText}
+                      onChange={(e) => setNewCommentText(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (newCommentText.trim()) {
+                            setComments(prev => [...prev, { id: crypto.randomUUID(), text: newCommentText.trim(), createdAt: Date.now() }]);
+                            setNewCommentText('');
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (!newCommentText.trim()) return;
+                        setComments(prev => [...prev, { id: crypto.randomUUID(), text: newCommentText.trim(), createdAt: Date.now() }]);
+                        setNewCommentText('');
+                      }}
+                    >Add</Button>
+                  </div>
+                </div>
+              </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>

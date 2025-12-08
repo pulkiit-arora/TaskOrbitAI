@@ -2,7 +2,7 @@ import React from 'react';
 import { Task, Priority, Recurrence } from '../types';
 import { formatRecurrenceSummary } from '../utils/taskUtils';
 import Tooltip from './Tooltip';
-import { Calendar, RefreshCw, MoreVertical, Archive, ArrowRight, ArrowLeft, Trash2, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { Calendar, RefreshCw, MoreVertical, Archive, ArrowRight, ArrowLeft, Trash2, ArrowUp, ArrowDown, Minus, MessageSquare } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -82,6 +82,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
               <Tooltip content={formatRecurrenceSummary(task)}>
                 <span className="text-gray-400 flex-shrink-0">
                   <RefreshCw size={14} />
+                </span>
+              </Tooltip>
+            )}
+            {task.comments && task.comments.length > 0 && (
+              <Tooltip content={`${task.comments.length} comment${task.comments.length > 1 ? 's' : ''}`}>
+                <span className="ml-2 text-gray-400 flex items-center gap-1 text-xs">
+                  <MessageSquare size={14} />
+                  <span className="text-[11px]">{task.comments.length}</span>
                 </span>
               </Tooltip>
             )}

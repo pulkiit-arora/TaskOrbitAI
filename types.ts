@@ -40,10 +40,18 @@ export interface Task {
   recurrenceStart?: string; // ISO Date string
   recurrenceEnd?: string; // ISO Date string
   createdAt: number;
+  // Progress comments for the task. Users can add multiple comments to track progress.
+  comments?: TaskComment[];
 }
 
 export interface AISuggestion {
   title: string;
   description: string;
   priority: Priority;
+}
+
+export interface TaskComment {
+  id: string;
+  text: string;
+  createdAt: number;
 }
