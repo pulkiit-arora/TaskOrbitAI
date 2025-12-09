@@ -17,6 +17,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
+  const [status, setStatus] = useState<Status>(Status.TODO);
   const [recurrence, setRecurrence] = useState<Recurrence>(Recurrence.NONE);
   const [dueDate, setDueDate] = useState('');
   const [recurrenceStart, setRecurrenceStart] = useState('');
@@ -38,6 +39,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       setTitle(task.title || '');
       setDescription(task.description || '');
       setPriority(task.priority || Priority.MEDIUM);
+      setStatus(task.status || Status.TODO);
       setRecurrence(task.recurrence || Recurrence.NONE);
       setRecurrenceInterval(task.recurrenceInterval || 1);
       setRecurrenceWeekdays(task.recurrenceWeekdays || []);
@@ -57,6 +59,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setTitle('');
     setDescription('');
     setPriority(Priority.MEDIUM);
+    setStatus(Status.TODO);
     setRecurrence(Recurrence.NONE);
     setDueDate('');
     setRecurrenceStart('');
@@ -102,7 +105,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       recurrenceStart: isoRecurrenceStart,
       recurrenceEnd: isoRecurrenceEnd,
       comments,
-      status: task?.status || Status.TODO,
+      status: status,
       createdAt: task?.createdAt || Date.now(),
     });
     onClose();
@@ -300,14 +303,32 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <div className="relative">
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as Status)}
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900 appearance-none cursor-pointer"
+                  >
+                    <option value={Status.TODO}>To Do</option>
+                    <option value={Status.IN_PROGRESS}>In Progress</option>
+                    <option value={Status.DONE}>Done</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
+                    <ChevronDown size={16} />
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+              <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
             </div>
 
             <div className="border-t border-gray-100 pt-4 mt-2">

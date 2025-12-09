@@ -181,7 +181,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 ...task,
                 id: `${task.id}-virtual-${date.getTime()}`,
                 dueDate: occurrenceISO,
-                status: Status.TODO
+                status: task.status === Status.IN_PROGRESS ? Status.IN_PROGRESS : Status.TODO
             };
 
             dayTasks.push({
@@ -391,16 +391,16 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                   return (
                     <div
                       key={task.id}
+                      title={`${task.title}${task.description ? '\n' + task.description : ''}${isInProgress ? '\n📍 In Progress' : ''}`}
                       className={`group flex items-center gap-2 px-1.5 py-1 rounded border transition-all 
                         ${isDone ? 'bg-gray-100 border-gray-100 opacity-60' : priorityColor[task.priority]} 
                         ${isVirtual ? 'opacity-60 border-dashed bg-white' : 'hover:shadow-sm'}
-                        ${isInProgress ? 'border-blue-300 bg-blue-50/30' : ''}
+                        ${isInProgress ? 'border-blue-400 bg-blue-50/50 ring-1 ring-blue-300' : ''}
                       `}
                     >
                       <button 
                         onClick={(e) => { 
                             e.stopPropagation(); 
-                            // Allow toggling even for virtual occurrences by targeting the base task id
                             if (isVirtual) {
                               onToggleDone(baseTaskId, occurrenceISO);
                             } else {
@@ -446,7 +446,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                           <span className="truncate">{task.title}</span>
                         </button>
                         {isInProgress && (
-                          <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0">In Progress</span>
+                          <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0 whitespace-nowrap">In Progress</span>
                         )}
                       </div>
                     </div>
