@@ -167,26 +167,37 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             }
 
             // Only show DONE tasks if they are the real instance (history). 
-            // Don't show future recurring 'ghosts' if the main task is already DONE? 
-            // Actually, if a task is recurring, the 'DONE' state usually applies to the last finished one,
-            // and the system creates a new 'TODO' one. 
-            // So if we have a TODO recurring task, we project it forward.
-            
-            if (task.status === Status.DONE && !isRealInstance) {
-                return;
+            // Don't project virtual occurrences for DONE recurring tasks - the new TODO task will project forward
+            if (task.status === Status.DONE) {
+                if (!isRealInstance) {
+                    return; // Don't show virtual occurrences of DONE tasks
+                }
+                // Show only the real DONE instance on its actual due date
             }
 
             // If a DONE history exists for this same date (same title heuristic), skip projecting a virtual duplicate
+            // But only if that DONE task is not recurring - recurring tasks that are DONE should still project future occurrences
             if (!isRealInstance) {
                 const occStart = new Date(date); occStart.setHours(0,0,0,0);
                 const hasDoneHistory = tasks.some(tt => {
                     if (tt.status !== Status.DONE || !tt.dueDate) return false;
                     const dd = new Date(tt.dueDate); dd.setHours(0,0,0,0);
-                    return dd.getTime() === occStart.getTime() && tt.title === task.title;
+                    // Only treat it as history if it's a non-recurring DONE task, or a DONE task with a different ID
+                    // This prevents skipping future occurrences when the base task is still recurring and DONE
+                    return dd.getTime() === occStart.getTime() && tt.title === task.title && tt.recurrence === Recurrence.NONE && tt.id !== task.id;
                 });
                 if (hasDoneHistory) {
                     return; // skip adding virtual duplicate
                 }
+            }
+
+            // For recurring tasks that are DONE, always show future occurrences as TODO (new instances)
+            let displayStatus = Status.TODO;
+            if (isRealInstance) {
+              displayStatus = task.status; // Real instance keeps its actual status
+            } else if (task.recurrence !== Recurrence.NONE) {
+              // Virtual occurrences of recurring tasks are always TODO, even if the base task is DONE
+              displayStatus = Status.TODO;
             }
 
             // Create a display copy
@@ -194,7 +205,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 ...task,
                 id: `${task.id}-virtual-${date.getTime()}`, // Virtual ID
                 dueDate: date.toISOString(), // Project the date for display
-                status: task.status === Status.IN_PROGRESS ? Status.IN_PROGRESS : Status.TODO // Preserve IN_PROGRESS status
+                status: displayStatus
             };
 
             dayTasks.push({
@@ -363,7 +374,15 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             </div>
             
             <div className="flex-1 p-2 overflow-y-auto custom-scrollbar space-y-2">
-              {sortedDayTasks.map(({ task, isVirtual, baseTask }) => (
+              {sortedDayTasks.map(({ task, isVirtual, baseTask }) => {
+                // Don't show virtual indicator for recurring tasks if due date is today or earlier
+                const taskDueDate = new Date(task.dueDate || Date.now());
+                taskDueDate.setHours(0, 0, 0, 0);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const shouldShowVirtualIndicator = isVirtual && taskDueDate > today;
+                
+                return (
                 <div key={task.id} className="space-y-1 overflow-visible">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {task.status === Status.DONE && (
@@ -376,15 +395,17 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                   <div className={`${task.status === Status.DONE ? 'line-through text-gray-500' : ''} ${task.status === Status.IN_PROGRESS ? 'bg-blue-50/40 rounded px-1.5 py-1' : ''}`}>
                     <TaskCard 
                       task={task} 
-                      onEdit={() => onEditTask(isVirtual ? baseTask : task)} 
+                      onEdit={() => onEditTask(task)} 
                       onMove={onMoveTask} 
                       onArchive={onArchiveTask} 
                       onDelete={onDeleteTask}
                       isVirtual={isVirtual}
+                      showFutureIndicator={shouldShowVirtualIndicator}
                     />
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {sortedDayTasks.length === 0 && (
                 <div className="h-full flex items-center justify-center">
                     <span className="text-xs text-gray-300 italic">No tasks</span>

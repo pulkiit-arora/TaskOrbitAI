@@ -11,9 +11,11 @@ interface TaskCardProps {
   onArchive: (taskId: string) => void;
   onDelete: (taskId: string) => void;
   isVirtual?: boolean;
+  showFutureIndicator?: boolean;
+  showStrikethrough?: boolean;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArchive, onDelete, isVirtual = false }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArchive, onDelete, isVirtual = false, showFutureIndicator = false, showStrikethrough = true }) => {
   const priorityColor = {
     [Priority.HIGH]: 'bg-red-100 text-red-800 border-red-200',
     [Priority.MEDIUM]: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -47,7 +49,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
       draggable={!isVirtual && task.status !== 'ARCHIVED'}
       onDragStart={handleDragStart}
       className={`group relative bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200
-        ${!isVirtual ? 'cursor-grab active:cursor-grabbing' : 'opacity-60 border-dashed'}
+        ${!isVirtual ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
         ${task.status === 'ARCHIVED' ? 'opacity-75' : ''}
       `}
     >
@@ -56,28 +58,30 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
         onClick={(e) => handleButtonClick(e, () => onEdit(task))}
         onMouseDown={handleButtonMouseDown}
       >
-        {task.priority === Priority.HIGH && (
-          <ArrowUp 
-            size={14} 
-            className="text-red-500 flex-shrink-0" 
-            title={`Priority: ${task.priority}`}
-          />
-        )}
-        {task.priority === Priority.MEDIUM && (
-          <Minus 
-            size={14} 
-            className="text-yellow-500 flex-shrink-0" 
-            title={`Priority: ${task.priority}`}
-          />
-        )}
-        {task.priority === Priority.LOW && (
-          <ArrowDown 
-            size={14} 
-            className="text-blue-500 flex-shrink-0" 
-            title={`Priority: ${task.priority}`}
-          />
-        )}
-        <span className="flex-1">{task.title}</span>
+        <span className={`flex items-center gap-1.5 flex-1 ${showStrikethrough && task.status === 'DONE' ? 'line-through text-gray-500' : ''}`}>
+          {task.priority === Priority.HIGH && (
+            <ArrowUp 
+              size={14} 
+              className="text-red-500 flex-shrink-0" 
+              title={`Priority: ${task.priority}`}
+            />
+          )}
+          {task.priority === Priority.MEDIUM && (
+            <Minus 
+              size={14} 
+              className="text-yellow-500 flex-shrink-0" 
+              title={`Priority: ${task.priority}`}
+            />
+          )}
+          {task.priority === Priority.LOW && (
+            <ArrowDown 
+              size={14} 
+              className="text-blue-500 flex-shrink-0" 
+              title={`Priority: ${task.priority}`}
+            />
+          )}
+          <span className="flex-1">{task.title}</span>
+        </span>
             {task.recurrence !== Recurrence.NONE && (
               <Tooltip content={formatRecurrenceSummary(task)}>
                 <span className="text-gray-400 flex-shrink-0">
@@ -93,12 +97,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
                 </span>
               </Tooltip>
             )}
-        {isVirtual && <span className="ml-2 text-[10px] font-normal text-gray-400 bg-gray-100 px-1 rounded flex-shrink-0">(Future)</span>}
+        {showFutureIndicator && <span className="ml-2 text-[10px] font-normal text-gray-400 bg-gray-100 px-1 rounded flex-shrink-0">(Future)</span>}
       </h3>
       {/* recurrence summary shown on hover tooltip only */}
       
       {task.description && (
-        <p className="text-gray-500 text-xs line-clamp-2 mb-3 pointer-events-none">
+        <p className={`text-gray-500 text-xs line-clamp-2 mb-3 pointer-events-none ${showStrikethrough && task.status === 'DONE' ? 'line-through' : ''}`}>
           {task.description}
         </p>
       )}

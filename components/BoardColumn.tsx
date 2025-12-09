@@ -66,6 +66,7 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
             onMove={onMoveTask}
             onArchive={onArchiveTask}
             onDelete={onDeleteTask}
+            showStrikethrough={false}
           />
         ))}
         {tasks.length === 0 && (

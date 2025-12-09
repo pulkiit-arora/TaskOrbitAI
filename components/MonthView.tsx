@@ -157,31 +157,47 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 isRealInstance = due.getTime() === check.getTime();
             }
 
-            if (task.status === Status.DONE && !isRealInstance) {
-                return;
+            // Skip virtual occurrences for DONE recurring tasks - the new TODO task will project forward
+            if (task.status === Status.DONE) {
+                if (!isRealInstance) {
+                    return; // Don't show virtual occurrences of DONE tasks
+                }
+                // Show only the real DONE instance on its actual due date
             }
 
             const baseTaskId = task.id;
             const occurrenceISO = date.toISOString();
 
             // If a DONE history exists for this same date (same title match heuristic), skip projecting a virtual copy
+            // But only if that DONE task is not recurring - recurring tasks that are DONE should still project future occurrences
             if (!isRealInstance) {
               const occStart = new Date(occurrenceISO); occStart.setHours(0,0,0,0);
               const hasDoneHistory = tasks.some(tt => {
                 if (tt.status !== Status.DONE || !tt.dueDate) return false;
                 const dd = new Date(tt.dueDate); dd.setHours(0,0,0,0);
-                return dd.getTime() === occStart.getTime() && tt.title === task.title;
+                // Only treat it as history if it's a non-recurring DONE task, or a DONE task with a different ID
+                // This prevents skipping future occurrences when the base task is still recurring and DONE
+                return dd.getTime() === occStart.getTime() && tt.title === task.title && tt.recurrence === Recurrence.NONE && tt.id !== task.id;
               });
               if (hasDoneHistory) {
                 return; // skip adding virtual duplicate
               }
             }
 
+            // For recurring tasks that are DONE, always show future occurrences as TODO (new instances)
+            let displayStatus = Status.TODO;
+            if (isRealInstance) {
+              displayStatus = task.status; // Real instance keeps its actual status
+            } else if (task.recurrence !== Recurrence.NONE) {
+              // Virtual occurrences of recurring tasks are always TODO, even if the base task is DONE
+              displayStatus = Status.TODO;
+            }
+
             const displayTask = isRealInstance ? task : {
                 ...task,
                 id: `${task.id}-virtual-${date.getTime()}`,
                 dueDate: occurrenceISO,
-                status: task.status === Status.IN_PROGRESS ? Status.IN_PROGRESS : Status.TODO
+                status: displayStatus
             };
 
             dayTasks.push({
@@ -388,13 +404,21 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 {dayTasks.map(({ task, isVirtual, baseTaskId, baseTask, occurrenceISO }) => {
                   const isDone = task.status === Status.DONE;
                   const isInProgress = task.status === Status.IN_PROGRESS;
+                  
+                  // Don't show virtual indicator for recurring tasks if due date is today or earlier
+                  const occurrenceDate = new Date(occurrenceISO);
+                  occurrenceDate.setHours(0, 0, 0, 0);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const shouldShowVirtualIndicator = isVirtual && occurrenceDate > today;
+                  
                   return (
                     <div
                       key={task.id}
                       title={`${task.title}${task.description ? '\n' + task.description : ''}${isInProgress ? '\n📍 In Progress' : ''}`}
                       className={`group flex items-center gap-2 px-1.5 py-1 rounded border transition-all 
-                        ${isDone ? 'bg-gray-100 border-gray-100 opacity-60' : priorityColor[task.priority]} 
-                        ${isVirtual ? 'opacity-60 border-dashed bg-white' : 'hover:shadow-sm'}
+                        ${isDone ? 'bg-gray-100 border-gray-100' : priorityColor[task.priority]} 
+                        ${shouldShowVirtualIndicator ? 'opacity-60 border-dashed bg-white' : 'hover:shadow-sm'}
                         ${isInProgress ? 'border-blue-400 bg-blue-50/50 ring-1 ring-blue-300' : ''}
                       `}
                     >
@@ -417,7 +441,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                       
                       <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         <button 
-                          onClick={() => onEditTask(isVirtual ? baseTask : task)}
+                          onClick={() => onEditTask(task)}
                           className={`text-left text-xs truncate flex-1 font-medium cursor-pointer flex items-center gap-1
                               ${isDone ? 'line-through text-gray-500' : ''}
                           `}

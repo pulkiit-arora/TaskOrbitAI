@@ -63,7 +63,21 @@ const App: React.FC = () => {
   // Task handlers
   const handleSaveTask = (taskData: Partial<Task>) => {
     if (taskData.id) {
-      setTasks(prev => prev.map(t => t.id === taskData.id ? { ...t, ...taskData } as Task : t));
+      // Check if this is a virtual task (editing an occurrence)
+      if (typeof taskData.id === 'string' && taskData.id.includes('-virtual-')) {
+        // For virtual tasks, create a new one-off task for that specific date
+        // and don't modify the base recurring task
+        const newTask: Task = {
+          ...taskData,
+          id: crypto.randomUUID(),
+          recurrence: Recurrence.NONE, // Make it a one-off task
+          createdAt: Date.now(),
+        } as Task;
+        setTasks(prev => [...prev, newTask]);
+      } else {
+        // For real tasks, just update normally
+        setTasks(prev => prev.map(t => t.id === taskData.id ? { ...t, ...taskData } as Task : t));
+      }
     } else {
       const newTask: Task = {
         ...taskData,
@@ -130,6 +144,7 @@ const App: React.FC = () => {
           id: crypto.randomUUID(),
           status: Status.DONE,
           dueDate: occurrenceISO,
+          recurrence: Recurrence.NONE,
           createdAt: Date.now(),
         };
 
@@ -169,6 +184,7 @@ const App: React.FC = () => {
           id: crypto.randomUUID(),
           status: Status.DONE,
           dueDate: occurrenceISO,
+          recurrence: Recurrence.NONE,
           createdAt: Date.now(),
         };
 
