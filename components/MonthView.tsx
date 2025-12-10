@@ -168,19 +168,19 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
             const baseTaskId = task.id;
             const occurrenceISO = date.toISOString();
 
-            // If a DONE history exists for this same date (same title match heuristic), skip projecting a virtual copy
-            // But only if that DONE task is not recurring - recurring tasks that are DONE should still project future occurrences
+            // If a history record (non-recurring instance) exists for this same date, skip projecting a virtual copy
+            // A history record is a non-recurring task with the same title on the same date, but different ID
             if (!isRealInstance) {
               const occStart = new Date(occurrenceISO); occStart.setHours(0,0,0,0);
-              const hasDoneHistory = tasks.some(tt => {
-                if (tt.status !== Status.DONE || !tt.dueDate) return false;
+              const hasHistoryRecord = tasks.some(tt => {
+                if (!tt.dueDate) return false;
                 const dd = new Date(tt.dueDate); dd.setHours(0,0,0,0);
-                // Only treat it as history if it's a non-recurring DONE task, or a DONE task with a different ID
-                // This prevents skipping future occurrences when the base task is still recurring and DONE
+                // Match non-recurring tasks with same title on same date (but different ID)
+                // Status doesn't matter - could be DONE, IN_PROGRESS, or TODO
                 return dd.getTime() === occStart.getTime() && tt.title === task.title && tt.recurrence === Recurrence.NONE && tt.id !== task.id;
               });
-              if (hasDoneHistory) {
-                return; // skip adding virtual duplicate
+              if (hasHistoryRecord) {
+                return; // skip adding virtual duplicate - the actual history record will be shown instead
               }
             }
 

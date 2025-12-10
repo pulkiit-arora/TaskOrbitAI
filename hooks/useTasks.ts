@@ -106,7 +106,7 @@ export const useTasks = () => {
       const task = prev.find(t => t.id === taskId);
       if (!task) return prev;
 
-      if (task.status === Status.DONE && newStatus !== Status.DONE && task.recurrence !== Recurrence.NONE) {
+      if (task.status === Status.DONE && newStatus === Status.TODO && task.recurrence !== Recurrence.NONE) {
         const baseDueISO = task.dueDate || new Date().toISOString();
         const anchorISO = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
         const expectedNextDue = calculateNextDueDate(
