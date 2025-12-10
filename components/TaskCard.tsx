@@ -13,9 +13,10 @@ interface TaskCardProps {
   isVirtual?: boolean;
   showFutureIndicator?: boolean;
   showStrikethrough?: boolean;
+  hideMoveButtons?: boolean;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArchive, onDelete, isVirtual = false, showFutureIndicator = false, showStrikethrough = true }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArchive, onDelete, isVirtual = false, showFutureIndicator = false, showStrikethrough = true, hideMoveButtons = false }) => {
   const priorityColor = {
     [Priority.HIGH]: 'bg-red-100 text-red-800 border-red-200',
     [Priority.MEDIUM]: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -119,7 +120,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
 
         <div className="flex items-center gap-1 relative z-10">
           {/* Controls - show edit button for all tasks, other controls only for non-virtual */}
-          {!isVirtual && task.status !== 'TODO' && task.status !== 'ARCHIVED' && (
+          {!isVirtual && !hideMoveButtons && task.status !== 'TODO' && task.status !== 'ARCHIVED' && (
             <button 
               type="button"
               onMouseDown={handleButtonMouseDown}
@@ -143,7 +144,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
             <MoreVertical size={14} className="pointer-events-none" />
           </button>
 
-          {!isVirtual && task.status !== 'DONE' && task.status !== 'ARCHIVED' && (
+          {!isVirtual && !hideMoveButtons && task.status !== 'DONE' && task.status !== 'ARCHIVED' && (
             <button 
               type="button"
               onMouseDown={handleButtonMouseDown}

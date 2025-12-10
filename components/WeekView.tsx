@@ -270,6 +270,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 onMove={onMoveTask}
                 onArchive={onArchiveTask}
                 onDelete={onDeleteTask}
+                hideMoveButtons={true}
               />
             ))}
         </div>
@@ -299,6 +300,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 onMove={onMoveTask}
                 onArchive={onArchiveTask}
                 onDelete={onDeleteTask}
+                hideMoveButtons={true}
               />
             ))}
         </div>
@@ -325,6 +327,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 onMove={onMoveTask}
                 onArchive={onArchiveTask}
                 onDelete={onDeleteTask}
+                hideMoveButtons={true}
               />
             ))}
         </div>
@@ -401,6 +404,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                       onDelete={onDeleteTask}
                       isVirtual={isVirtual}
                       showFutureIndicator={shouldShowVirtualIndicator}
+                      hideMoveButtons={true}
                     />
                   </div>
                 </div>
