@@ -70,19 +70,24 @@ const App: React.FC = () => {
         const baseTask = tasks.find(t => t.id === baseTaskId);
         
         // If editing a recurring task's occurrence, update the base task's comments
-        // but create a one-off task for other changes (status, description, etc.)
+        // and create one-off tasks for other changes (status, description, etc.)
         if (baseTask && baseTask.recurrence !== Recurrence.NONE) {
-          // For recurring tasks, update the base task with new comments
+          // Always update the base task with new comments
           if (taskData.comments) {
             setTasks(prev => prev.map(t => 
               t.id === baseTaskId ? { ...t, comments: taskData.comments } : t
             ));
           }
-          // Also create a one-off task if other fields (besides comments) were changed
-          const otherFieldsChanged = Object.keys(taskData).some(
-            key => key !== 'comments' && key !== 'id' && taskData[key as keyof Task] !== baseTask[key as keyof Task]
+          
+          // Check if any non-comment fields were actually changed
+          // Compare only editable fields (exclude system fields like id, createdAt)
+          const editableFields = ['title', 'description', 'status', 'priority', 'dueDate'] as const;
+          const otherFieldsChanged = editableFields.some(
+            key => taskData[key] !== undefined && taskData[key] !== baseTask[key]
           );
+          
           if (otherFieldsChanged) {
+            // Create a one-off task for the specific occurrence with the changes
             const newTask: Task = {
               ...taskData,
               id: crypto.randomUUID(),
@@ -102,8 +107,37 @@ const App: React.FC = () => {
           setTasks(prev => [...prev, newTask]);
         }
       } else {
-        // For real tasks, just update normally
-        setTasks(prev => prev.map(t => t.id === taskData.id ? { ...t, ...taskData } as Task : t));
+        // For real tasks, check if it's a recurring task that needs comment sync
+        const task = tasks.find(t => t.id === taskData.id);
+        
+        if (task && task.recurrence !== Recurrence.NONE) {
+          // For recurring tasks, sync comments across all occurrences
+          // by updating only the comments field on the base task
+          const updatedTask = { ...task, ...taskData } as Task;
+          
+          // Check if only comments were changed
+          const editableFields = ['title', 'description', 'status', 'priority', 'dueDate'] as const;
+          const otherFieldsChanged = editableFields.some(
+            key => taskData[key] !== undefined && taskData[key] !== task[key]
+          );
+          
+          setTasks(prev => prev.map(t => t.id === taskData.id ? updatedTask : t));
+          
+          // If other fields changed AND this is a specific occurrence edit (not base task edit),
+          // create a one-off task for that occurrence
+          if (otherFieldsChanged && taskData.dueDate && taskData.dueDate !== task.dueDate) {
+            const newTask: Task = {
+              ...taskData,
+              id: crypto.randomUUID(),
+              recurrence: Recurrence.NONE,
+              createdAt: Date.now(),
+            } as Task;
+            setTasks(prev => [...prev, newTask]);
+          }
+        } else {
+          // For non-recurring tasks, just update normally
+          setTasks(prev => prev.map(t => t.id === taskData.id ? { ...t, ...taskData } as Task : t));
+        }
       }
     } else {
       const newTask: Task = {
