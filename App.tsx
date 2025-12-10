@@ -65,15 +65,42 @@ const App: React.FC = () => {
     if (taskData.id) {
       // Check if this is a virtual task (editing an occurrence)
       if (typeof taskData.id === 'string' && taskData.id.includes('-virtual-')) {
-        // For virtual tasks, create a new one-off task for that specific date
-        // and don't modify the base recurring task
-        const newTask: Task = {
-          ...taskData,
-          id: crypto.randomUUID(),
-          recurrence: Recurrence.NONE, // Make it a one-off task
-          createdAt: Date.now(),
-        } as Task;
-        setTasks(prev => [...prev, newTask]);
+        // Extract the base task ID from virtual ID (format: {baseTaskId}-virtual-{timestamp})
+        const baseTaskId = taskData.id.split('-virtual-')[0];
+        const baseTask = tasks.find(t => t.id === baseTaskId);
+        
+        // If editing a recurring task's occurrence, update the base task's comments
+        // but create a one-off task for other changes (status, description, etc.)
+        if (baseTask && baseTask.recurrence !== Recurrence.NONE) {
+          // For recurring tasks, update the base task with new comments
+          if (taskData.comments) {
+            setTasks(prev => prev.map(t => 
+              t.id === baseTaskId ? { ...t, comments: taskData.comments } : t
+            ));
+          }
+          // Also create a one-off task if other fields (besides comments) were changed
+          const otherFieldsChanged = Object.keys(taskData).some(
+            key => key !== 'comments' && key !== 'id' && taskData[key as keyof Task] !== baseTask[key as keyof Task]
+          );
+          if (otherFieldsChanged) {
+            const newTask: Task = {
+              ...taskData,
+              id: crypto.randomUUID(),
+              recurrence: Recurrence.NONE,
+              createdAt: Date.now(),
+            } as Task;
+            setTasks(prev => [...prev, newTask]);
+          }
+        } else {
+          // For non-recurring virtual tasks, create a new one-off task
+          const newTask: Task = {
+            ...taskData,
+            id: crypto.randomUUID(),
+            recurrence: Recurrence.NONE,
+            createdAt: Date.now(),
+          } as Task;
+          setTasks(prev => [...prev, newTask]);
+        }
       } else {
         // For real tasks, just update normally
         setTasks(prev => prev.map(t => t.id === taskData.id ? { ...t, ...taskData } as Task : t));
