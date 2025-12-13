@@ -7,6 +7,7 @@ import { BoardView } from './components/BoardView';
 import { LoadingScreen } from './components/LoadingScreen';
 import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
 import { Tour } from './components/Tour';
+import { SearchInput } from './components/SearchInput';
 import { Task, Status, Recurrence } from './types';
 import { useTasks } from './hooks/useTasks';
 import { useTaskModal } from './hooks/useTaskModal';
@@ -41,6 +42,7 @@ const App: React.FC = () => {
   });
   const [isTourOpen, setIsTourOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchResults, setSearchResults] = useState<Task[]>([]);
 
   // Persist showArchived
   useEffect(() => {
@@ -347,7 +349,7 @@ const App: React.FC = () => {
     setCurrentDate(newDate);
   };
 
-  const filteredTasks = tasks.filter(t => showArchived ? true : t.status !== Status.ARCHIVED);
+  const filteredTasks = searchResults.length > 0 ? searchResults : tasks.filter(t => showArchived ? true : t.status !== Status.ARCHIVED);
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -374,6 +376,8 @@ const App: React.FC = () => {
         onExportData={handleExportData}
         onImportClick={handleImportClick}
         onTourClick={() => setIsTourOpen(true)}
+        tasks={tasks}
+        onSearchResults={setSearchResults}
       />
 
       <main className="flex-1 overflow-hidden bg-gray-50 p-4 md:p-6">

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Button } from './Button';
+import { SearchInput } from './SearchInput';
 import { CheckSquare, Archive, Plus, Layout, Calendar, ChevronLeft, ChevronRight, Grid, Download, Upload } from 'lucide-react';
+import { Task } from '../types';
 
 type ViewMode = 'board' | 'week' | 'month';
 
@@ -15,6 +17,8 @@ interface AppHeaderProps {
   onExportData: () => void;
   onImportClick: () => void;
   onTourClick: () => void;
+  tasks: Task[];
+  onSearchResults: (results: Task[]) => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -27,7 +31,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onAddTask,
   onExportData,
   onImportClick,
-  onTourClick
+  onTourClick,
+  tasks,
+  onSearchResults
 }) => {
   return (
     <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-col md:flex-row items-center justify-between sticky top-0 z-20 gap-4">
@@ -97,6 +103,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       
       {/* Right Section: Actions */}
       <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+        {/* Search Input */}
+        <div className="w-full md:w-64">
+          <SearchInput 
+            tasks={tasks}
+            onSearchResults={onSearchResults}
+            placeholder="Search tasks..."
+          />
+        </div>
+        
         {viewMode === 'board' && (
           <>
             <Button 

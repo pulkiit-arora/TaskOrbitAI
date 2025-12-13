@@ -2,6 +2,7 @@ import React from 'react';
 import { Task, Priority, Recurrence } from '../types';
 import { formatRecurrenceSummary } from '../utils/taskUtils';
 import Tooltip from './Tooltip';
+import { CommentPopover } from './CommentPopover';
 import { Calendar, RefreshCw, MoreVertical, Archive, ArrowRight, ArrowLeft, Trash2, ArrowUp, ArrowDown, Minus, MessageSquare } from 'lucide-react';
 
 interface TaskCardProps {
@@ -91,12 +92,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
               </Tooltip>
             )}
             {task.comments && task.comments.length > 0 && (
-              <Tooltip content={`${task.comments.length} comment${task.comments.length > 1 ? 's' : ''}`}>
-                <span className="ml-2 text-gray-400 flex items-center gap-1 text-xs">
+              <CommentPopover comments={task.comments}>
+                <span className="ml-2 text-gray-400 flex items-center gap-1 text-xs hover:text-blue-600 transition-colors">
                   <MessageSquare size={14} />
                   <span className="text-[11px]">{task.comments.length}</span>
                 </span>
-              </Tooltip>
+              </CommentPopover>
             )}
         {showFutureIndicator && <span className="ml-2 text-[10px] font-normal text-gray-400 bg-gray-100 px-1 rounded flex-shrink-0">(Future)</span>}
       </h3>
