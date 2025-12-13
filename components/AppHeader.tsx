@@ -103,14 +103,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       
       {/* Right Section: Actions */}
       <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-        {/* Search Input */}
-        <div className="w-full md:w-64">
-          <SearchInput 
-            tasks={tasks}
-            onSearchResults={onSearchResults}
-            placeholder="Search tasks..."
-          />
-        </div>
+        {/* Search Input - Only show in Board view */}
+        {viewMode === 'board' && (
+          <div className="w-full md:w-64">
+            <SearchInput 
+              tasks={tasks}
+              onSearchResults={onSearchResults}
+              placeholder="Search tasks..."
+            />
+          </div>
+        )}
         
         {viewMode === 'board' && (
           <>
