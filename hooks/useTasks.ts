@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Task, Status, Recurrence, Priority } from '../types';
 import { loadTasksFromDB, saveTasksToDB } from '../services/storage';
 import { calculateNextDueDate } from '../utils/taskUtils';
+import { processTaskStatusChange } from '../utils/taskLogic';
 
 const INITIAL_TASKS: Task[] = [
   {
@@ -101,97 +102,10 @@ export const useTasks = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [tasks]);
 
+
+
   const updateTaskStatus = (taskId: string, newStatus: Status) => {
-    setTasks(prev => {
-      const task = prev.find(t => t.id === taskId);
-      if (!task) return prev;
-
-      if (task.status === Status.DONE && newStatus === Status.TODO && task.recurrence !== Recurrence.NONE) {
-        const baseDueISO = task.dueDate || new Date().toISOString();
-        const anchorISO = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
-        const expectedNextDue = calculateNextDueDate(
-          baseDueISO,
-          task.recurrence,
-          task.recurrenceInterval || 1,
-          task.recurrenceWeekdays,
-          task.recurrenceMonthDay,
-          anchorISO,
-          task.recurrenceMonthNth,
-          task.recurrenceMonthWeekday
-        ).toISOString();
-
-        let removed = false;
-        let pruned = prev.filter(t => {
-          if (removed) return true;
-          const isAutoNext = (
-            t.id !== task.id &&
-            t.status === Status.TODO &&
-            t.recurrence === task.recurrence &&
-            (t.recurrenceInterval || 1) === (task.recurrenceInterval || 1) &&
-            JSON.stringify(t.recurrenceWeekdays || []) === JSON.stringify(task.recurrenceWeekdays || []) &&
-            (t.recurrenceMonthDay || null) === (task.recurrenceMonthDay || null) &&
-            t.title === task.title &&
-            t.description === task.description &&
-            t.priority === task.priority &&
-            (task.dueDate ? t.dueDate === expectedNextDue : true)
-          );
-          if (isAutoNext) {
-            removed = true;
-            return false;
-          }
-          return true;
-        });
-
-        if (!removed && !task.dueDate) {
-          const candidates = prev.filter(t => (
-            t.id !== task.id &&
-            t.status === Status.TODO &&
-            t.recurrence === task.recurrence &&
-            (t.recurrenceInterval || 1) === (task.recurrenceInterval || 1) &&
-            JSON.stringify(t.recurrenceWeekdays || []) === JSON.stringify(task.recurrenceWeekdays || []) &&
-            (t.recurrenceMonthDay || null) === (task.recurrenceMonthDay || null) &&
-            t.title === task.title &&
-            t.description === task.description &&
-            t.priority === task.priority
-          ));
-          if (candidates.length > 0) {
-            const toRemove = candidates.sort((a, b) => b.createdAt - a.createdAt)[0];
-            pruned = prev.filter(t => t.id !== toRemove.id);
-          }
-        }
-
-        return pruned.map(t => t.id === taskId ? ({ ...t, status: newStatus }) : t);
-      }
-
-      if (newStatus === Status.DONE && task.recurrence !== Recurrence.NONE && task.status !== Status.DONE) {
-        const anchorISO2 = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
-        const nextDueDate = calculateNextDueDate(
-          task.dueDate || new Date().toISOString(),
-          task.recurrence,
-          task.recurrenceInterval || 1,
-          task.recurrenceWeekdays,
-          task.recurrenceMonthDay,
-          anchorISO2,
-          task.recurrenceMonthNth,
-          task.recurrenceMonthWeekday
-        );
-        const nextTask: Task = {
-          ...task,
-          id: crypto.randomUUID(),
-          status: Status.TODO,
-          dueDate: nextDueDate.toISOString(),
-          recurrenceInterval: task.recurrenceInterval,
-          recurrenceWeekdays: task.recurrenceWeekdays,
-          recurrenceMonthDay: task.recurrenceMonthDay,
-          recurrenceMonthNth: task.recurrenceMonthNth,
-          recurrenceMonthWeekday: task.recurrenceMonthWeekday,
-          createdAt: Date.now()
-        };
-        return [...prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t), nextTask];
-      }
-
-      return prev.map(t => t.id === taskId ? ({ ...t, status: newStatus }) : t);
-    });
+    setTasks(prev => processTaskStatusChange(prev, taskId, newStatus));
   };
 
   return {
