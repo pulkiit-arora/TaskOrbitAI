@@ -10,7 +10,7 @@ interface CommentPopoverProps {
 
 export const CommentPopover: React.FC<CommentPopoverProps> = ({ comments, children }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
 
   const formatDate = (timestamp: number) => {
@@ -18,7 +18,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({ comments, childr
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return 'Today';
     } else if (diffDays === 1) {
@@ -30,35 +30,76 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({ comments, childr
     }
   };
 
-  useEffect(() => {
-    if (isVisible && triggerRef.current) {
+  const updatePosition = () => {
+    if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      
-      let x = rect.left; // Align to left edge
-      let y = rect.bottom + 8;
-      
-      // Prevent horizontal overflow
-      if (x < 10) x = 10;
-      if (x + 320 > viewportWidth - 10) x = viewportWidth - 330;
-      
-      // Prevent vertical overflow
-      if (y + 300 > viewportHeight - 10) {
-        y = rect.top - 308; // Show above
+
+      const width = 320; // Estimated max width
+
+      // X Calculation
+      let left = rect.left;
+      if (left + width > viewportWidth - 10) {
+        left = Math.max(10, viewportWidth - width - 10);
       }
-      if (y < 10) y = 10;
-      
-      setPosition({ x, y });
+      if (left < 10) left = 10;
+
+      // Y Calculation
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      // Prefer bottom placement, switch to top if tight below and more space above
+      // Using 300 as threshold (max-height of 256px + padding/header)
+      const placement = spaceBelow < 320 && spaceAbove > spaceBelow ? 'top' : 'bottom';
+
+      if (placement === 'top') {
+        setPopoverStyle({
+          left,
+          bottom: viewportHeight - rect.top + 8, // Anchor above trigger
+          maxHeight: Math.min(300, spaceAbove - 20) // Constraint height
+        });
+      } else {
+        setPopoverStyle({
+          left,
+          top: rect.bottom + 8, // Anchor below trigger
+          maxHeight: Math.min(300, spaceBelow - 20) // Constraint height
+        });
+      }
+    }
+  };
+
+  const handleMouseEnter = () => {
+    updatePosition();
+    setIsVisible(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsVisible(false);
+    setPopoverStyle(null);
+  };
+
+  // Close on scroll to prevent detached popover
+  useEffect(() => {
+    if (isVisible) {
+      const handleScroll = () => setIsVisible(false);
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', updatePosition);
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', updatePosition);
+      };
     }
   }, [isVisible]);
 
-  const popoverContent = (
-    <div 
-      className="fixed w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] p-4"
-      style={{ left: position.x, top: position.y }}
+  const popoverContent = popoverStyle && (
+    <div
+      className="fixed w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] p-4 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+      style={popoverStyle}
+      onMouseEnter={() => setIsVisible(true)}
+      onMouseLeave={handleMouseLeave}
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <div className="flex items-center gap-2">
           <MessageSquare size={16} className="text-gray-500" />
           <h3 className="font-semibold text-gray-800 text-sm">
@@ -66,14 +107,17 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({ comments, childr
           </h3>
         </div>
         <button
-          onClick={() => setIsVisible(false)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsVisible(false);
+          }}
           className="text-gray-400 hover:text-gray-600"
         >
           <X size={14} />
         </button>
       </div>
-      
-      <div className="space-y-3 max-h-64 overflow-y-auto">
+
+      <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1 min-h-0">
         {comments.map((comment) => (
           <div key={comment.id} className="border-b border-gray-100 pb-3 last:border-b-0">
             <div className="flex items-center justify-between mb-1">
@@ -81,13 +125,13 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({ comments, childr
                 {formatDate(comment.createdAt)}
               </span>
             </div>
-            <p className="text-sm text-gray-700 leading-relaxed">
+            <p className="text-sm text-gray-700 leading-relaxed break-words">
               {comment.text}
             </p>
           </div>
         ))}
       </div>
-      
+
       {comments.length === 0 && (
         <div className="text-center py-4">
           <MessageSquare size={24} className="text-gray-300 mx-auto mb-2" />
@@ -98,17 +142,17 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({ comments, childr
   );
 
   return (
-    <div className="relative">
+    <div className="relative inline-block">
       <div
         ref={triggerRef}
-        onMouseEnter={() => setIsVisible(true)}
-        onMouseLeave={() => setIsVisible(false)}
-        className="cursor-pointer"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="cursor-pointer inline-flex"
       >
         {children}
       </div>
-      
-      {isVisible && typeof document !== 'undefined' && createPortal(
+
+      {isVisible && popoverStyle && typeof document !== 'undefined' && createPortal(
         popoverContent,
         document.body
       )}

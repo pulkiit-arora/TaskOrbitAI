@@ -19,7 +19,7 @@ type ViewMode = 'board' | 'week' | 'month';
 const App: React.FC = () => {
   const { tasks, isLoading, setTasks, updateTaskStatus } = useTasks();
   const { isModalOpen, editingTask, openModal, closeModal, openModalWithDate } = useTaskModal();
-  
+
   const [viewMode, setViewModeState] = useLocalStorageString('lifeflow-view-mode', 'board');
   const setViewMode = (mode: ViewMode) => setViewModeState(mode);
   const [showArchived, setShowArchived] = useState(() => {
@@ -36,13 +36,13 @@ const App: React.FC = () => {
   });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [boardFilter, setBoardFilter] = useState<'all' | 'overdue' | 'week' | 'nodue'>('all');
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{isOpen: boolean, taskId: string | null}>({
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean, taskId: string | null }>({
     isOpen: false,
     taskId: null
   });
   const [isTourOpen, setIsTourOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [searchResults, setSearchResults] = useState<Task[]>([]);
+
 
   // Persist showArchived
   useEffect(() => {
@@ -59,7 +59,7 @@ const App: React.FC = () => {
     try {
       const seen = localStorage.getItem('lifeflow-tour-seen');
       if (!seen) setIsTourOpen(true);
-    } catch {}
+    } catch { }
   }, []);
 
   // Task handlers
@@ -70,24 +70,24 @@ const App: React.FC = () => {
         // Extract the base task ID from virtual ID (format: {baseTaskId}-virtual-{timestamp})
         const baseTaskId = taskData.id.split('-virtual-')[0];
         const baseTask = tasks.find(t => t.id === baseTaskId);
-        
+
         // If editing a recurring task's occurrence, update the base task's comments
         // and create one-off tasks for other changes (status, description, etc.)
         if (baseTask && baseTask.recurrence !== Recurrence.NONE) {
           // Always update the base task with new comments
           if (taskData.comments) {
-            setTasks(prev => prev.map(t => 
+            setTasks(prev => prev.map(t =>
               t.id === baseTaskId ? { ...t, comments: taskData.comments } : t
             ));
           }
-          
+
           // Check if any non-comment fields were actually changed
           // Compare only editable fields (exclude system fields like id, createdAt)
           const editableFields = ['title', 'description', 'status', 'priority', 'dueDate'] as const;
           const otherFieldsChanged = editableFields.some(
             key => taskData[key] !== undefined && taskData[key] !== baseTask[key]
           );
-          
+
           if (otherFieldsChanged) {
             // Create a one-off task for the specific occurrence with the changes
             const newTask: Task = {
@@ -111,20 +111,20 @@ const App: React.FC = () => {
       } else {
         // For real tasks, check if it's a recurring task that needs comment sync
         const task = tasks.find(t => t.id === taskData.id);
-        
+
         if (task && task.recurrence !== Recurrence.NONE) {
           // For recurring tasks, sync comments across all occurrences
           // by updating only the comments field on the base task
           const updatedTask = { ...task, ...taskData } as Task;
-          
+
           // Check if only comments were changed
           const editableFields = ['title', 'description', 'status', 'priority', 'dueDate'] as const;
           const otherFieldsChanged = editableFields.some(
             key => taskData[key] !== undefined && taskData[key] !== task[key]
           );
-          
+
           setTasks(prev => prev.map(t => t.id === taskData.id ? updatedTask : t));
-          
+
           // If other fields changed AND this is a specific occurrence edit (not base task edit),
           // create a one-off task for that occurrence
           if (otherFieldsChanged && taskData.dueDate && taskData.dueDate !== task.dueDate) {
@@ -166,7 +166,7 @@ const App: React.FC = () => {
 
     const flow = [Status.TODO, Status.IN_PROGRESS, Status.DONE];
     const currentIndex = flow.indexOf(task.status);
-    
+
     if (direction === 'next' && currentIndex < flow.length - 1) {
       updateTaskStatus(taskId, flow[currentIndex + 1]);
     } else if (direction === 'prev' && currentIndex > 0) {
@@ -296,7 +296,7 @@ const App: React.FC = () => {
     const dataStr = JSON.stringify(tasks, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `taskorbit-backup-${new Date().toISOString().split('T')[0]}.json`;
@@ -335,7 +335,7 @@ const App: React.FC = () => {
   };
 
   const handleCloseTour = () => {
-    try { localStorage.setItem('lifeflow-tour-seen', 'true'); } catch {}
+    try { localStorage.setItem('lifeflow-tour-seen', 'true'); } catch { }
     setIsTourOpen(false);
   };
 
@@ -349,7 +349,24 @@ const App: React.FC = () => {
     setCurrentDate(newDate);
   };
 
-  const filteredTasks = searchResults.length > 0 ? searchResults : tasks.filter(t => showArchived ? true : t.status !== Status.ARCHIVED);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Task[]>([]); // Keep this if needed, but we'll prefer direct filtering
+
+  // ... (previous effects)
+
+  const filteredTasks = React.useMemo(() => {
+    let list = tasks.filter(t => showArchived ? true : t.status !== Status.ARCHIVED);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(t =>
+        t.title.toLowerCase().includes(q) ||
+        t.description.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [tasks, showArchived, searchQuery]);
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -357,13 +374,48 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <input 
-        type="file" 
+      <input
+        type="file"
         ref={fileInputRef}
         onChange={handleImportFile}
         accept=".json"
-        className="hidden" 
+        className="hidden"
       />
+
+      {/* Top Banner (Global Toolbar) */}
+      <div className="sticky top-0 z-[60] bg-gray-100 border-b border-gray-200 text-gray-700 text-xs px-4 py-1 flex items-center justify-between shadow-sm h-8">
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-gray-500 hidden sm:inline">Build: {import.meta.env.VITE_BUILD_TIME || 'Dev'}</span>
+          <span className="text-gray-300 hidden sm:inline">|</span>
+          <button
+            onClick={() => setIsTourOpen(true)}
+            className="hover:text-blue-600 transition-colors flex items-center gap-1"
+          >
+            Tour
+          </button>
+        </div>
+        <div className="flex items-center gap-3">
+          <a href="mailto:pulkiit.arora@gmail.com" className="hover:text-blue-600 transition-colors">
+            Contact Me
+          </a>
+          <span className="text-gray-300">|</span>
+          <button
+            onClick={handleExportData}
+            className="hover:text-blue-600 transition-colors flex items-center gap-1"
+            title="Backup Tasks"
+          >
+            Export
+          </button>
+          <span className="text-gray-300">|</span>
+          <button
+            onClick={handleImportClick}
+            className="hover:text-blue-600 transition-colors flex items-center gap-1"
+            title="Restore Tasks"
+          >
+            Import
+          </button>
+        </div>
+      </div>
 
       <AppHeader
         viewMode={viewMode as ViewMode}
@@ -373,11 +425,9 @@ const App: React.FC = () => {
         showArchived={showArchived}
         setShowArchived={setShowArchived}
         onAddTask={() => openModal()}
-        onExportData={handleExportData}
-        onImportClick={handleImportClick}
-        onTourClick={() => setIsTourOpen(true)}
         tasks={tasks}
-        onSearchResults={setSearchResults}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
       />
 
       <main className="flex-1 overflow-hidden bg-gray-50 p-4 md:p-6">
@@ -399,9 +449,9 @@ const App: React.FC = () => {
         )}
 
         {viewMode === 'month' && (
-          <MonthView 
-            currentDate={currentDate} 
-            tasks={filteredTasks} 
+          <MonthView
+            currentDate={currentDate}
+            tasks={filteredTasks}
             onEditTask={(task) => openModal(task)}
             onToggleDone={handleToggleDone}
             onAddTask={openModalWithDate}
@@ -409,9 +459,9 @@ const App: React.FC = () => {
         )}
 
         {viewMode === 'week' && (
-          <WeekView 
-            currentDate={currentDate} 
-            tasks={filteredTasks} 
+          <WeekView
+            currentDate={currentDate}
+            tasks={filteredTasks}
             onEditTask={(task) => openModal(task)}
             onMoveTask={handleMoveTask}
             onArchiveTask={handleArchiveTask}
@@ -420,8 +470,8 @@ const App: React.FC = () => {
           />
         )}
       </main>
-      
-      <Tour 
+
+      <Tour
         isOpen={isTourOpen}
         onClose={handleCloseTour}
         steps={[
@@ -433,7 +483,7 @@ const App: React.FC = () => {
         ]}
       />
 
-      <TaskModal 
+      <TaskModal
         isOpen={isModalOpen}
         onClose={closeModal}
         onSave={handleSaveTask}
