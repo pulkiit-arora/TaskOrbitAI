@@ -12,7 +12,7 @@ export const getNthWeekdayOfMonth = (year: number, month: number, nth: number, w
     const diff = (last.getDay() - weekday + 7) % 7;
     const day = last.getDate() - diff;
     const d = new Date(year, month, day);
-    d.setHours(12,0,0,0);
+    d.setHours(12, 0, 0, 0);
     return d;
   }
   // first occurrence
@@ -22,7 +22,7 @@ export const getNthWeekdayOfMonth = (year: number, month: number, nth: number, w
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const finalDay = Math.min(day, daysInMonth);
   const d = new Date(year, month, finalDay);
-  d.setHours(12,0,0,0);
+  d.setHours(12, 0, 0, 0);
   return d;
 };
 
@@ -61,10 +61,10 @@ export const calculateNextDueDate = (
 
     case Recurrence.WEEKLY: {
       // Strictly anchor multi-week intervals to the anchor week (start of week of anchor)
-      const sorted = (weekdays && weekdays.length > 0) ? Array.from(new Set(weekdays)).sort((a,b)=>a-b) : [anchor.getDay()];
+      const sorted = (weekdays && weekdays.length > 0) ? Array.from(new Set(weekdays)).sort((a, b) => a - b) : [anchor.getDay()];
       const anchorWeekStart = new Date(anchor);
       anchorWeekStart.setDate(anchor.getDate() - anchor.getDay());
-      anchorWeekStart.setHours(0,0,0,0);
+      anchorWeekStart.setHours(0, 0, 0, 0);
 
       const maxDays = 7 * Math.max(4, Math.floor(interval) * 8); // generous cap
       for (let i = 1; i <= maxDays; i++) {
@@ -73,7 +73,7 @@ export const calculateNextDueDate = (
         if (!sorted.includes(d.getDay())) continue;
         const dWeekStart = new Date(d);
         dWeekStart.setDate(d.getDate() - d.getDay());
-        dWeekStart.setHours(0,0,0,0);
+        dWeekStart.setHours(0, 0, 0, 0);
         const weekDiff = Math.floor((dWeekStart.getTime() - anchorWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
         if ((weekDiff % Math.max(1, Math.floor(interval))) === 0) return d;
       }
@@ -87,6 +87,9 @@ export const calculateNextDueDate = (
       // If monthly-by-weekday rules are provided (nth + weekday), compute that occurrence
       if (typeof monthNth === 'number' && typeof monthWeekday === 'number') {
         const target = new Date(date);
+        // Safely add months: set to 1st of month, add months, then calculate nth weekday
+        // Actually for nth weekday logic, adding months to the 1st is safe/correct base.
+        target.setDate(1);
         target.setMonth(target.getMonth() + monthsToAdd);
         const year = target.getFullYear();
         const month = target.getMonth();
@@ -98,6 +101,9 @@ export const calculateNextDueDate = (
       // If a specific day-of-month is provided, use that (clamped to month length)
       if (monthDay && Number.isInteger(monthDay) && monthDay >= 1 && monthDay <= 31) {
         const target = new Date(date);
+        // Avoid overflow (e.g. Jan 31 + 1 month -> Mar 3)
+        // Set to day 1, add months, then set recurrence day.
+        target.setDate(1);
         target.setMonth(target.getMonth() + monthsToAdd);
         const year = target.getFullYear();
         const month = target.getMonth();
@@ -110,7 +116,14 @@ export const calculateNextDueDate = (
       // through the monthDay parameter in this util as we can't change signature everywhere.
       // To support nth-weekday, callers can pass a negative monthDay encoding or use
       // a future signature. For now fall back to adding monthsToAdd months.
+
+      // Fix default monthly behavior (same day of month) avoiding overflow
+      // e.g. Jan 31 + 1 month -> Feb 28/29, not Mar 2/3
+      const originalDay = date.getDate();
+      date.setDate(1);
       date.setMonth(date.getMonth() + monthsToAdd);
+      const daysInTargetMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      date.setDate(Math.min(originalDay, daysInTargetMonth));
       break;
     }
 
@@ -163,7 +176,7 @@ export const formatRecurrenceSummary = (task: Task): string => {
   if (!task || task.recurrence === Recurrence.NONE) return '';
   const interval = task.recurrenceInterval && task.recurrenceInterval > 0 ? Math.floor(task.recurrenceInterval) : 1;
 
-  const weekdayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   switch (task.recurrence) {
     case Recurrence.DAILY:
@@ -171,7 +184,7 @@ export const formatRecurrenceSummary = (task: Task): string => {
 
     case Recurrence.WEEKLY: {
       const days = task.recurrenceWeekdays && task.recurrenceWeekdays.length > 0
-        ? task.recurrenceWeekdays.slice().sort((a,b)=>a-b).map(d => weekdayNames[d]).join(', ')
+        ? task.recurrenceWeekdays.slice().sort((a, b) => a - b).map(d => weekdayNames[d]).join(', ')
         : null;
       if (days) return interval === 1 ? `Weekly on ${days}` : `Every ${interval} weeks on ${days}`;
       return interval === 1 ? 'Weekly' : `Every ${interval} weeks`;
@@ -186,7 +199,7 @@ export const formatRecurrenceSummary = (task: Task): string => {
 
       // Monthly by nth weekday (e.g., Last Saturday)
       if (typeof task.recurrenceMonthNth === 'number' && typeof task.recurrenceMonthWeekday === 'number') {
-        const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const nth = task.recurrenceMonthNth;
         const weekdayName = names[task.recurrenceMonthWeekday];
         const nthName = nth === -1 ? 'Last' : `${nth}${nth === 1 ? 'st' : nth === 2 ? 'nd' : nth === 3 ? 'rd' : 'th'}`;
