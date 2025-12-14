@@ -43,15 +43,7 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Inject build banner
-        run: |
-          set -e
-          FILE="dist/index.html"
-          if [ -f "$FILE" ]; then
-            sed -i "s|<body>|<body>\n    <div style=\"position:sticky;top:0;z-index:9999;background:#f3f4f6;border-bottom:1px solid #e5e7eb;color:#374151;font-size:12px;text-align:center;padding:4px 8px;\">Built: ${VITE_BUILD_TIME}</div>|" "$FILE"
-          else
-            echo "dist/index.html not found; skipping banner injection" >&2
-          fi
+
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
