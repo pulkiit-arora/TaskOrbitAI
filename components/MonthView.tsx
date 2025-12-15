@@ -392,7 +392,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
       {/* Calendar Grid */}
       {filterMode === 'all' && (
-        <div className="grid grid-cols-7 auto-rows-fr flex-1 bg-gray-200 dark:bg-gray-700 gap-[1px] overflow-y-auto custom-scrollbar">
+        <div className="grid grid-cols-7 auto-rows-[minmax(140px,1fr)] flex-1 bg-gray-200 dark:bg-gray-700 gap-[1px] overflow-y-auto custom-scrollbar">
           {totalSlots.map((day, index) => {
             if (day === null) {
               return <div key={`blank-${index}`} className="bg-gray-50/50 dark:bg-gray-900/50" />;
