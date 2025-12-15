@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
+import { Layout, Calendar as CalendarIcon, List, Search, Moon, Sun } from 'lucide-react';
 import { TaskModal } from './components/TaskModal';
 import { MonthView } from './components/MonthView';
 import { WeekView } from './components/WeekView';
@@ -96,7 +97,26 @@ const App: React.FC = () => {
               recurrence: Recurrence.NONE,
               createdAt: Date.now(),
             } as Task;
-            setTasks(prev => [...prev, newTask]);
+
+            // Fix: Extract the ORIGINAL occurrence date from the virtual ID
+            // Format: {baseId}-virtual-{timestamp}
+            const virtualTimestamp = parseInt(taskData.id.split('-virtual-')[1], 10);
+            const occurrenceDate = new Date(virtualTimestamp).toISOString();
+
+            setTasks(prev => {
+              const list = [...prev, newTask];
+              // Update base task with exclusion
+              return list.map(t => {
+                if (t.id === baseTaskId) {
+                  const newExcluded = [...(t.excludedDates || [])];
+                  if (occurrenceDate && !newExcluded.includes(occurrenceDate)) {
+                    newExcluded.push(occurrenceDate);
+                  }
+                  return { ...t, excludedDates: newExcluded };
+                }
+                return t;
+              });
+            });
           }
         } else {
           // For non-recurring virtual tasks, create a new one-off task
@@ -264,6 +284,7 @@ const App: React.FC = () => {
 
     const newStatus = task.status === Status.DONE ? Status.TODO : Status.DONE;
     // If toggling to DONE and task has no dueDate, anchor it to today so Week/Month can display it
+    // If toggling to DONE and task has no dueDate, anchor it to today so Week/Month can display it
     if (newStatus === Status.DONE && !task.dueDate) {
       const today = new Date();
       today.setHours(12, 0, 0, 0);
@@ -281,9 +302,48 @@ const App: React.FC = () => {
     setDeleteConfirmation({ isOpen: true, taskId });
   };
 
+  const handleDropTaskDate = (taskId: string, newDate: Date) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    let updatedDate = new Date(newDate);
+    if (task.dueDate) {
+      const originalDate = new Date(task.dueDate);
+      updatedDate.setHours(originalDate.getHours(), originalDate.getMinutes(), 0, 0);
+    } else {
+      updatedDate.setHours(12, 0, 0, 0);
+    }
+
+    const updatedTask: Task = {
+      ...task,
+      dueDate: updatedDate.toISOString(),
+    };
+
+    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+  };
+
   const confirmDelete = () => {
     if (deleteConfirmation.taskId) {
-      setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId));
+      if (deleteConfirmation.taskId.includes('-virtual-')) {
+        // Deleting a virtual occurrence
+        const baseTaskId = deleteConfirmation.taskId.split('-virtual-')[0];
+        const timestamp = Number(deleteConfirmation.taskId.split('-virtual-')[1]);
+        const dateISO = new Date(timestamp).toISOString();
+
+        setTasks(prev => prev.map(t => {
+          if (t.id === baseTaskId) {
+            return {
+              ...t,
+              excludedDates: [...(t.excludedDates || []), dateISO]
+            };
+          }
+          return t;
+        }));
+      } else {
+        // Deleting a normal task
+        setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId));
+      }
+
       setDeleteConfirmation({ isOpen: false, taskId: null });
       if (editingTask?.id === deleteConfirmation.taskId) {
         closeModal();
@@ -354,6 +414,26 @@ const App: React.FC = () => {
 
   // ... (previous effects)
 
+  // Dark Mode State
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+      return localStorage.getItem('theme') === 'dark';
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+
   const filteredTasks = React.useMemo(() => {
     let list = tasks.filter(t => showArchived ? true : t.status !== Status.ARCHIVED);
 
@@ -373,7 +453,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={`flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-gray-900 transition-colors duration-200`}>
       <input
         type="file"
         ref={fileInputRef}
@@ -381,35 +461,43 @@ const App: React.FC = () => {
         accept=".json"
         className="hidden"
       />
-
       {/* Top Banner (Global Toolbar) */}
-      <div className="sticky top-0 z-[60] bg-gray-100 border-b border-gray-200 text-gray-700 text-xs px-4 py-1 flex items-center justify-between shadow-sm h-8">
+      <div className="sticky top-0 z-[60] bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-xs px-4 py-1 flex items-center justify-between shadow-sm h-8 transition-colors duration-200">
         <div className="flex items-center gap-3">
-          <span className="font-semibold text-gray-500 hidden sm:inline">Build: {import.meta.env.VITE_BUILD_TIME || 'Dev'}</span>
-          <span className="text-gray-300 hidden sm:inline">|</span>
+          <span className="font-semibold text-gray-500 dark:text-gray-400 hidden sm:inline">Build: {import.meta.env.VITE_BUILD_TIME || 'Dev'}</span>
+          <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">|</span>
           <button
             onClick={() => setIsTourOpen(true)}
-            className="hover:text-blue-600 transition-colors flex items-center gap-1"
+            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
           >
             Tour
           </button>
         </div>
         <div className="flex items-center gap-3">
-          <a href="mailto:pulkiit.arora@gmail.com" className="hover:text-blue-600 transition-colors">
+          <button
+            onClick={toggleDarkMode}
+            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
+            title="Toggle Theme"
+          >
+            {darkMode ? <Sun size={12} /> : <Moon size={12} />}
+            <span className="hidden sm:inline">{darkMode ? 'Light' : 'Dark'}</span>
+          </button>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
+          <a href="mailto:pulkiit.arora@gmail.com" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
             Contact Me
           </a>
-          <span className="text-gray-300">|</span>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
           <button
             onClick={handleExportData}
-            className="hover:text-blue-600 transition-colors flex items-center gap-1"
+            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
             title="Backup Tasks"
           >
             Export
           </button>
-          <span className="text-gray-300">|</span>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
           <button
             onClick={handleImportClick}
-            className="hover:text-blue-600 transition-colors flex items-center gap-1"
+            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
             title="Restore Tasks"
           >
             Import
@@ -455,6 +543,7 @@ const App: React.FC = () => {
             onEditTask={(task) => openModal(task)}
             onToggleDone={handleToggleDone}
             onAddTask={openModalWithDate}
+            onDropTask={handleDropTaskDate}
           />
         )}
 
@@ -467,6 +556,7 @@ const App: React.FC = () => {
             onArchiveTask={handleArchiveTask}
             onDeleteTask={handleDeleteTask}
             onAddTask={openModalWithDate}
+            onDropTask={handleDropTaskDate}
           />
         )}
       </main>

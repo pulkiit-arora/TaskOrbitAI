@@ -11,10 +11,12 @@ interface WeekViewProps {
   onMoveTask: (taskId: string, direction: 'prev' | 'next') => void;
   onArchiveTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onToggleDone: (taskId: string, onDate?: string) => void;
   onAddTask?: (date: Date) => void;
+  onDropTask?: (taskId: string, date: Date) => void;
 }
 
-export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTask, onMoveTask, onArchiveTask, onDeleteTask, onAddTask }) => {
+export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTask, onMoveTask, onArchiveTask, onDeleteTask, onToggleDone, onAddTask, onDropTask }) => {
   const getStartOfWeek = (date: Date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -23,7 +25,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
   };
 
   const startOfWeek = getStartOfWeek(currentDate);
-  
+
   // Generate array of 7 days starting from Sunday
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(startOfWeek);
@@ -61,168 +63,190 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
   const toggleNoDue = () => setFilterMode(m => (m === 'nodue' ? 'all' : 'nodue'));
 
   const doesTaskOccurOnDate = (task: Task, date: Date): boolean => {
-      // 1. Basic filtering: Archived tasks are hidden unless we want them? (Usually handled by parent)
-      // Assuming parent filters 'ARCHIVED' based on toggle, but we still check for 'DONE' behavior.
-      
-      const checkDate = new Date(date);
-      checkDate.setHours(0,0,0,0);
-      
-      // Determine start anchor
-      const startAnchor = task.recurrenceStart 
-        ? new Date(task.recurrenceStart) 
-        : (task.dueDate ? new Date(task.dueDate) : new Date(task.createdAt));
-      startAnchor.setHours(0,0,0,0);
+    // 1. Basic filtering: Archived tasks are hidden unless we want them? (Usually handled by parent)
+    // Assuming parent filters 'ARCHIVED' based on toggle, but we still check for 'DONE' behavior.
 
-      // Determine end anchor
-      let endAnchor: Date | null = null;
-      if (task.recurrenceEnd) {
-          endAnchor = new Date(task.recurrenceEnd);
-          endAnchor.setHours(23,59,59,999);
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+
+    // Check for exclusions (deleted/moved occurrences)
+    if (task.excludedDates && task.excludedDates.some(d => {
+      const ex = new Date(d);
+      ex.setHours(0, 0, 0, 0);
+      return ex.getTime() === checkDate.getTime();
+    })) {
+      return false;
+    }
+
+    // Determine start anchor
+    const startAnchor = task.recurrenceStart
+      ? new Date(task.recurrenceStart)
+      : (task.dueDate ? new Date(task.dueDate) : new Date(task.createdAt));
+    startAnchor.setHours(0, 0, 0, 0);
+
+    // Determine end anchor
+    let endAnchor: Date | null = null;
+    if (task.recurrenceEnd) {
+      endAnchor = new Date(task.recurrenceEnd);
+      endAnchor.setHours(23, 59, 59, 999);
+    }
+
+    // Check range
+    if (checkDate < startAnchor) return false;
+    if (endAnchor && checkDate > endAnchor) return false;
+
+    // Check Recurrence Rule (consider interval, weekdays and month-day overrides)
+    const interval = task.recurrenceInterval && task.recurrenceInterval > 0 ? Math.floor(task.recurrenceInterval) : 1;
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysDiff = Math.round((checkDate.getTime() - startAnchor.getTime()) / msPerDay);
+
+    switch (task.recurrence) {
+      case Recurrence.NONE: {
+        if (!task.dueDate) return false;
+        const due = new Date(task.dueDate);
+        due.setHours(0, 0, 0, 0);
+        return due.getTime() === checkDate.getTime();
       }
 
-      // Check range
-      if (checkDate < startAnchor) return false;
-      if (endAnchor && checkDate > endAnchor) return false;
+      case Recurrence.DAILY:
+        return (daysDiff % interval) === 0;
 
-      // Check Recurrence Rule (consider interval, weekdays and month-day overrides)
-      const interval = task.recurrenceInterval && task.recurrenceInterval > 0 ? Math.floor(task.recurrenceInterval) : 1;
-      const msPerDay = 24 * 60 * 60 * 1000;
-      const daysDiff = Math.round((checkDate.getTime() - startAnchor.getTime()) / msPerDay);
-
-      switch (task.recurrence) {
-        case Recurrence.NONE: {
-          if (!task.dueDate) return false;
-          const due = new Date(task.dueDate);
-          due.setHours(0,0,0,0);
-          return due.getTime() === checkDate.getTime();
-        }
-
-        case Recurrence.DAILY:
-          return (daysDiff % interval) === 0;
-
-        case Recurrence.WEEKLY: {
-          // Compute week difference relative to the startAnchor's week (Sunday-based)
-          const startAnchorWeekStart = new Date(startAnchor);
-          startAnchorWeekStart.setDate(startAnchor.getDate() - startAnchor.getDay());
-          startAnchorWeekStart.setHours(0, 0, 0, 0);
-          const weekDiff = Math.floor((checkDate.getTime() - startAnchorWeekStart.getTime()) / (7 * msPerDay));
-          if (task.recurrenceWeekdays && task.recurrenceWeekdays.length > 0) {
-            if (!task.recurrenceWeekdays.includes(checkDate.getDay())) return false;
-            return (weekDiff % interval) === 0;
-          }
-          // fallback: use startAnchor's weekday
-          if (checkDate.getDay() !== startAnchor.getDay()) return false;
+      case Recurrence.WEEKLY: {
+        // Compute week difference relative to the startAnchor's week (Sunday-based)
+        const startAnchorWeekStart = new Date(startAnchor);
+        startAnchorWeekStart.setDate(startAnchor.getDate() - startAnchor.getDay());
+        startAnchorWeekStart.setHours(0, 0, 0, 0);
+        const weekDiff = Math.floor((checkDate.getTime() - startAnchorWeekStart.getTime()) / (7 * msPerDay));
+        if (task.recurrenceWeekdays && task.recurrenceWeekdays.length > 0) {
+          if (!task.recurrenceWeekdays.includes(checkDate.getDay())) return false;
           return (weekDiff % interval) === 0;
         }
+        // fallback: use startAnchor's weekday
+        if (checkDate.getDay() !== startAnchor.getDay()) return false;
+        return (weekDiff % interval) === 0;
+      }
 
-        case Recurrence.MONTHLY: {
-          const monthDiff = (checkDate.getFullYear() - startAnchor.getFullYear()) * 12 + (checkDate.getMonth() - startAnchor.getMonth());
-          if (typeof task.recurrenceMonthNth === 'number' && typeof task.recurrenceMonthWeekday === 'number') {
-            if (!isNthWeekdayOfMonth(checkDate, task.recurrenceMonthNth, task.recurrenceMonthWeekday)) return false;
-            return (monthDiff % interval) === 0;
-          }
-          if (task.recurrenceMonthDay && Number.isInteger(task.recurrenceMonthDay)) {
-            if (checkDate.getDate() !== task.recurrenceMonthDay) return false;
-            return (monthDiff % interval) === 0;
-          }
-          if (checkDate.getDate() !== startAnchor.getDate()) return false;
+      case Recurrence.MONTHLY: {
+        const monthDiff = (checkDate.getFullYear() - startAnchor.getFullYear()) * 12 + (checkDate.getMonth() - startAnchor.getMonth());
+        if (typeof task.recurrenceMonthNth === 'number' && typeof task.recurrenceMonthWeekday === 'number') {
+          if (!isNthWeekdayOfMonth(checkDate, task.recurrenceMonthNth, task.recurrenceMonthWeekday)) return false;
           return (monthDiff % interval) === 0;
         }
-
-        case Recurrence.QUARTERLY: {
-          const monthDiff = (checkDate.getFullYear() - startAnchor.getFullYear()) * 12 + (checkDate.getMonth() - startAnchor.getMonth());
-          const quarterInterval = 3 * interval;
-          if (checkDate.getDate() !== startAnchor.getDate()) return false;
-          return (monthDiff % quarterInterval) === 0;
+        if (task.recurrenceMonthDay && Number.isInteger(task.recurrenceMonthDay)) {
+          if (checkDate.getDate() !== task.recurrenceMonthDay) return false;
+          return (monthDiff % interval) === 0;
         }
-
-        case Recurrence.YEARLY: {
-          const yearDiff = checkDate.getFullYear() - startAnchor.getFullYear();
-          if (checkDate.getMonth() !== startAnchor.getMonth() || checkDate.getDate() !== startAnchor.getDate()) return false;
-          return (yearDiff % interval) === 0;
-        }
-
-        default:
-          return false;
+        if (checkDate.getDate() !== startAnchor.getDate()) return false;
+        return (monthDiff % interval) === 0;
       }
+
+      case Recurrence.QUARTERLY: {
+        const monthDiff = (checkDate.getFullYear() - startAnchor.getFullYear()) * 12 + (checkDate.getMonth() - startAnchor.getMonth());
+        const quarterInterval = 3 * interval;
+        if (checkDate.getDate() !== startAnchor.getDate()) return false;
+        return (monthDiff % quarterInterval) === 0;
+      }
+
+      case Recurrence.YEARLY: {
+        const yearDiff = checkDate.getFullYear() - startAnchor.getFullYear();
+        if (checkDate.getMonth() !== startAnchor.getMonth() || checkDate.getDate() !== startAnchor.getDate()) return false;
+        return (yearDiff % interval) === 0;
+      }
+
+      default:
+        return false;
+    }
   };
 
   const getTasksForDay = (date: Date) => {
     const dayTasks: { task: Task; isVirtual: boolean; baseTask: Task }[] = [];
 
     tasks.forEach(task => {
-        // Skip archived in calendar views typically, unless explicitly desired. 
-        // Logic passed from App says 'tasks' is already filtered for ARCHIVED if hidden.
-        if (task.status === Status.ARCHIVED) return;
+      // Skip archived in calendar views typically, unless explicitly desired. 
+      // Logic passed from App says 'tasks' is already filtered for ARCHIVED if hidden.
+      if (task.status === Status.ARCHIVED) return;
 
-        if (doesTaskOccurOnDate(task, date)) {
-            // Check if this is the REAL instance
-            let isRealInstance = false;
-            if (task.dueDate) {
-                const due = new Date(task.dueDate);
-                due.setHours(0,0,0,0);
-                const check = new Date(date);
-                check.setHours(0,0,0,0);
-                isRealInstance = due.getTime() === check.getTime();
-            }
-
-            // Only show DONE tasks if they are the real instance (history). 
-            // Don't project virtual occurrences for DONE recurring tasks - the new TODO task will project forward
-            if (task.status === Status.DONE) {
-                if (!isRealInstance) {
-                    return; // Don't show virtual occurrences of DONE tasks
-                }
-                // Show only the real DONE instance on its actual due date
-            }
-
-            // If a history record (non-recurring instance) exists for this same date, skip projecting a virtual copy
-            // A history record is a non-recurring task with the same title on the same date, but different ID
-            if (!isRealInstance) {
-                const occStart = new Date(date); occStart.setHours(0,0,0,0);
-                const hasHistoryRecord = tasks.some(tt => {
-                    if (!tt.dueDate) return false;
-                    const dd = new Date(tt.dueDate); dd.setHours(0,0,0,0);
-                    // Match non-recurring tasks with same title on same date (but different ID)
-                    // Status doesn't matter - could be DONE, IN_PROGRESS, or TODO
-                    return dd.getTime() === occStart.getTime() && tt.title === task.title && tt.recurrence === Recurrence.NONE && tt.id !== task.id;
-                });
-                if (hasHistoryRecord) {
-                    return; // skip adding virtual duplicate - the actual history record will be shown instead
-                }
-            }
-
-            // For recurring tasks that are DONE, always show future occurrences as TODO (new instances)
-            let displayStatus = Status.TODO;
-            if (isRealInstance) {
-              displayStatus = task.status; // Real instance keeps its actual status
-            } else if (task.recurrence !== Recurrence.NONE) {
-              // Virtual occurrences of recurring tasks are always TODO, even if the base task is DONE
-              displayStatus = Status.TODO;
-            }
-
-            // Create a display copy
-            const displayTask = isRealInstance ? task : {
-                ...task,
-                id: `${task.id}-virtual-${date.getTime()}`, // Virtual ID
-                dueDate: date.toISOString(), // Project the date for display
-                status: displayStatus
-            };
-
-            dayTasks.push({
-                task: displayTask,
-                isVirtual: !isRealInstance,
-                baseTask: task // Store the original task for editing
-            });
+      if (doesTaskOccurOnDate(task, date)) {
+        // Check if this is the REAL instance
+        let isRealInstance = false;
+        if (task.dueDate) {
+          const due = new Date(task.dueDate);
+          due.setHours(0, 0, 0, 0);
+          const check = new Date(date);
+          check.setHours(0, 0, 0, 0);
+          isRealInstance = due.getTime() === check.getTime();
         }
+
+        // Only show DONE tasks if they are the real instance (history). 
+        // Don't project virtual occurrences for DONE recurring tasks - the new TODO task will project forward
+        if (task.status === Status.DONE) {
+          if (!isRealInstance) {
+            return; // Don't show virtual occurrences of DONE tasks
+          }
+          // Show only the real DONE instance on its actual due date
+        }
+
+        // If a history record (non-recurring instance) exists for this same date, skip projecting a virtual copy
+        // A history record is a non-recurring task with the same title on the same date, but different ID
+        if (!isRealInstance) {
+          const occStart = new Date(date); occStart.setHours(0, 0, 0, 0);
+          const hasHistoryRecord = tasks.some(tt => {
+            if (!tt.dueDate) return false;
+            const dd = new Date(tt.dueDate); dd.setHours(0, 0, 0, 0);
+            // Match non-recurring tasks with same title on same date (but different ID)
+            // Status doesn't matter - could be DONE, IN_PROGRESS, or TODO
+            return dd.getTime() === occStart.getTime() && tt.title === task.title && tt.recurrence === Recurrence.NONE && tt.id !== task.id;
+          });
+          if (hasHistoryRecord) {
+            return; // skip adding virtual duplicate - the actual history record will be shown instead
+          }
+        }
+
+        // For recurring tasks that are DONE, always show future occurrences as TODO (new instances)
+        let displayStatus = Status.TODO;
+        if (isRealInstance) {
+          displayStatus = task.status; // Real instance keeps its actual status
+        } else if (task.recurrence !== Recurrence.NONE) {
+          // Virtual occurrences of recurring tasks are always TODO, even if the base task is DONE
+          displayStatus = Status.TODO;
+        }
+
+        // Create a display copy
+        const displayTask = isRealInstance ? task : {
+          ...task,
+          id: `${task.id}-virtual-${date.getTime()}`, // Virtual ID
+          dueDate: date.toISOString(), // Project the date for display
+          status: displayStatus
+        };
+
+        dayTasks.push({
+          task: displayTask,
+          isVirtual: !isRealInstance,
+          baseTask: task // Store the original task for editing
+        });
+      }
     });
 
     return dayTasks;
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, date: Date) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('taskId');
+    if (taskId && onDropTask) {
+      onDropTask(taskId, date);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="mb-3 flex items-center gap-2 px-1">
-        <span className="text-sm text-gray-600 font-medium">Summary</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Summary</span>
         <button
           type="button"
           onClick={toggleOverdue}
@@ -335,91 +359,96 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
 
       {filterMode !== 'overdue' && filterMode !== 'week' && filterMode !== 'nodue' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 overflow-y-auto">
-      {weekDays.map(day => {
-        const dayTasks = getTasksForDay(day);
-        const sortedDayTasks = dayTasks.slice().sort((a, b) => {
-          const aDone = a.task.status === Status.DONE ? 1 : 0;
-          const bDone = b.task.status === Status.DONE ? 1 : 0;
-          if (aDone !== bDone) return aDone - bDone;
-          const priorityWeight: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
-          const pw = (t: typeof a.task) => priorityWeight[t.priority];
-          const pDiff = pw(b.task) - pw(a.task);
-          if (pDiff !== 0) return pDiff;
-          const ad = a.task.dueDate ? new Date(a.task.dueDate).getTime() : Infinity;
-          const bd = b.task.dueDate ? new Date(b.task.dueDate).getTime() : Infinity;
-          if (ad !== bd) return ad - bd;
-          return b.task.createdAt - a.task.createdAt;
-        });
-        const isToday = new Date().toDateString() === day.toDateString();
-        
-        return (
-          <div key={day.toISOString()} className={`flex flex-col rounded-xl border ${isToday ? 'border-blue-300 bg-blue-50/20' : 'border-gray-200 bg-gray-50'}`}>
-            <div className={`p-3 border-b ${isToday ? 'border-blue-200 bg-blue-100/50' : 'border-gray-200 bg-gray-100/50'} rounded-t-xl`}>
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex-1">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    {day.toLocaleDateString('en-US', { weekday: 'short' })}
-                  </div>
-                  <div className={`text-lg font-bold ${isToday ? 'text-blue-700' : 'text-gray-800'}`}>
-                    {day.getDate()} <span className="text-sm font-normal text-gray-400">{day.toLocaleDateString('en-US', { month: 'short' })}</span>
+          {weekDays.map(day => {
+            const dayTasks = getTasksForDay(day);
+            const sortedDayTasks = dayTasks.slice().sort((a, b) => {
+              const aDone = a.task.status === Status.DONE ? 1 : 0;
+              const bDone = b.task.status === Status.DONE ? 1 : 0;
+              if (aDone !== bDone) return aDone - bDone;
+              const priorityWeight: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+              const pw = (t: typeof a.task) => priorityWeight[t.priority];
+              const pDiff = pw(b.task) - pw(a.task);
+              if (pDiff !== 0) return pDiff;
+              const ad = a.task.dueDate ? new Date(a.task.dueDate).getTime() : Infinity;
+              const bd = b.task.dueDate ? new Date(b.task.dueDate).getTime() : Infinity;
+              if (ad !== bd) return ad - bd;
+              return b.task.createdAt - a.task.createdAt;
+            });
+            const isToday = new Date().toDateString() === day.toDateString();
+
+            return (
+              <div
+                key={day.toISOString()}
+                className={`flex flex-col rounded-xl border ${isToday ? 'border-blue-300 dark:border-blue-500 bg-blue-50/20 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'}`}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, day)}
+              >
+                <div className={`p-3 border-b ${isToday ? 'border-blue-200 dark:border-blue-500/50 bg-blue-100/50 dark:bg-blue-900/50' : 'border-gray-200 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800'} rounded-t-xl`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex-1">
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                      </div>
+                      <div className={`text-lg font-bold ${isToday ? 'text-blue-700 dark:text-blue-400' : 'text-gray-800 dark:text-gray-100'}`}>
+                        {day.getDate()} <span className="text-sm font-normal text-gray-400 dark:text-gray-500">{day.toLocaleDateString('en-US', { month: 'short' })}</span>
+                      </div>
+                    </div>
+                    {onAddTask && (
+                      <button
+                        onClick={() => onAddTask(day)}
+                        className="p-1.5 rounded-md hover:bg-gray-200/50 text-gray-500 hover:text-blue-600 transition-colors"
+                        title="Add task"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
-                {onAddTask && (
-                  <button
-                    onClick={() => onAddTask(day)}
-                    className="p-1.5 rounded-md hover:bg-gray-200/50 text-gray-500 hover:text-blue-600 transition-colors"
-                    title="Add task"
-                  >
-                    <Plus size={16} />
-                  </button>
-                )}
+
+                <div className="flex-1 p-2 overflow-y-auto custom-scrollbar space-y-2">
+                  {sortedDayTasks.map(({ task, isVirtual, baseTask }) => {
+                    // Don't show virtual indicator for recurring tasks if due date is today or earlier
+                    const taskDueDate = new Date(task.dueDate || Date.now());
+                    taskDueDate.setHours(0, 0, 0, 0);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const shouldShowVirtualIndicator = isVirtual && taskDueDate > today;
+
+                    return (
+                      <div key={task.id} className="space-y-1 overflow-visible">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {task.status === Status.DONE && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 border border-green-200">Done</span>
+                          )}
+                          {task.status === Status.IN_PROGRESS && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 border border-blue-200">In Progress</span>
+                          )}
+                        </div>
+                        <div className={`${task.status === Status.DONE ? 'line-through text-gray-500' : ''} ${task.status === Status.IN_PROGRESS ? 'bg-blue-50/40 rounded px-1.5 py-1' : ''}`}>
+                          <TaskCard
+                            task={task}
+                            onEdit={() => onEditTask(task)}
+                            onMove={onMoveTask}
+                            onArchive={onArchiveTask}
+                            onDelete={onDeleteTask}
+                            isVirtual={isVirtual}
+                            showFutureIndicator={shouldShowVirtualIndicator}
+                            hideMoveButtons={true}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {sortedDayTasks.length === 0 && (
+                    <div className="h-full flex items-center justify-center">
+                      <span className="text-xs text-gray-300 italic">No tasks</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            
-            <div className="flex-1 p-2 overflow-y-auto custom-scrollbar space-y-2">
-              {sortedDayTasks.map(({ task, isVirtual, baseTask }) => {
-                // Don't show virtual indicator for recurring tasks if due date is today or earlier
-                const taskDueDate = new Date(task.dueDate || Date.now());
-                taskDueDate.setHours(0, 0, 0, 0);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const shouldShowVirtualIndicator = isVirtual && taskDueDate > today;
-                
-                return (
-                <div key={task.id} className="space-y-1 overflow-visible">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {task.status === Status.DONE && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 border border-green-200">Done</span>
-                    )}
-                    {task.status === Status.IN_PROGRESS && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 border border-blue-200">In Progress</span>
-                    )}
-                  </div>
-                  <div className={`${task.status === Status.DONE ? 'line-through text-gray-500' : ''} ${task.status === Status.IN_PROGRESS ? 'bg-blue-50/40 rounded px-1.5 py-1' : ''}`}>
-                    <TaskCard 
-                      task={task} 
-                      onEdit={() => onEditTask(task)} 
-                      onMove={onMoveTask} 
-                      onArchive={onArchiveTask} 
-                      onDelete={onDeleteTask}
-                      isVirtual={isVirtual}
-                      showFutureIndicator={shouldShowVirtualIndicator}
-                      hideMoveButtons={true}
-                    />
-                  </div>
-                </div>
-                );
-              })}
-              {sortedDayTasks.length === 0 && (
-                <div className="h-full flex items-center justify-center">
-                    <span className="text-xs text-gray-300 italic">No tasks</span>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-      </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

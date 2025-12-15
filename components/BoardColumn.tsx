@@ -12,20 +12,20 @@ interface BoardColumnProps {
   onDropTask: (taskId: string, newStatus: Status) => void;
 }
 
-export const BoardColumn: React.FC<BoardColumnProps> = ({ 
-  status, 
-  tasks, 
-  onEditTask, 
+export const BoardColumn: React.FC<BoardColumnProps> = ({
+  status,
+  tasks,
+  onEditTask,
   onMoveTask,
   onArchiveTask,
   onDeleteTask,
-  onDropTask 
+  onDropTask
 }) => {
   const statusConfig = {
-    [Status.TODO]: { label: 'To Do', color: 'bg-slate-100', borderColor: 'border-slate-200', textColor: 'text-slate-700' },
-    [Status.IN_PROGRESS]: { label: 'In Progress', color: 'bg-blue-50', borderColor: 'border-blue-200', textColor: 'text-blue-700' },
-    [Status.DONE]: { label: 'Done', color: 'bg-green-50', borderColor: 'border-green-200', textColor: 'text-green-700' },
-    [Status.ARCHIVED]: { label: 'Archived', color: 'bg-gray-100', borderColor: 'border-gray-200', textColor: 'text-gray-500' }
+    [Status.TODO]: { label: 'To Do', color: 'bg-slate-100', borderColor: 'border-slate-200', textColor: 'text-slate-700 dark:text-slate-200' },
+    [Status.IN_PROGRESS]: { label: 'In Progress', color: 'bg-blue-50', borderColor: 'border-blue-200', textColor: 'text-blue-700 dark:text-blue-300' },
+    [Status.DONE]: { label: 'Done', color: 'bg-green-50', borderColor: 'border-green-200', textColor: 'text-green-700 dark:text-green-300' },
+    [Status.ARCHIVED]: { label: 'Archived', color: 'bg-gray-100', borderColor: 'border-gray-200', textColor: 'text-gray-500 dark:text-gray-400' }
   };
 
   const config = statusConfig[status];
@@ -43,26 +43,26 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
   };
 
   return (
-    <div 
-      className={`flex flex-col h-full min-w-[300px] w-full md:w-1/3 rounded-xl border ${config.borderColor} ${config.color} transition-colors`}
+    <div
+      className="flex flex-col h-full min-w-[300px] w-[300px] md:w-full bg-gray-50/50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       <div className="p-4 flex items-center justify-between border-b border-black/5">
         <h3 className={`font-bold ${config.textColor} flex items-center gap-2`}>
           {config.label}
-          <span className="bg-white/50 px-2 py-0.5 rounded-full text-xs border border-black/5">
+          <span className="text-xs text-slate-600 dark:text-slate-300 font-normal ml-2 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full opacity-90">
             {tasks.length}
           </span>
         </h3>
       </div>
-      
+
       <div className="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-3">
         {tasks.map(task => (
-          <TaskCard 
-            key={task.id} 
-            task={task} 
-            onEdit={onEditTask} 
+          <TaskCard
+            key={task.id}
+            task={task}
+            onEdit={onEditTask}
             onMove={onMoveTask}
             onArchive={onArchiveTask}
             onDelete={onDeleteTask}

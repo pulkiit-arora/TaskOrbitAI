@@ -94,15 +94,15 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({ comments, childr
 
   const popoverContent = popoverStyle && (
     <div
-      className="fixed w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] p-4 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+      className="fixed w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[9999] p-4 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
       style={popoverStyle}
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={handleMouseLeave}
     >
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <MessageSquare size={16} className="text-gray-500" />
-          <h3 className="font-semibold text-gray-800 text-sm">
+          <MessageSquare size={16} className="text-gray-500 dark:text-gray-400" />
+          <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm">
             Comments ({comments.length})
           </h3>
         </div>

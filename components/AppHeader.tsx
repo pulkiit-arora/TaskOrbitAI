@@ -32,7 +32,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   setSearchQuery
 }) => {
   return (
-    <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex flex-col md:flex-row items-center justify-between sticky top-0 z-20 gap-4">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex-shrink-0 transition-colors duration-200 flex flex-col md:flex-row items-center justify-between sticky top-0 z-20 gap-4">
       {/* Logo & Primary Actions */}
       <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
         <div className="flex items-center gap-3">
@@ -40,8 +40,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <CheckSquare size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 leading-none">TaskOrbit AI</h1>
-            <p className="text-xs text-gray-500 mt-1">Personal Task Manager</p>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent truncate">
+              TaskOrbit AI
+            </h1>  <p className="text-xs text-gray-500 mt-1">Personal Task Manager</p>
           </div>
         </div>
 
@@ -58,21 +59,30 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-full sm:w-auto justify-center">
           <button
             onClick={() => setViewMode('board')}
-            className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'board' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'board'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              }`}
           >
             <Layout size={18} />
             <span className="inline">Board</span>
           </button>
           <button
             onClick={() => setViewMode('week')}
-            className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'week'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              }`}
           >
             <Grid size={18} />
             <span className="inline">Week</span>
           </button>
           <button
             onClick={() => setViewMode('month')}
-            className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'month'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              }`}
           >
             <Calendar size={18} />
             <span className="inline">Month</span>
@@ -80,17 +90,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
 
         {viewMode !== 'board' && (
-          <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm w-full sm:w-auto justify-between sm:justify-start">
-            <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-gray-50 text-gray-700 rounded-l-lg border-r border-gray-100">
+          <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm w-full sm:w-auto justify-between sm:justify-start">
+            <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-l-lg border-r border-gray-100 dark:border-gray-700">
               <ChevronLeft size={18} />
             </button>
-            <span className="px-4 text-sm font-semibold text-gray-800 min-w-[140px] text-center">
+            <span className="px-4 text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[140px] text-center">
               {viewMode === 'month'
                 ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                 : `Week of ${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
               }
             </span>
-            <button onClick={() => navigateDate('next')} className="p-2 hover:bg-gray-50 text-gray-700 rounded-r-lg border-l border-gray-100">
+            <button onClick={() => navigateDate('next')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-r-lg border-l border-gray-100 dark:border-gray-700">
               <ChevronRight size={18} />
             </button>
           </div>

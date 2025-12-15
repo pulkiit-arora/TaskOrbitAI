@@ -42,6 +42,8 @@ export interface Task {
   createdAt: number;
   // Progress comments for the task. Users can add multiple comments to track progress.
   comments?: TaskComment[];
+  // Array of ISO date strings to exclude from recurrence (deleted/moved occurrences)
+  excludedDates?: string[];
 }
 
 export interface AISuggestion {
