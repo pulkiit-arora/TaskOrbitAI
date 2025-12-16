@@ -443,7 +443,12 @@ const App: React.FC = () => {
     setIsTourOpen(false);
   };
 
-  const navigateDate = (direction: 'prev' | 'next') => {
+  const navigateDate = (direction: 'prev' | 'next' | 'today') => {
+    if (direction === 'today') {
+      setCurrentDate(new Date());
+      return;
+    }
+
     const newDate = new Date(currentDate);
     if (viewMode === 'month') {
       newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));

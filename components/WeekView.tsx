@@ -365,7 +365,9 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
               if (ad !== bd) return ad - bd;
               return b.task.createdAt - a.task.createdAt;
             });
-            const isToday = new Date().toDateString() === day.toDateString();
+            const isToday = day.getDate() === new Date().getDate() &&
+              day.getMonth() === new Date().getMonth() &&
+              day.getFullYear() === new Date().getFullYear();
 
             return (
               <div

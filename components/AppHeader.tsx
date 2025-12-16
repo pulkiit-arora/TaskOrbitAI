@@ -10,7 +10,7 @@ interface AppHeaderProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   currentDate: Date;
-  navigateDate: (direction: 'prev' | 'next') => void;
+  navigateDate: (direction: 'prev' | 'next' | 'today') => void;
   showArchived: boolean;
   setShowArchived: (show: boolean) => void;
   onAddTask: () => void;
@@ -90,20 +90,38 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
 
         {viewMode !== 'board' && (
-          <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm w-full sm:w-auto justify-between sm:justify-start">
-            <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-l-lg border-r border-gray-100 dark:border-gray-700">
-              <ChevronLeft size={18} />
-            </button>
-            <span className="px-4 text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[140px] text-center">
-              {viewMode === 'month'
-                ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-                : `Week of ${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-              }
-            </span>
-            <button onClick={() => navigateDate('next')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-r-lg border-l border-gray-100 dark:border-gray-700">
-              <ChevronRight size={18} />
-            </button>
-          </div>
+          <>
+            <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm w-full sm:w-auto justify-between sm:justify-start">
+              <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-l-lg border-r border-gray-100 dark:border-gray-700">
+                <ChevronLeft size={18} />
+              </button>
+              <div className="flex items-center">
+                <span className="px-4 text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[140px] text-center">
+                  {viewMode === 'month'
+                    ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                    : (() => {
+                      const d = new Date(currentDate);
+                      const day = d.getDay();
+                      const diff = d.getDate() - day;
+                      const startOfWeek = new Date(d.setDate(diff));
+                      return `Week of ${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                    })()
+                  }
+                </span>
+              </div>
+              <button onClick={() => navigateDate('next')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-r-lg border-l border-gray-100 dark:border-gray-700">
+                <ChevronRight size={18} />
+              </button>
+            </div>
+            <Button
+              variant="secondary"
+              onClick={() => navigateDate('today')}
+              className="hidden sm:flex"
+              title="Go to Today"
+            >
+              Today
+            </Button>
+          </>
         )}
       </div>
 
@@ -131,7 +149,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           Add Task
         </Button>
       </div>
-    </header>
+    </header >
   );
 };
-

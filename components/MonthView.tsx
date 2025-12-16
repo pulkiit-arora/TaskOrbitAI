@@ -417,40 +417,44 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
       {/* Calendar Grid */}
       {filterMode === 'all' && (
         <div className="grid grid-cols-7 auto-rows-[minmax(140px,1fr)] flex-1 bg-gray-200 dark:bg-gray-700 gap-[1px] overflow-y-auto custom-scrollbar">
-          {totalSlots.map((day, index) => {
-            if (day === null) {
+          {totalSlots.map((slot, index) => {
+            if (slot === null) {
               return <div key={`blank-${index}`} className="bg-gray-50/50 dark:bg-gray-900/50" />;
             }
 
+            const day = slot as number; // It's a number here
+            const date = new Date(year, month, day);
+            const isToday = day === new Date().getDate() &&
+              month === new Date().getMonth() &&
+              year === new Date().getFullYear();
+
             const dayTasks = getTasksForDay(day);
-            const isToday = new Date().getDate() === day &&
-              new Date().getMonth() === month &&
-              new Date().getFullYear() === year;
 
             return (
               <div
-                key={`day-${day}`}
-                className={`group min-h-[140px] bg-white dark:bg-gray-800 p-2 flex flex-col gap-1 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50 relative`}
+                key={index}
+                className={`min-h-[140px] flex flex-col border-b border-r border-gray-200 dark:border-gray-700 transition-colors ${'bg-white dark:bg-gray-800'
+                  } ${isToday ? 'ring-2 ring-inset ring-blue-500/50 z-10' : ''}`}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, day)}
               >
-                <div className="flex justify-between items-center mb-1">
-                  <span className={`text-sm font-medium h-7 w-7 flex items-center justify-center rounded-full ${isToday ? 'bg-blue-600 text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                    {day}
-                  </span>
-                  {onAddTask && (
-                    <button
-                      onClick={() => {
-                        const date = new Date(year, month, day);
-                        date.setHours(12, 0, 0, 0);
-                        onAddTask(date);
-                      }}
-                      className="p-1 rounded-md hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors opacity-60 group-hover:opacity-100"
-                      title="Add task"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  )}
+                <div className={`p-2 flex justify-between items-start sticky top-0 z-10 ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
+                  }`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-medium rounded-full w-7 h-7 flex items-center justify-center ${isToday
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-900 dark:text-gray-100'
+                      }`}>
+                      {day}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => onAddTask(date)}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-blue-600 rounded full transition-all"
+                    title="Add task on this day"
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
 
                 <div className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar max-h-[160px] flex-1">
