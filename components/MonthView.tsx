@@ -433,7 +433,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
             return (
               <div
                 key={index}
-                className={`min-h-[140px] flex flex-col border-b border-r border-gray-200 dark:border-gray-700 transition-colors ${'bg-white dark:bg-gray-800'
+                className={`group min-h-[140px] flex flex-col border-b border-r border-gray-200 dark:border-gray-700 transition-colors ${'bg-white dark:bg-gray-800'
                   } ${isToday ? 'ring-2 ring-inset ring-blue-500/50 z-10' : ''}`}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, day)}
@@ -450,7 +450,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                   </div>
                   <button
                     onClick={() => onAddTask(date)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-blue-600 rounded full transition-all"
+                    className="p-1 text-gray-400 hover:text-blue-600 rounded full transition-all"
                     title="Add task on this day"
                   >
                     <Plus size={14} />
