@@ -44,6 +44,8 @@ export interface Task {
   comments?: TaskComment[];
   // Array of ISO date strings to exclude from recurrence (deleted/moved occurrences)
   excludedDates?: string[];
+  // Indicates if this task was detached from a recurrence (is an exception)
+  isRecurringException?: boolean;
 }
 
 export interface AISuggestion {

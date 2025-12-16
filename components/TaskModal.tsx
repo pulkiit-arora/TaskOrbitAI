@@ -7,7 +7,7 @@ import { generateTaskSuggestions } from '../services/geminiService';
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (task: Partial<Task>) => void;
+  onSave: (task: Partial<Task>, scope?: 'single' | 'series') => void;
   onSaveMultiple?: (tasks: Partial<Task>[]) => void;
   onDelete?: (taskId: string) => void;
   task?: Partial<Task>;
@@ -33,6 +33,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   // Progress comments
   const [comments, setComments] = useState<{ id: string; text: string; createdAt: number }[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
+
+  // 'single' = update only this instance (exception). 'series' = update base task.
+  const [saveScope, setSaveScope] = useState<'single' | 'series'>('single');
 
   useEffect(() => {
     if (task) {
@@ -107,7 +110,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       comments,
       status: status,
       createdAt: task?.createdAt || Date.now(),
-    });
+    }, saveScope);
     onClose();
   };
 
@@ -477,13 +480,44 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
           </div>
         </div>
 
-        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 flex justify-between gap-3">
-          {task && onDelete && (
-            <Button variant="danger" onClick={() => onDelete(task.id)}>Delete</Button>
+        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 space-y-4">
+          {/* Show recurrence scope selector if editing a recurring task */}
+          {task?.id && (task.id.includes('-virtual-') || (task.recurrence && task.recurrence !== Recurrence.NONE)) && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Edit Scope:</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="saveScope"
+                    checked={saveScope === 'single'}
+                    onChange={() => setSaveScope('single')}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">This event</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="saveScope"
+                    checked={saveScope === 'series'}
+                    onChange={() => setSaveScope('series')}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">All events</span>
+                </label>
+              </div>
+            </div>
           )}
-          <div className="flex gap-3 ml-auto">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSave}>Save Task</Button>
+
+          <div className="flex justify-between gap-3">
+            {task && onDelete && (
+              <Button variant="danger" onClick={() => onDelete(task.id)}>Delete</Button>
+            )}
+            <div className="flex gap-3 ml-auto">
+              <Button variant="ghost" onClick={onClose}>Cancel</Button>
+              <Button onClick={handleSave}>Save Task</Button>
+            </div>
           </div>
         </div>
       </div>

@@ -91,6 +91,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
             </span>
           </Tooltip>
         )}
+        {task.isRecurringException && (
+          <Tooltip content="This task is detached from its recurrence series">
+            <span className="text-orange-400 flex-shrink-0">
+              <RefreshCw size={14} className="stroke-[2.5]" />
+            </span>
+          </Tooltip>
+        )}
         {task.comments && task.comments.length > 0 && (
           <CommentPopover comments={task.comments}>
             <span className="ml-2 text-gray-400 flex items-center gap-1 text-xs hover:text-blue-600 transition-colors">

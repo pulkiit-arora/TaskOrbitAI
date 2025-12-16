@@ -177,15 +177,6 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
           isRealInstance = due.getTime() === check.getTime();
         }
 
-        // Only show DONE tasks if they are the real instance (history). 
-        // Don't project virtual occurrences for DONE recurring tasks - the new TODO task will project forward
-        if (task.status === Status.DONE) {
-          if (!isRealInstance) {
-            return; // Don't show virtual occurrences of DONE tasks
-          }
-          // Show only the real DONE instance on its actual due date
-        }
-
         // If a history record (non-recurring instance) exists for this same date, skip projecting a virtual copy
         // A history record is a non-recurring task with the same title on the same date, but different ID
         if (!isRealInstance) {
