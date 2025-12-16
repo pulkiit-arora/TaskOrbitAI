@@ -156,22 +156,33 @@ const App: React.FC = () => {
 
         // If it's a recurring task and scope is SINGLE, we treat it as an exception?
         if (task && task.recurrence !== Recurrence.NONE && scope === 'single') {
-          // "Recurrence: Single" on the Base Task? what does that mean?
-          // "I want to change today's instance only"
-          // Since we are editing the base task directly, we can't just 'edit this instance' easily
-          // unless we do the Exclusion Dance:
-          // 1. Exclude current Due Date from Base Task.
-          // 2. Create new One-Off Task with changes.
-          // 3. Increment Base Task Due Date? (This part is hard without complex logic).
+          // "Single" edit on the Base Task (Series Head)
+          // 1. Create a new task (Exception) with the changes
+          const newTask: Task = {
+            ...taskData,
+            id: crypto.randomUUID(),
+            recurrence: Recurrence.NONE,
+            isRecurringException: true,
+            createdAt: Date.now(),
+          } as Task;
 
-          // SIMPLIFICATION: If editing Base Task directly, assume Series update OR warn user.
-          // But if we passed 'single', we should try.
-          // Let's stick to: Real Task Edit = Series Edit mostly.
-          // But we already detect changes.
-          const updatedTask = { ...task, ...taskData } as Task;
-          setTasks(prev => prev.map(t => t.id === taskData.id ? updatedTask : t));
+          // 2. Add the Base Task's CURRENT due date to its excludedDates
+          // This hides the Base Task for this specific day, replacing it with the Exception.
+          const originalDate = task.dueDate;
+          const updatedExcludedDates = [...(task.excludedDates || [])];
+          if (originalDate && !updatedExcludedDates.includes(originalDate)) {
+            updatedExcludedDates.push(originalDate);
+          }
+
+          setTasks(prev => {
+            // Update Base Task with exclusion, keeping its date/recurrence intact
+            const updatedBase = { ...task, excludedDates: updatedExcludedDates };
+            // Add the new Exception task
+            const list = prev.map(t => t.id === task.id ? updatedBase : t);
+            return [...list, newTask];
+          });
         } else {
-          // Standard update
+          // Standard update (Non-recurring OR Series update)
           const updatedTask = { ...task, ...taskData } as Task;
           setTasks(prev => prev.map(t => t.id === taskData.id ? updatedTask : t));
         }
@@ -318,6 +329,42 @@ const App: React.FC = () => {
   };
 
   const handleDropTaskDate = (taskId: string, newDate: Date) => {
+    // Check if it's a virtual task
+    if (taskId.includes('-virtual-')) {
+      const baseTaskId = taskId.split('-virtual-')[0];
+      const virtualTimestamp = parseInt(taskId.split('-virtual-')[1], 10);
+      const originalDateISO = new Date(virtualTimestamp).toISOString();
+      const baseTask = tasks.find(t => t.id === baseTaskId);
+
+      if (baseTask) {
+        // Create Exception for this virtual instance movement
+        let updatedDate = new Date(newDate);
+        // Default to same time or noon
+        updatedDate.setHours(12, 0, 0, 0);
+
+        const newTask: Task = {
+          ...baseTask,
+          id: crypto.randomUUID(),
+          recurrence: Recurrence.NONE,
+          isRecurringException: true,
+          dueDate: updatedDate.toISOString(),
+          createdAt: Date.now(),
+        };
+
+        setTasks(prev => {
+          // Update base task with exclusion
+          const updatedBase = {
+            ...baseTask,
+            excludedDates: [...(baseTask.excludedDates || []), originalDateISO]
+          };
+          // Replace base task and add new exception
+          return prev.map(t => t.id === baseTaskId ? updatedBase : t).concat(newTask);
+        });
+      }
+      return;
+    }
+
+    // Real Task
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -328,10 +375,36 @@ const App: React.FC = () => {
     } else {
       updatedDate.setHours(12, 0, 0, 0);
     }
+    const newDueDateISO = updatedDate.toISOString();
 
+    // If it's a Base Recurring Task, treat drag as an Exception (move THIS instance)
+    if (task.recurrence !== Recurrence.NONE) {
+      // Exception logic
+      const newTask: Task = {
+        ...task,
+        id: crypto.randomUUID(),
+        recurrence: Recurrence.NONE,
+        isRecurringException: true,
+        dueDate: newDueDateISO,
+        createdAt: Date.now(),
+      };
+
+      const originalDateISO = task.dueDate;
+
+      setTasks(prev => {
+        const updatedBase = {
+          ...task,
+          excludedDates: originalDateISO ? [...(task.excludedDates || []), originalDateISO] : task.excludedDates
+        };
+        return prev.map(t => t.id === task.id ? updatedBase : t).concat(newTask);
+      });
+      return;
+    }
+
+    // Normal Task Move
     const updatedTask: Task = {
       ...task,
-      dueDate: updatedDate.toISOString(),
+      dueDate: newDueDateISO,
     };
 
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));

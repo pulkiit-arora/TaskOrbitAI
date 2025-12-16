@@ -50,17 +50,17 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
     if (!t.dueDate || !isOpen(t)) return false;
     const d = new Date(t.dueDate);
     d.setHours(0, 0, 0, 0);
+    // Check for exclusions (deleted/moved occurrences)
+    if (t.excludedDates && t.excludedDates.some(exDate => {
+      const ex = new Date(exDate);
+      ex.setHours(0, 0, 0, 0);
+      return ex.getTime() === d.getTime();
+    })) {
+      return false;
+    }
     return d >= weekStart && d <= weekEnd;
   });
-  const dueThisWeekCount = dueThisWeekTasks.length;
-  const missingDueTasks = tasks.filter(t => !t.dueDate && isOpen(t));
-  const missingDueCount = missingDueTasks.length;
 
-  // Filter mode: 'all' | 'overdue' | 'week' | 'nodue'
-  const [filterMode, setFilterMode] = React.useState<'all' | 'overdue' | 'week' | 'nodue'>('all');
-  const toggleOverdue = () => setFilterMode(m => (m === 'overdue' ? 'all' : 'overdue'));
-  const toggleWeek = () => setFilterMode(m => (m === 'week' ? 'all' : 'week'));
-  const toggleNoDue = () => setFilterMode(m => (m === 'nodue' ? 'all' : 'nodue'));
 
   const doesTaskOccurOnDate = (task: Task, date: Date): boolean => {
     // 1. Basic filtering: Archived tasks are hidden unless we want them? (Usually handled by parent)
@@ -136,6 +136,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
           if (checkDate.getDate() !== task.recurrenceMonthDay) return false;
           return (monthDiff % interval) === 0;
         }
+        // Fallback to startAnchor date
         if (checkDate.getDate() !== startAnchor.getDate()) return false;
         return (monthDiff % interval) === 0;
       }
@@ -157,6 +158,82 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
         return false;
     }
   };
+
+
+
+  // Combine real tasks and projected recurring tasks (avoid double counting base tasks if they fall in range)
+  // Logic: 
+  // 1. `dueThisWeekTasks` contains real tasks (todo/in-progress) that have a hard dueDate in this week.
+  // 2. `recurringDueThisWeekCount` counts projected occurrences.
+  // Problem: If a Base Task has a dueDate this week, it is in (1). `doesTaskOccurOnDate` will also return true for it in (2).
+  // Fix: In (2), if it's the Base Task's actual due date, don't count it if it's already in (1).
+
+  const finalDueThisWeekCount = tasks.reduce((acc, task) => {
+    // We only care about open tasks for the count, primarily. 
+    // EXCEPT: The user feedback says "count mismatch ... when I have a DONE task".
+    // 1. If it's a DONE task (Status.DONE), it's completed. Should it subtract from "Due This Week"?
+    //    Usually "Due This Week" implies "Tasks I still need to do".
+    //    So `isOpen(task)` check at the top is correct for general Todo lists.
+    // 2. However, for Recurring tasks:
+    //    If we project an occurrence on Wednesday, but there is ALSO a completed history task for Wednesday.
+    //    We should NOT count that occurrence.
+
+    if (task.status === Status.ARCHIVED) return acc; // Always ignore archived
+
+    // Case 1: Real Task (Non-recurring or ONE-OFF exception)
+    if (task.recurrence === Recurrence.NONE) {
+      if (task.status === Status.DONE) return acc; // Ignore completed real tasks
+      if (task.dueDate) {
+        const d = new Date(task.dueDate);
+        d.setHours(0, 0, 0, 0);
+        if (d >= weekStart && d <= weekEnd) return acc + 1;
+      }
+      return acc;
+    }
+
+    // Case 2: Recurring Task - Count valid occurrences in the week
+    // Only process if the BASE task itself is open (active series)
+    if (task.status === Status.DONE) return acc;
+
+    let occurrences = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      d.setHours(0, 0, 0, 0);
+
+      if (doesTaskOccurOnDate(task, d)) {
+        // It occurs. 
+        // 1. Is it already counted as a real task (e.g. Base Task current due date)?
+        //    (The Base task is Open, so if its dueDate falls here, we count it here).
+        // 2. Is there a DONE history instance for this specific date?
+        //    If `onToggleDone` created a history record for this date, we shouldn't show it as "Due".
+        const hasDoneInstance = tasks.some(t =>
+          t.status === Status.DONE &&
+          t.title === task.title && // Heuristic: Same title. ID is different.
+          t.dueDate &&
+          new Date(t.dueDate).setHours(0, 0, 0, 0) === d.getTime()
+        );
+
+        if (!hasDoneInstance) {
+          occurrences++;
+        }
+      }
+    }
+    return acc + occurrences;
+  }, 0);
+
+  const dueThisWeekCount = finalDueThisWeekCount;
+  const missingDueTasks = tasks.filter(t => !t.dueDate && isOpen(t));
+  const missingDueCount = missingDueTasks.length;
+
+  // Filter mode: 'all' | 'overdue' | 'week' | 'nodue'
+  const [filterMode, setFilterMode] = React.useState<'all' | 'overdue' | 'week' | 'nodue'>('all');
+  const toggleOverdue = () => setFilterMode(m => (m === 'overdue' ? 'all' : 'overdue'));
+  const toggleWeek = () => setFilterMode(m => (m === 'week' ? 'all' : 'week'));
+  const toggleNoDue = () => setFilterMode(m => (m === 'nodue' ? 'all' : 'nodue'));
+
+
+
 
   const getTasksForDay = (date: Date) => {
     const dayTasks: { task: Task; isVirtual: boolean; baseTask: Task }[] = [];
