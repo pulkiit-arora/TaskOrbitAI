@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Layout, Calendar as CalendarIcon, List, Search, Moon, Sun } from 'lucide-react';
 import { TaskModal } from './components/TaskModal';
 import { MonthView } from './components/MonthView';
@@ -9,6 +9,7 @@ import { LoadingScreen } from './components/LoadingScreen';
 import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
 import { Tour } from './components/Tour';
 import { SearchInput } from './components/SearchInput';
+import { CommandPalette } from './components/CommandPalette';
 import { Task, Status, Recurrence } from './types';
 import { useTasks } from './hooks/useTasks';
 import { useTaskModal } from './hooks/useTaskModal';
@@ -689,11 +690,22 @@ const App: React.FC = () => {
         isOpen={isTourOpen}
         onClose={handleCloseTour}
         steps={[
-          { title: 'Welcome to TaskOrbit AI', description: 'Capture tasks, prioritize, and track across Board, Week, and Month views.' },
-          { title: 'Switch Views', description: 'Use the buttons at the top to switch between Board, Week, and Month.' },
-          { title: 'Quick Filters', description: 'Use Summary filters to focus on Overdue, Due this week, or No due date.' },
-          { title: 'Manage Tasks', description: 'Click Add Task to create. Drag between columns or use arrows to change status.' },
-          { title: 'Recurring Tasks', description: 'Mark a recurring task Done to auto-schedule the next occurrence.' },
+          {
+            title: 'Welcome to TaskOrbit AI',
+            description: 'Your central hub for productivity. Manage tasks, build habits, and track progress across powerful views.'
+          },
+          {
+            title: 'Flexible Views',
+            description: 'Switch between Board (Kanban), Week, and Month views to visualize your workload exactly how you prefer.'
+          },
+          {
+            title: 'Command Palette',
+            description: 'Power User Tip: Press Ctrl+K (or Cmd+K) to instantly access the Command Palette. Create tasks, navigate views, or toggle themes without lifting your hands.'
+          },
+          {
+            title: 'Global Actions',
+            description: 'Access global controls in the top bar to toggle Dark Mode, Export your data for safekeeping, or Import backups.'
+          },
         ]}
       />
 
@@ -716,6 +728,14 @@ const App: React.FC = () => {
           const t = tasks.find(x => x.id === deleteConfirmation.taskId);
           return t ? t.recurrence !== Recurrence.NONE : false;
         })()}
+      />
+      <CommandPalette
+        tasks={tasks}
+        onNavigate={(view) => setViewMode(view)}
+        onAddTask={() => openModal()}
+        onEditTask={(task) => openModal(task)}
+        toggleTheme={toggleDarkMode}
+        darkMode={darkMode}
       />
     </div>
   );

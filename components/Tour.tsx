@@ -4,6 +4,7 @@ import { Button } from './Button';
 type Step = {
   title: string;
   description: string;
+  image?: string;
 };
 
 interface TourProps {
@@ -33,11 +34,16 @@ export const Tour: React.FC<TourProps> = ({ isOpen, onClose, steps }) => {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg border border-gray-200">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg border border-gray-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <h3 className="text-lg font-bold text-gray-900">{step.title}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close tour">✕</button>
         </div>
+        {step.image && (
+          <div className="w-full h-48 bg-gray-50 flex items-center justify-center border-b border-gray-100">
+             <img src={step.image} alt={step.title} className="max-h-full max-w-full object-contain" />
+          </div>
+        )}
         <div className="px-5 py-4">
           <p className="text-sm text-gray-600 leading-relaxed">{step.description}</p>
           <div className="mt-3 text-xs text-gray-400">Step {index + 1} of {steps.length}</div>
