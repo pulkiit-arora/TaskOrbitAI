@@ -261,6 +261,7 @@ const App: React.FC = () => {
           ...base,
           status: Status.TODO,
           dueDate: nextDue.toISOString(),
+          excludedDates: [...(base.excludedDates || []), occurrenceISO]
         };
 
         return prev.map(t => t.id === taskId ? updatedBase : t).concat(history);
@@ -301,6 +302,7 @@ const App: React.FC = () => {
           ...base,
           status: Status.TODO,
           dueDate: nextDue.toISOString(),
+          excludedDates: [...(base.excludedDates || []), occurrenceISO]
         };
 
         return prev.map(t => t.id === taskId ? updatedBase : t).concat(history);
