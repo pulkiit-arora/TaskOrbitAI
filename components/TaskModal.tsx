@@ -263,7 +263,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 {comments.map(c => (
                   <div key={c.id} className="flex items-start gap-2 bg-gray-50 p-2 rounded">
                     <div className="text-xs text-gray-500">{new Date(c.createdAt).toLocaleString()}</div>
-                    <div className="text-sm text-gray-800 flex-1">{c.text}</div>
+                    <div className="text-sm text-gray-800 flex-1 break-words whitespace-pre-wrap">
+                      {c.text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => (
+                        part.match(/https?:\/\/[^\s]+/) ? (
+                          <a
+                            key={i}
+                            href={part}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >{part}</a>
+                        ) : (
+                          <span key={i}>{part}</span>
+                        )
+                      ))}
+                    </div>
                     <button
                       onClick={() => setComments(prev => prev.filter(x => x.id !== c.id))}
                       className="text-xs text-red-600 hover:underline"
