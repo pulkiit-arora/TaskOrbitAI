@@ -27,6 +27,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   const [recurrenceMonthDay, setRecurrenceMonthDay] = useState<number | undefined>(undefined);
   const [recurrenceMonthNth, setRecurrenceMonthNth] = useState<number | undefined>(undefined);
   const [recurrenceMonthWeekday, setRecurrenceMonthWeekday] = useState<number | undefined>(undefined);
+  const [recurrenceMonths, setRecurrenceMonths] = useState<number[]>([]);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
@@ -49,6 +50,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       setRecurrenceMonthDay(task.recurrenceMonthDay);
       setRecurrenceMonthNth(task.recurrenceMonthNth);
       setRecurrenceMonthWeekday(task.recurrenceMonthWeekday);
+      setRecurrenceMonths(task.recurrenceMonths || []);
       setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
       setRecurrenceStart(task.recurrenceStart ? new Date(task.recurrenceStart).toISOString().split('T')[0] : '');
       setRecurrenceEnd(task.recurrenceEnd ? new Date(task.recurrenceEnd).toISOString().split('T')[0] : '');
@@ -83,6 +85,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setRecurrenceMonthDay(undefined);
     setRecurrenceMonthNth(undefined);
     setRecurrenceMonthWeekday(undefined);
+    setRecurrenceMonths([]);
     setComments([]);
     setNewCommentText('');
     setSuggestions([]);
@@ -115,6 +118,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       recurrenceMonthDay,
       recurrenceMonthNth,
       recurrenceMonthWeekday,
+      recurrenceMonths,
       dueDate: isoDate,
       recurrenceStart: isoRecurrenceStart,
       recurrenceEnd: isoRecurrenceEnd,
@@ -483,6 +487,31 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {recurrence !== Recurrence.NONE && (
+                  <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-3 animate-in fade-in slide-in-from-top-2">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Active Months (Seasonal Recurrence)</label>
+                    <div className="flex gap-1 flex-wrap">
+                      {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((label, idx) => {
+                        const active = recurrenceMonths.includes(idx);
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setRecurrenceMonths(prev => prev.includes(idx) ? prev.filter(m => m !== idx) : [...prev, idx]);
+                            }}
+                            className={`px-2 py-1 rounded text-xs border transition-colors ${active ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                            title={`Click to toggle ${label}`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1">Select specific months for this task to occur. Leave empty for all months.</p>
                   </div>
                 )}
               </div>

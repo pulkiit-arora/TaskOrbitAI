@@ -49,14 +49,16 @@ export const calculateNextDueDate = (
   monthDay?: number,
   anchorDate?: string,
   monthNth?: number,
-  monthWeekday?: number
+  monthWeekday?: number,
+  recurrenceMonths?: number[]
 ): Date => {
   const date = new Date(currentDate);
   const anchor = anchorDate ? new Date(anchorDate) : new Date(currentDate);
+  let nextDate = new Date(date);
 
   switch (recurrence) {
     case Recurrence.DAILY:
-      date.setDate(date.getDate() + Math.max(1, Math.floor(interval)));
+      nextDate.setDate(date.getDate() + Math.max(1, Math.floor(interval)));
       break;
 
     case Recurrence.WEEKLY: {
@@ -67,6 +69,7 @@ export const calculateNextDueDate = (
       anchorWeekStart.setHours(0, 0, 0, 0);
 
       const maxDays = 7 * Math.max(4, Math.floor(interval) * 8); // generous cap
+      let found = false;
       for (let i = 1; i <= maxDays; i++) {
         const d = new Date(date);
         d.setDate(date.getDate() + i);
@@ -75,68 +78,79 @@ export const calculateNextDueDate = (
         dWeekStart.setDate(d.getDate() - d.getDay());
         dWeekStart.setHours(0, 0, 0, 0);
         const weekDiff = Math.floor((dWeekStart.getTime() - anchorWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
-        if ((weekDiff % Math.max(1, Math.floor(interval))) === 0) return d;
+        if ((weekDiff % Math.max(1, Math.floor(interval))) === 0) {
+          nextDate = d;
+          found = true;
+          break;
+        }
       }
-      // fallback: add interval weeks
-      date.setDate(date.getDate() + 7 * Math.max(1, Math.floor(interval)));
+      if (!found) {
+        // fallback: add interval weeks
+        nextDate.setDate(date.getDate() + 7 * Math.max(1, Math.floor(interval)));
+      }
       break;
     }
 
     case Recurrence.MONTHLY: {
       const monthsToAdd = Math.max(1, Math.floor(interval));
-      // If monthly-by-weekday rules are provided (nth + weekday), compute that occurrence
       if (typeof monthNth === 'number' && typeof monthWeekday === 'number') {
         const target = new Date(date);
-        // Safely add months: set to 1st of month, add months, then calculate nth weekday
-        // Actually for nth weekday logic, adding months to the 1st is safe/correct base.
         target.setDate(1);
         target.setMonth(target.getMonth() + monthsToAdd);
         const year = target.getFullYear();
         const month = target.getMonth();
-        // compute nth weekday
-        const nthDate = getNthWeekdayOfMonth(year, month, monthNth, monthWeekday);
-        return nthDate;
-      }
-
-      // If a specific day-of-month is provided, use that (clamped to month length)
-      if (monthDay && Number.isInteger(monthDay) && monthDay >= 1 && monthDay <= 31) {
+        nextDate = getNthWeekdayOfMonth(year, month, monthNth, monthWeekday);
+      } else if (monthDay && Number.isInteger(monthDay) && monthDay >= 1 && monthDay <= 31) {
         const target = new Date(date);
-        // Avoid overflow (e.g. Jan 31 + 1 month -> Mar 3)
-        // Set to day 1, add months, then set recurrence day.
         target.setDate(1);
         target.setMonth(target.getMonth() + monthsToAdd);
         const year = target.getFullYear();
         const month = target.getMonth();
         const daysInTargetMonth = new Date(year, month + 1, 0).getDate();
         target.setDate(Math.min(monthDay, daysInTargetMonth));
-        return target;
+        nextDate = target;
+      } else {
+        const originalDay = date.getDate();
+        const target = new Date(date);
+        target.setDate(1);
+        target.setMonth(target.getMonth() + monthsToAdd);
+        const daysInTargetMonth = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+        target.setDate(Math.min(originalDay, daysInTargetMonth));
+        nextDate = target;
       }
-
-      // If monthly-by-weekday rules are provided via task fields, callers should pass them
-      // through the monthDay parameter in this util as we can't change signature everywhere.
-      // To support nth-weekday, callers can pass a negative monthDay encoding or use
-      // a future signature. For now fall back to adding monthsToAdd months.
-
-      // Fix default monthly behavior (same day of month) avoiding overflow
-      // e.g. Jan 31 + 1 month -> Feb 28/29, not Mar 2/3
-      const originalDay = date.getDate();
-      date.setDate(1);
-      date.setMonth(date.getMonth() + monthsToAdd);
-      const daysInTargetMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-      date.setDate(Math.min(originalDay, daysInTargetMonth));
       break;
     }
 
     case Recurrence.QUARTERLY:
-      date.setMonth(date.getMonth() + 3 * Math.max(1, Math.floor(interval)));
+      nextDate.setMonth(date.getMonth() + 3 * Math.max(1, Math.floor(interval)));
       break;
 
     case Recurrence.YEARLY:
-      date.setFullYear(date.getFullYear() + Math.max(1, Math.floor(interval)));
+      nextDate.setFullYear(date.getFullYear() + Math.max(1, Math.floor(interval)));
       break;
   }
 
-  return date;
+  // Recursive check for allowed months
+  if (recurrenceMonths && recurrenceMonths.length > 0) {
+    if (!recurrenceMonths.includes(nextDate.getMonth())) {
+      // If the calculated next date lands in a forbidden month, find the next one *after* it.
+      // We pass the invalid 'nextDate' as the new 'currentDate' base.
+      // NOTE: We must be careful not to infinite loop if NO months are allowed (though UI should prevent empty list).
+      return calculateNextDueDate(
+        nextDate.toISOString(),
+        recurrence,
+        interval,
+        weekdays,
+        monthDay,
+        anchorDate,
+        monthNth,
+        monthWeekday,
+        recurrenceMonths
+      );
+    }
+  }
+
+  return nextDate;
 };
 
 export const sortTasks = (taskList: Task[], sortBy: 'priority' | 'dueDate'): Task[] => {
@@ -228,3 +242,106 @@ export const formatRecurrenceSummary = (task: Task): string => {
   }
 };
 
+
+export const doesTaskOccurOnDate = (task: Task, date: Date): boolean => {
+  const checkDate = new Date(date);
+  checkDate.setHours(0, 0, 0, 0);
+
+  // Check for exclusions (deleted/moved occurrences)
+  if (task.excludedDates && task.excludedDates.some(d => {
+    const ex = new Date(d);
+    ex.setHours(0, 0, 0, 0);
+    return ex.getTime() === checkDate.getTime();
+  })) {
+    return false;
+  }
+
+  // Check for specific months restriction (Seasonal Recurrence)
+  if (task.recurrenceMonths && task.recurrenceMonths.length > 0) {
+    if (!task.recurrenceMonths.includes(checkDate.getMonth())) {
+      return false;
+    }
+  }
+
+  const startAnchor = task.recurrenceStart
+    ? new Date(task.recurrenceStart)
+    : (task.dueDate ? new Date(task.dueDate) : new Date(task.createdAt));
+  startAnchor.setHours(0, 0, 0, 0);
+
+  let endAnchor: Date | null = null;
+  if (task.recurrenceEnd) {
+    endAnchor = new Date(task.recurrenceEnd);
+    endAnchor.setHours(23, 59, 59, 999);
+  }
+
+  if (checkDate < startAnchor) return false;
+  if (endAnchor && checkDate > endAnchor) return false;
+
+  const interval = task.recurrenceInterval && task.recurrenceInterval > 0 ? Math.floor(task.recurrenceInterval) : 1;
+  const msPerDay = 24 * 60 * 60 * 1000;
+
+  // Safe day diff calculation using UTC to avoid DST issues
+  const utcCheck = Date.UTC(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
+  const utcStart = Date.UTC(startAnchor.getFullYear(), startAnchor.getMonth(), startAnchor.getDate());
+  const daysDiff = Math.floor((utcCheck - utcStart) / msPerDay);
+
+  switch (task.recurrence) {
+    case Recurrence.NONE: {
+      if (!task.dueDate) return false;
+      const due = new Date(task.dueDate);
+      due.setHours(0, 0, 0, 0);
+      return due.getTime() === checkDate.getTime();
+    }
+
+    case Recurrence.DAILY:
+      return (daysDiff % interval) === 0;
+
+    case Recurrence.WEEKLY: {
+      const startAnchorWeekStart = new Date(startAnchor);
+      startAnchorWeekStart.setDate(startAnchor.getDate() - startAnchor.getDay());
+      startAnchorWeekStart.setHours(0, 0, 0, 0);
+
+      const utcWeekStart = Date.UTC(startAnchorWeekStart.getFullYear(), startAnchorWeekStart.getMonth(), startAnchorWeekStart.getDate());
+      const weekDiff = Math.floor((utcCheck - utcWeekStart) / (7 * msPerDay));
+
+      if (task.recurrenceWeekdays && task.recurrenceWeekdays.length > 0) {
+        if (!task.recurrenceWeekdays.includes(checkDate.getDay())) return false;
+        return (weekDiff % interval) === 0;
+      }
+      if (checkDate.getDay() !== startAnchor.getDay()) return false;
+      return (weekDiff % interval) === 0;
+    }
+
+    case Recurrence.MONTHLY: {
+      const monthDiff = (checkDate.getFullYear() - startAnchor.getFullYear()) * 12 + (checkDate.getMonth() - startAnchor.getMonth());
+
+      if (typeof task.recurrenceMonthNth === 'number' && typeof task.recurrenceMonthWeekday === 'number') {
+        if (!isNthWeekdayOfMonth(checkDate, task.recurrenceMonthNth, task.recurrenceMonthWeekday)) return false;
+        return (monthDiff % interval) === 0;
+      }
+      if (task.recurrenceMonthDay && Number.isInteger(task.recurrenceMonthDay)) {
+        if (checkDate.getDate() !== task.recurrenceMonthDay) return false;
+        return (monthDiff % interval) === 0;
+      }
+      // Default: same day of month
+      if (checkDate.getDate() !== startAnchor.getDate()) return false;
+      return (monthDiff % interval) === 0;
+    }
+
+    case Recurrence.QUARTERLY: {
+      const monthDiff = (checkDate.getFullYear() - startAnchor.getFullYear()) * 12 + (checkDate.getMonth() - startAnchor.getMonth());
+      const quarterInterval = 3 * interval;
+      if (checkDate.getDate() !== startAnchor.getDate()) return false;
+      return (monthDiff % quarterInterval) === 0;
+    }
+
+    case Recurrence.YEARLY: {
+      const yearDiff = checkDate.getFullYear() - startAnchor.getFullYear();
+      if (checkDate.getMonth() !== startAnchor.getMonth() || checkDate.getDate() !== startAnchor.getDate()) return false;
+      return (yearDiff % interval) === 0;
+    }
+
+    default:
+      return false;
+  }
+};

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Task, Priority, Status, Recurrence } from '../types';
-import { isNthWeekdayOfMonth } from '../utils/taskUtils';
+import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
 import { TaskCard } from './TaskCard';
 import { Plus } from 'lucide-react';
 
@@ -60,104 +60,6 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
     }
     return d >= weekStart && d <= weekEnd;
   });
-
-
-  const doesTaskOccurOnDate = (task: Task, date: Date): boolean => {
-    // 1. Basic filtering: Archived tasks are hidden unless we want them? (Usually handled by parent)
-    // Assuming parent filters 'ARCHIVED' based on toggle, but we still check for 'DONE' behavior.
-
-    const checkDate = new Date(date);
-    checkDate.setHours(0, 0, 0, 0);
-
-    // Check for exclusions (deleted/moved occurrences)
-    if (task.excludedDates && task.excludedDates.some(d => {
-      const ex = new Date(d);
-      ex.setHours(0, 0, 0, 0);
-      return ex.getTime() === checkDate.getTime();
-    })) {
-      return false;
-    }
-
-    // Determine start anchor
-    const startAnchor = task.recurrenceStart
-      ? new Date(task.recurrenceStart)
-      : (task.dueDate ? new Date(task.dueDate) : new Date(task.createdAt));
-    startAnchor.setHours(0, 0, 0, 0);
-
-    // Determine end anchor
-    let endAnchor: Date | null = null;
-    if (task.recurrenceEnd) {
-      endAnchor = new Date(task.recurrenceEnd);
-      endAnchor.setHours(23, 59, 59, 999);
-    }
-
-    // Check range
-    if (checkDate < startAnchor) return false;
-    if (endAnchor && checkDate > endAnchor) return false;
-
-    // Check Recurrence Rule (consider interval, weekdays and month-day overrides)
-    const interval = task.recurrenceInterval && task.recurrenceInterval > 0 ? Math.floor(task.recurrenceInterval) : 1;
-    const msPerDay = 24 * 60 * 60 * 1000;
-    const daysDiff = Math.round((checkDate.getTime() - startAnchor.getTime()) / msPerDay);
-
-    switch (task.recurrence) {
-      case Recurrence.NONE: {
-        if (!task.dueDate) return false;
-        const due = new Date(task.dueDate);
-        due.setHours(0, 0, 0, 0);
-        return due.getTime() === checkDate.getTime();
-      }
-
-      case Recurrence.DAILY:
-        return (daysDiff % interval) === 0;
-
-      case Recurrence.WEEKLY: {
-        // Compute week difference relative to the startAnchor's week (Sunday-based)
-        const startAnchorWeekStart = new Date(startAnchor);
-        startAnchorWeekStart.setDate(startAnchor.getDate() - startAnchor.getDay());
-        startAnchorWeekStart.setHours(0, 0, 0, 0);
-        const weekDiff = Math.floor((checkDate.getTime() - startAnchorWeekStart.getTime()) / (7 * msPerDay));
-        if (task.recurrenceWeekdays && task.recurrenceWeekdays.length > 0) {
-          if (!task.recurrenceWeekdays.includes(checkDate.getDay())) return false;
-          return (weekDiff % interval) === 0;
-        }
-        // fallback: use startAnchor's weekday
-        if (checkDate.getDay() !== startAnchor.getDay()) return false;
-        return (weekDiff % interval) === 0;
-      }
-
-      case Recurrence.MONTHLY: {
-        const monthDiff = (checkDate.getFullYear() - startAnchor.getFullYear()) * 12 + (checkDate.getMonth() - startAnchor.getMonth());
-        if (typeof task.recurrenceMonthNth === 'number' && typeof task.recurrenceMonthWeekday === 'number') {
-          if (!isNthWeekdayOfMonth(checkDate, task.recurrenceMonthNth, task.recurrenceMonthWeekday)) return false;
-          return (monthDiff % interval) === 0;
-        }
-        if (task.recurrenceMonthDay && Number.isInteger(task.recurrenceMonthDay)) {
-          if (checkDate.getDate() !== task.recurrenceMonthDay) return false;
-          return (monthDiff % interval) === 0;
-        }
-        // Fallback to startAnchor date
-        if (checkDate.getDate() !== startAnchor.getDate()) return false;
-        return (monthDiff % interval) === 0;
-      }
-
-      case Recurrence.QUARTERLY: {
-        const monthDiff = (checkDate.getFullYear() - startAnchor.getFullYear()) * 12 + (checkDate.getMonth() - startAnchor.getMonth());
-        const quarterInterval = 3 * interval;
-        if (checkDate.getDate() !== startAnchor.getDate()) return false;
-        return (monthDiff % quarterInterval) === 0;
-      }
-
-      case Recurrence.YEARLY: {
-        const yearDiff = checkDate.getFullYear() - startAnchor.getFullYear();
-        if (checkDate.getMonth() !== startAnchor.getMonth() || checkDate.getDate() !== startAnchor.getDate()) return false;
-        return (yearDiff % interval) === 0;
-      }
-
-      default:
-        return false;
-    }
-  };
 
 
 

@@ -37,6 +37,7 @@ export interface Task {
   // For monthly-by-weekday rules: nth (1..4 or -1 for last) and weekday (0=Sun..6=Sat)
   recurrenceMonthNth?: number; // e.g., 1 = first, 2 = second, -1 = last
   recurrenceMonthWeekday?: number; // 0..6
+  recurrenceMonths?: number[]; // 0..11, specific months to occur in
   recurrenceStart?: string; // ISO Date string
   recurrenceEnd?: string; // ISO Date string
   createdAt: number;
