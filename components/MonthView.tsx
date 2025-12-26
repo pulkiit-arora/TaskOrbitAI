@@ -403,9 +403,25 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               return <div className="text-xs text-gray-400 italic px-1">No tasks due this month</div>;
             }
 
-            // Sort by date then priority
+            // Sort to match WeekView: Status(Active->Done) -> Priority(High->Low) -> DueTime(Earliest->Latest) -> CreatedAt(Newest->Oldest)
             return monthTasks.sort((a, b) => {
-              return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+              // 1. Status: Active first
+              const aDone = a.status === Status.DONE ? 1 : 0;
+              const bDone = b.status === Status.DONE ? 1 : 0;
+              if (aDone !== bDone) return aDone - bDone;
+
+              // 2. Priority: High first
+              const priorityWeight: Record<string, number> = { [Priority.HIGH]: 3, [Priority.MEDIUM]: 2, [Priority.LOW]: 1 };
+              const pDiff = (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
+              if (pDiff !== 0) return pDiff;
+
+              // 3. Due Time: Earliest first
+              const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+              const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+              if (ad !== bd) return ad - bd;
+
+              // 4. Created At: Newest first
+              return (b.createdAt || 0) - (a.createdAt || 0);
             }).map(task => (
               <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]}`}>
                 {/* Simplified Task Row - Maybe Read Only or jump to date? For now simple edit/toggle */}
