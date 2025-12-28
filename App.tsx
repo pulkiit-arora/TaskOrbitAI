@@ -154,39 +154,114 @@ const App: React.FC = () => {
         }
       } else {
         // For real tasks
-        const task = tasks.find(t => t.id === taskData.id);
+        let targetId = taskData.id;
+        let isVirtual = false;
 
-        // If it's a recurring task and scope is SINGLE, we treat it as an exception?
+        // Handle virtual IDs (from recurring instances in Month/Week view)
+        if (targetId && typeof targetId === 'string' && targetId.includes('-virtual-')) {
+          targetId = targetId.split('-virtual-')[0];
+          isVirtual = true;
+          // Virtual edits are always single-instance unless specified otherwise (but UI might pass 'series'?)
+          // Usually clicking a virtual instance implies 'single' unless user toggles "All events".
+          // But let's respect the 'scope' argument if it was passed, otherwise default to single?
+          // The 'scope' arg defaults to 'single' in function signature.
+        }
+
+        const task = tasks.find(t => t.id === targetId);
+
+        // If it's a recurring task and scope is SINGLE
         if (task && task.recurrence !== Recurrence.NONE && scope === 'single') {
-          // "Single" edit on the Base Task (Series Head)
-          // 1. Create a new task (Exception) with the changes
-          const newTask: Task = {
-            ...taskData,
-            id: crypto.randomUUID(),
-            recurrence: Recurrence.NONE,
-            isRecurringException: true,
-            createdAt: Date.now(),
-          } as Task;
 
-          // 2. Add the Base Task's CURRENT due date to its excludedDates
-          // This hides the Base Task for this specific day, replacing it with the Exception.
-          const originalDate = task.dueDate;
-          const updatedExcludedDates = [...(task.excludedDates || [])];
-          if (originalDate && !updatedExcludedDates.includes(originalDate)) {
-            updatedExcludedDates.push(originalDate);
+          // Check if we are completing the task (Status -> DONE)
+          if (taskData.status === Status.DONE && task.status !== Status.DONE) {
+            // Treat this as a standard "Completion" of the occurrence
+            // 1. Calculate next due date
+            const occurrenceISO = taskData.dueDate || new Date().toISOString(); // Use the edited due date as the completion date
+            const anchorISO = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
+
+            // Use the imported calculateNextDueDate
+            const nextDue = calculateNextDueDate(
+              occurrenceISO,
+              task.recurrence,
+              task.recurrenceInterval || 1,
+              task.recurrenceWeekdays,
+              task.recurrenceMonthDay,
+              anchorISO,
+              task.recurrenceMonthNth,
+              task.recurrenceMonthWeekday
+            );
+
+            setTasks(prev => {
+              const base = prev.find(t => t.id === task.id);
+              if (!base) return prev;
+
+              // Create History Item (The completed task)
+              const history: Task = {
+                ...taskData, // Inherit any edits made (desc, title)
+                id: crypto.randomUUID(), // New ID
+                status: Status.DONE,
+                recurrence: Recurrence.NONE,
+                // Ensure specific fields key to the instance
+                dueDate: occurrenceISO,
+                createdAt: Date.now(),
+              } as Task;
+
+              // Update Base Task (Advance to next due)
+              const updatedBase: Task = {
+                ...base,
+                status: Status.TODO, // Keep Base alive
+                dueDate: nextDue.toISOString(),
+                // Do NOT exclude the date, because we "moved" away from it.
+                // However, if we edited other props (title), those edits are lost on the Base Task (as desired for 'single' scope).
+                // Base Task keeps original props.
+              };
+
+              return prev.map(t => t.id === task.id ? updatedBase : t).concat(history);
+            });
+
+          } else {
+            // "Single" edit on the Base Task (Series Head) that is NOT a completion (e.g. rename, change desc)
+            // 1. Create a new task (Exception) with the changes
+            const newTask: Task = {
+              ...taskData,
+              id: crypto.randomUUID(),
+              recurrence: Recurrence.NONE,
+              isRecurringException: true,
+              createdAt: Date.now(),
+            } as Task;
+
+            // 2. Add the Base Task's CURRENT due date (or specific instance date) to its excludedDates
+            const originalDate = task.dueDate;
+            // If we are editing a virtual task, we should exclude the date of that virtual task?
+            // Virtual ID usually contains the date. But `taskData.dueDate` might be it?
+            // The safest is to rely on the fact that if we opened a virtual task due X, we want to hide X.
+            // If we changed dates, `taskData.dueDate` is new. `originalDate` is old.
+            // We want to hide `originalDate` (from Base) and show `newTask` (Exception) at `newTask.dueDate`.
+
+            const dateToExclude = (isVirtual && taskData.id?.includes('-virtual-'))
+              ? taskData.id.split('-virtual-')[1]
+              : originalDate;
+
+            const updatedExcludedDates = [...(task.excludedDates || [])];
+            if (dateToExclude && !updatedExcludedDates.includes(dateToExclude)) {
+              updatedExcludedDates.push(dateToExclude);
+            }
+
+            setTasks(prev => {
+              const updatedBase = { ...task, excludedDates: updatedExcludedDates };
+              const list = prev.map(t => t.id === task.id ? updatedBase : t);
+              return [...list, newTask];
+            });
           }
-
-          setTasks(prev => {
-            // Update Base Task with exclusion, keeping its date/recurrence intact
-            const updatedBase = { ...task, excludedDates: updatedExcludedDates };
-            // Add the new Exception task
-            const list = prev.map(t => t.id === task.id ? updatedBase : t);
-            return [...list, newTask];
-          });
         } else {
           // Standard update (Non-recurring OR Series update)
-          const updatedTask = { ...task, ...taskData } as Task;
-          setTasks(prev => prev.map(t => t.id === taskData.id ? updatedTask : t));
+          // If updating series, we apply changes to Base Task.
+          // Note: If we just completed the Series, status becomes DONE. Series effectively ends.
+          const updatedTask = { ...task, ...taskData, id: targetId } as Task; // ensure we preserve ID? targetId is correct.
+          // Wait, if taskData has virtual ID, we must overwrite it with real ID.
+          updatedTask.id = targetId;
+
+          setTasks(prev => prev.map(t => t.id === targetId ? updatedTask : t));
         }
       }
     } else {
