@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BoardColumn } from './BoardColumn';
-import { Task, Status } from '../types';
+import { Task, Status, Priority } from '../types';
+import { Filter } from 'lucide-react';
 import { sortTasks, isOpen } from '../utils/taskUtils';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
@@ -17,6 +18,8 @@ interface BoardViewProps {
   onDeleteTask: (taskId: string) => void;
   onDropTask: (taskId: string, newStatus: Status) => void;
   onDeleteAll?: () => void;
+  priorityFilter?: Priority[];
+  setPriorityFilter?: (priorities: Priority[]) => void;
 }
 
 export const BoardView: React.FC<BoardViewProps> = ({
@@ -30,8 +33,10 @@ export const BoardView: React.FC<BoardViewProps> = ({
   onMoveTask,
   onArchiveTask,
   onDeleteTask,
-  onDropTask
-  , onDeleteAll
+  onDropTask,
+  onDeleteAll,
+  priorityFilter,
+  setPriorityFilter
 }) => {
   const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
   const confirmDeleteAll = () => {
@@ -97,6 +102,57 @@ export const BoardView: React.FC<BoardViewProps> = ({
         >
           No due date: {missingDueTasks.length}
         </button>
+
+        {setPriorityFilter && priorityFilter && (
+          <>
+            <div className="h-5 w-px bg-gray-300 mx-1"></div>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-500 mr-1">Priority:</span>
+              <button
+                onClick={() => {
+                  const newFilter = priorityFilter.includes(Priority.HIGH)
+                    ? priorityFilter.filter(p => p !== Priority.HIGH)
+                    : [...priorityFilter, Priority.HIGH];
+                  setPriorityFilter(newFilter);
+                }}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.HIGH)
+                  ? 'bg-red-100 text-red-800 border-red-200'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-red-200 hover:text-red-700'
+                  }`}
+              >
+                High
+              </button>
+              <button
+                onClick={() => {
+                  const newFilter = priorityFilter.includes(Priority.MEDIUM)
+                    ? priorityFilter.filter(p => p !== Priority.MEDIUM)
+                    : [...priorityFilter, Priority.MEDIUM];
+                  setPriorityFilter(newFilter);
+                }}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.MEDIUM)
+                  ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-yellow-200 hover:text-yellow-700'
+                  }`}
+              >
+                Med
+              </button>
+              <button
+                onClick={() => {
+                  const newFilter = priorityFilter.includes(Priority.LOW)
+                    ? priorityFilter.filter(p => p !== Priority.LOW)
+                    : [...priorityFilter, Priority.LOW];
+                  setPriorityFilter(newFilter);
+                }}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.LOW)
+                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-blue-200 hover:text-blue-700'
+                  }`}
+              >
+                Low
+              </button>
+            </div>
+          </>
+        )}
         <div className="h-5 w-px bg-gray-300 mx-1"></div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500">Sort</span>
@@ -127,8 +183,8 @@ export const BoardView: React.FC<BoardViewProps> = ({
         </div>
       </div>
       <div className="h-full flex flex-col md:flex-row gap-6 min-w-[320px] md:min-w-0">
-        <BoardColumn 
-          status={Status.TODO} 
+        <BoardColumn
+          status={Status.TODO}
           tasks={sortTasks(applyBoardFilter(tasks.filter(t => t.status === Status.TODO)), boardSort)}
           onEditTask={onEditTask}
           onMoveTask={onMoveTask}
@@ -136,8 +192,8 @@ export const BoardView: React.FC<BoardViewProps> = ({
           onDeleteTask={onDeleteTask}
           onDropTask={onDropTask}
         />
-        <BoardColumn 
-          status={Status.IN_PROGRESS} 
+        <BoardColumn
+          status={Status.IN_PROGRESS}
           tasks={sortTasks(applyBoardFilter(tasks.filter(t => t.status === Status.IN_PROGRESS)), boardSort)}
           onEditTask={onEditTask}
           onMoveTask={onMoveTask}
@@ -145,8 +201,8 @@ export const BoardView: React.FC<BoardViewProps> = ({
           onDeleteTask={onDeleteTask}
           onDropTask={onDropTask}
         />
-        <BoardColumn 
-          status={Status.DONE} 
+        <BoardColumn
+          status={Status.DONE}
           tasks={sortTasks(applyBoardFilter(tasks.filter(t => t.status === Status.DONE)), boardSort)}
           onEditTask={onEditTask}
           onMoveTask={onMoveTask}
@@ -154,10 +210,10 @@ export const BoardView: React.FC<BoardViewProps> = ({
           onDeleteTask={onDeleteTask}
           onDropTask={onDropTask}
         />
-        
+
         {showArchived && (
-          <BoardColumn 
-            status={Status.ARCHIVED} 
+          <BoardColumn
+            status={Status.ARCHIVED}
             tasks={sortTasks(applyBoardFilter(tasks.filter(t => t.status === Status.ARCHIVED)), boardSort)}
             onEditTask={onEditTask}
             onMoveTask={onMoveTask}

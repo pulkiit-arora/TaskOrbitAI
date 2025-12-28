@@ -1,8 +1,8 @@
 import React from 'react';
 import { Button } from './Button';
 import { SearchInput } from './SearchInput';
-import { CheckSquare, Archive, Plus, Layout, Calendar, ChevronLeft, ChevronRight, Grid, Download, Upload } from 'lucide-react';
-import { Task } from '../types';
+import { CheckSquare, Archive, Plus, Layout, Calendar, ChevronLeft, ChevronRight, Grid, Download, Upload, Filter } from 'lucide-react';
+import { Task, Priority } from '../types';
 
 type ViewMode = 'board' | 'week' | 'month';
 

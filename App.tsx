@@ -10,7 +10,7 @@ import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
 import { Tour } from './components/Tour';
 import { SearchInput } from './components/SearchInput';
 import { CommandPalette } from './components/CommandPalette';
-import { Task, Status, Recurrence } from './types';
+import { Task, Status, Recurrence, Priority } from './types';
 import { useTasks } from './hooks/useTasks';
 import { useTaskModal } from './hooks/useTaskModal';
 import { useLocalStorageString } from './hooks/useLocalStorage';
@@ -37,6 +37,7 @@ const App: React.FC = () => {
     } catch { return 'priority'; }
   });
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [priorityFilter, setPriorityFilter] = useState<Priority[]>([]);
   const [boardFilter, setBoardFilter] = useState<'all' | 'overdue' | 'week' | 'nodue'>('all');
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean, taskId: string | null }>({
     isOpen: false,
@@ -562,6 +563,10 @@ const App: React.FC = () => {
   const filteredTasks = React.useMemo(() => {
     let list = tasks.filter(t => showArchived ? true : t.status !== Status.ARCHIVED);
 
+    if (priorityFilter.length > 0) {
+      list = list.filter(t => priorityFilter.includes(t.priority));
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(t =>
@@ -571,7 +576,7 @@ const App: React.FC = () => {
     }
 
     return list;
-  }, [tasks, showArchived, searchQuery]);
+  }, [tasks, showArchived, searchQuery, priorityFilter]);
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -658,6 +663,8 @@ const App: React.FC = () => {
             onDeleteTask={handleDeleteTask}
             onDropTask={handleDropTask}
             onDeleteAll={() => setTasks([])}
+            priorityFilter={priorityFilter}
+            setPriorityFilter={setPriorityFilter}
           />
         )}
 
@@ -669,6 +676,8 @@ const App: React.FC = () => {
             onToggleDone={handleToggleDone}
             onAddTask={openModalWithDate}
             onDropTask={handleDropTaskDate}
+            priorityFilter={priorityFilter}
+            setPriorityFilter={setPriorityFilter}
           />
         )}
 
@@ -682,6 +691,8 @@ const App: React.FC = () => {
             onDeleteTask={handleDeleteTask}
             onAddTask={openModalWithDate}
             onDropTask={handleDropTaskDate}
+            priorityFilter={priorityFilter}
+            setPriorityFilter={setPriorityFilter}
           />
         )}
       </main>

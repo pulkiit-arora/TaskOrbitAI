@@ -2,7 +2,7 @@ import React from 'react';
 import { Task, Priority, Status, Recurrence } from '../types';
 import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
 import { TaskCard } from './TaskCard';
-import { Plus } from 'lucide-react';
+import { Plus, Filter } from 'lucide-react';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -14,9 +14,11 @@ interface WeekViewProps {
   onToggleDone: (taskId: string, onDate?: string) => void;
   onAddTask?: (date: Date) => void;
   onDropTask?: (taskId: string, date: Date) => void;
+  priorityFilter?: Priority[];
+  setPriorityFilter?: (priorities: Priority[]) => void;
 }
 
-export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTask, onMoveTask, onArchiveTask, onDeleteTask, onToggleDone, onAddTask, onDropTask }) => {
+export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTask, onMoveTask, onArchiveTask, onDeleteTask, onToggleDone, onAddTask, onDropTask, priorityFilter, setPriorityFilter }) => {
   const getStartOfWeek = (date: Date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -238,6 +240,57 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
         >
           No due date: {missingDueCount}
         </button>
+
+        {setPriorityFilter && priorityFilter && (
+          <>
+            <div className="h-4 w-px bg-gray-300 mx-1"></div>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-500 mr-1">Priority:</span>
+              <button
+                onClick={() => {
+                  const newFilter = priorityFilter.includes(Priority.HIGH)
+                    ? priorityFilter.filter(p => p !== Priority.HIGH)
+                    : [...priorityFilter, Priority.HIGH];
+                  setPriorityFilter(newFilter);
+                }}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.HIGH)
+                  ? 'bg-red-100 text-red-800 border-red-200'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-red-200 hover:text-red-700'
+                  }`}
+              >
+                High
+              </button>
+              <button
+                onClick={() => {
+                  const newFilter = priorityFilter.includes(Priority.MEDIUM)
+                    ? priorityFilter.filter(p => p !== Priority.MEDIUM)
+                    : [...priorityFilter, Priority.MEDIUM];
+                  setPriorityFilter(newFilter);
+                }}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.MEDIUM)
+                  ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-yellow-200 hover:text-yellow-700'
+                  }`}
+              >
+                Med
+              </button>
+              <button
+                onClick={() => {
+                  const newFilter = priorityFilter.includes(Priority.LOW)
+                    ? priorityFilter.filter(p => p !== Priority.LOW)
+                    : [...priorityFilter, Priority.LOW];
+                  setPriorityFilter(newFilter);
+                }}
+                className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.LOW)
+                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-blue-200 hover:text-blue-700'
+                  }`}
+              >
+                Low
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {filterMode === 'overdue' && (
