@@ -78,7 +78,16 @@ export const calculateNextDueDate = (
         dWeekStart.setDate(d.getDate() - d.getDay());
         dWeekStart.setHours(0, 0, 0, 0);
         const weekDiff = Math.floor((dWeekStart.getTime() - anchorWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
-        if ((weekDiff % Math.max(1, Math.floor(interval))) === 0) {
+
+        let offset = 0;
+        const anchorDay = anchor.getDay();
+        // Since 'sorted' contains the weekdays we are looking for:
+        const hasOccurrenceInWeek0 = sorted.some(d => d >= anchorDay);
+        if (!hasOccurrenceInWeek0) {
+          offset = 1;
+        }
+
+        if (weekDiff >= offset && ((weekDiff - offset) % Math.max(1, Math.floor(interval))) === 0) {
           nextDate = d;
           found = true;
           break;
@@ -306,8 +315,31 @@ export const doesTaskOccurOnDate = (task: Task, date: Date): boolean => {
 
       if (task.recurrenceWeekdays && task.recurrenceWeekdays.length > 0) {
         if (!task.recurrenceWeekdays.includes(checkDate.getDay())) return false;
-        return (weekDiff % interval) === 0;
+
+        // Calculate effective start week offset
+        // If the anchor week has NO valid occurrences on or after the anchor date,
+        // then the series effectively starts in week 1, not week 0.
+        let offset = 0;
+        const anchorDay = startAnchor.getDay();
+        // Check if any recurrence day in the anchor week is >= anchorDay
+        // (Since weekdays are 0-6 Sun-Sat, we need to be careful with week boundaries if start day is not Sunday?
+        // Actually, our anchorWeekStart is always Sunday (0).
+        // The days available in week 0 are indices 0..6 corresponding to dates anchorWeekStart + 0..6.
+        // We only care if any `d` in recurrenceWeekdays obeys: (anchorWeekStart + d) >= startAnchor
+        // Since anchorWeekStart + d is just day index d relative to Sunday,
+        // and startAnchor is day index anchorDay relative to Sunday (in the same week).
+        // Then we just need any `d >= anchorDay`.
+        const hasOccurrenceInWeek0 = task.recurrenceWeekdays.some(d => d >= anchorDay);
+        if (!hasOccurrenceInWeek0) {
+          offset = 1;
+        }
+
+        // We only care about weeks >= offset
+        if (weekDiff < offset) return false;
+
+        return ((weekDiff - offset) % interval) === 0;
       }
+
       if (checkDate.getDay() !== startAnchor.getDay()) return false;
       return (weekDiff % interval) === 0;
     }
