@@ -204,6 +204,7 @@ const App: React.FC = () => {
                 // Ensure specific fields key to the instance
                 dueDate: occurrenceISO,
                 createdAt: Date.now(),
+                seriesId: base.id,
               } as Task;
 
               // Update Base Task (Advance to next due)
@@ -331,7 +332,9 @@ const App: React.FC = () => {
           status: Status.DONE,
           dueDate: occurrenceISO,
           recurrence: Recurrence.NONE,
+
           createdAt: Date.now(),
+          seriesId: base.id,
         };
 
         const updatedBase: Task = {
@@ -372,7 +375,9 @@ const App: React.FC = () => {
           status: Status.DONE,
           dueDate: occurrenceISO,
           recurrence: Recurrence.NONE,
+
           createdAt: Date.now(),
+          seriesId: base.id,
         };
 
         const updatedBase: Task = {
@@ -397,6 +402,64 @@ const App: React.FC = () => {
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, dueDate: iso } : t));
     }
     updateTaskStatus(taskId, newStatus);
+  };
+
+  const handleMarkMissed = (taskId: string) => {
+    let targetId = taskId;
+    let occurrenceISO: string | null = null;
+
+    if (taskId.includes('-virtual-')) {
+      targetId = taskId.split('-virtual-')[0];
+      const virtualTimestamp = parseInt(taskId.split('-virtual-')[1], 10);
+      occurrenceISO = new Date(virtualTimestamp).toISOString();
+    }
+
+    const task = tasks.find(t => t.id === targetId);
+    if (!task) return;
+
+    // Logic similar to completing a recurring task, but setting status to EXPIRED
+    if (task.recurrence !== Recurrence.NONE) {
+      const finalOccurrenceISO = occurrenceISO || task.dueDate || new Date().toISOString();
+
+      const anchorISO = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
+      const nextDue = calculateNextDueDate(
+        finalOccurrenceISO,
+        task.recurrence,
+        task.recurrenceInterval || 1,
+        task.recurrenceWeekdays,
+        task.recurrenceMonthDay,
+        anchorISO,
+        task.recurrenceMonthNth,
+        task.recurrenceMonthWeekday
+      );
+
+      setTasks(prev => {
+        const base = prev.find(t => t.id === targetId);
+        if (!base) return prev;
+
+        const history: Task = {
+          ...base, // Copy props
+          id: crypto.randomUUID(),
+          status: Status.EXPIRED, // MARK AS EXPIRED
+          dueDate: finalOccurrenceISO,
+          recurrence: Recurrence.NONE,
+          seriesId: base.id,
+          createdAt: Date.now(),
+        };
+
+        const updatedBase: Task = {
+          ...base,
+          status: Status.TODO,
+          dueDate: nextDue.toISOString(),
+          excludedDates: [...(base.excludedDates || []), finalOccurrenceISO]
+        };
+
+        return prev.map(t => t.id === targetId ? updatedBase : t).concat(history);
+      });
+    } else {
+      // Single task: just mark expired
+      updateTaskStatus(targetId, Status.EXPIRED);
+    }
   };
 
   const handleArchiveTask = (taskId: string) => {
@@ -798,11 +861,15 @@ const App: React.FC = () => {
       <TaskModal
         isOpen={isModalOpen}
         onClose={closeModal}
-        onSave={handleSaveTask}
+        onSave={(data, scope) => handleSaveTask(data, scope)}
         onSaveMultiple={handleSaveMultipleTasks}
-        onDelete={handleDeleteTask}
-        task={editingTask}
+        onDelete={(id) => confirmDelete('single')} // Default to single delete from modal? Or let modal handle confirm? Modal calls onDelete.
+        // We need to pass the mark missed handler to modal if we want it there
+        onMarkMissed={handleMarkMissed}
+        task={editingTask || undefined}
+        tasks={tasks} // Pass all tasks for stats calculation
       />
+
 
       <DeleteConfirmationModal
         isOpen={deleteConfirmation.isOpen}

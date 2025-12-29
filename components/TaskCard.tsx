@@ -24,7 +24,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
     [Priority.LOW]: 'bg-blue-100 text-blue-800 border-blue-200',
   };
 
-  const isOverdue = !isVirtual && task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'DONE' && task.status !== 'ARCHIVED';
+  const isOverdue = !isVirtual && task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'DONE' && task.status !== 'ARCHIVED' && task.status !== 'EXPIRED';
 
   const handleDragStart = (e: React.DragEvent) => {
     if (isVirtual) {

@@ -184,7 +184,7 @@ export const sortTasks = (taskList: Task[], sortBy: 'priority' | 'dueDate'): Tas
   });
 };
 
-export const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Status.ARCHIVED;
+export const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Status.ARCHIVED && t.status !== Status.EXPIRED;
 
 /**
  * Build a human-readable recurrence summary for UI display.
@@ -373,7 +373,22 @@ export const doesTaskOccurOnDate = (task: Task, date: Date): boolean => {
       return (yearDiff % interval) === 0;
     }
 
-    default:
       return false;
   }
+};
+
+export const calculateTaskStats = (tasks: Task[], seriesId: string) => {
+  if (!seriesId) return null;
+  // Find all tasks that belong to this series (history items) or are the series head itself
+  const history = tasks.filter(t => t.seriesId === seriesId || t.id === seriesId);
+  if (history.length === 0) return null;
+
+  const completed = history.filter(t => t.status === Status.DONE).length;
+  const expired = history.filter(t => t.status === Status.EXPIRED).length;
+  // Only count completed and expired as "past events". TODO: Should we count all?
+  const total = completed + expired;
+
+  const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  return { completed, expired, total, rate };
 };

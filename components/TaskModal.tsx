@@ -1,8 +1,9 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Task, Priority, Recurrence, Status, AISuggestion } from '../types';
-import { X, Sparkles, Plus, ChevronDown } from 'lucide-react';
+import { X, Sparkles, Plus, ChevronDown, Activity, AlertCircle, RotateCcw } from 'lucide-react';
 import { Button } from './Button';
 import { generateTaskSuggestions } from '../services/geminiService';
+import { calculateTaskStats } from '../utils/taskUtils';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -10,10 +11,12 @@ interface TaskModalProps {
   onSave: (task: Partial<Task>, scope?: 'single' | 'series') => void;
   onSaveMultiple?: (tasks: Partial<Task>[]) => void;
   onDelete?: (taskId: string) => void;
+  onMarkMissed?: (taskId: string) => void;
   task?: Partial<Task>;
+  tasks?: Task[];
 }
 
-export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, onDelete, task }) => {
+export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, onDelete, onMarkMissed, task, tasks }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
@@ -177,6 +180,40 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
             <X size={20} />
           </button>
         </div>
+
+        {/* Stats Section for Recurring Tasks */}
+        {task?.id && task.recurrence !== Recurrence.NONE && tasks && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 px-6 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-6 overflow-x-auto">
+            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-semibold text-sm whitespace-nowrap">
+              <Activity size={16} /> Performance
+            </div>
+            {(() => {
+              // Calculate stats for this series
+              // If it's a virtual task, we need the base ID
+              const seriesId = task.id.includes('-virtual-') ? task.id.split('-virtual-')[0] : (task.seriesId || task.id);
+              const stats = calculateTaskStats(tasks, seriesId);
+
+              if (!stats || stats.total === 0) return <span className="text-xs text-gray-500">No history yet</span>;
+
+              return (
+                <div className="flex gap-4 text-xs">
+                  <div className="flex flex-col">
+                    <span className="text-gray-500 dark:text-gray-400">Completion Rate</span>
+                    <span className="font-bold text-gray-800 dark:text-gray-200">{stats.rate}%</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-500 dark:text-gray-400">Completed</span>
+                    <span className="font-bold text-green-600 dark:text-green-400">{stats.completed}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-500 dark:text-gray-400">Missed</span>
+                    <span className="font-bold text-red-600 dark:text-red-400">{stats.expired}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         <div className="p-6 overflow-y-auto custom-scrollbar">
           <div className="space-y-4">
@@ -565,9 +602,42 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
           )}
 
           <div className="flex justify-between gap-3">
-            {task && onDelete && (
-              <Button variant="danger" onClick={() => onDelete(task.id)}>Delete</Button>
-            )}
+            <div className="flex gap-2">
+              {task && onDelete && (
+                <Button variant="danger" onClick={() => onDelete(task.id)}>Delete</Button>
+              )}
+              {task?.id && (
+                task.status === Status.EXPIRED ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      onSave({ id: task.id, status: Status.TODO }, 'single');
+                      onClose();
+                    }}
+                    className="bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
+                  >
+                    <RotateCcw size={16} className="mr-1 inline" />
+                    Restore Task
+                  </Button>
+                ) : (
+                  onMarkMissed && (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      onClick={() => {
+                        onMarkMissed(task.id!);
+                        onClose();
+                      }}
+                      className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                    >
+                      <AlertCircle size={16} className="mr-1 inline" />
+                      Mark Missed
+                    </Button>
+                  )
+                )
+              )}
+            </div>
             <div className="flex gap-3 ml-auto">
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
               <Button onClick={handleSave}>Save Task</Button>

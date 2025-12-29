@@ -2,7 +2,8 @@ export enum Status {
   TODO = 'TODO',
   IN_PROGRESS = 'IN_PROGRESS',
   DONE = 'DONE',
-  ARCHIVED = 'ARCHIVED'
+  ARCHIVED = 'ARCHIVED',
+  EXPIRED = 'EXPIRED'
 }
 
 export enum Priority {
@@ -22,6 +23,7 @@ export enum Recurrence {
 
 export interface Task {
   id: string;
+  seriesId?: string; // ID linking recurrence instances together
   title: string;
   description: string;
   status: Status;
