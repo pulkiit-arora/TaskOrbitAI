@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layout, Calendar as CalendarIcon, List, Search, Moon, Sun } from 'lucide-react';
+import { Layout, Calendar as CalendarIcon, List, Search, Moon, Sun, Trash2 } from 'lucide-react';
 import { TaskModal } from './components/TaskModal';
 import { MonthView } from './components/MonthView';
 import { WeekView } from './components/WeekView';
@@ -11,7 +11,7 @@ import { Tour } from './components/Tour';
 import { Legend } from './components/Legend';
 import { SearchInput } from './components/SearchInput';
 import { CommandPalette } from './components/CommandPalette';
-import { Task, Status, Recurrence, Priority } from './types';
+import { Task, Status, Recurrence, Priority, Tag } from './types';
 import { useTasks } from './hooks/useTasks';
 import { useTaskModal } from './hooks/useTaskModal';
 import { useLocalStorageString } from './hooks/useLocalStorage';
@@ -52,6 +52,20 @@ const App: React.FC = () => {
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
+
+  const [tags, setTags] = useState<Tag[]>(() => {
+    try {
+      const saved = localStorage.getItem('lifeflow-tags');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const [tagFilter, setTagFilter] = useState<string[]>([]); // Array of tag IDs
+  const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('lifeflow-tags', JSON.stringify(tags));
+  }, [tags]);
 
   useEffect(() => {
     localStorage.setItem('lifeflow-status-filters', JSON.stringify(selectedStatuses));
@@ -726,6 +740,10 @@ const App: React.FC = () => {
       list = list.filter(t => selectedStatuses.includes(t.status));
     }
 
+    if (tagFilter.length > 0) {
+      list = list.filter(t => t.tags && t.tags.some(tag => tagFilter.includes(tag.id)));
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(t =>
@@ -735,7 +753,7 @@ const App: React.FC = () => {
     }
 
     return list;
-  }, [tasks, showArchived, searchQuery, priorityFilter, selectedStatuses]);
+  }, [tasks, showArchived, searchQuery, priorityFilter, selectedStatuses, tagFilter]);
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -793,6 +811,15 @@ const App: React.FC = () => {
           >
             Import
           </button>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
+          <button
+            onClick={() => setIsDeleteAllOpen(true)}
+            className="hover:text-red-600 dark:hover:text-red-400 transition-colors flex items-center gap-1"
+            title="Delete All Tasks"
+          >
+            <Trash2 size={12} />
+            <span className="hidden sm:inline">Delete All</span>
+          </button>
         </div>
       </div>
 
@@ -821,13 +848,14 @@ const App: React.FC = () => {
             onEditTask={(task) => openModal(task)}
             onMoveTask={handleMoveTask}
             onArchiveTask={handleArchiveTask}
-            onDeleteTask={handleDeleteTask}
             onDropTask={handleDropTask}
-            onDeleteAll={() => setTasks([])}
             priorityFilter={priorityFilter}
             setPriorityFilter={setPriorityFilter}
             statusFilter={selectedStatuses}
             setStatusFilter={setSelectedStatuses}
+            tags={tags}
+            tagFilter={tagFilter}
+            setTagFilter={setTagFilter}
           />
         )}
 
@@ -843,6 +871,9 @@ const App: React.FC = () => {
             setPriorityFilter={setPriorityFilter}
             statusFilter={selectedStatuses}
             setStatusFilter={setSelectedStatuses}
+            tags={tags}
+            tagFilter={tagFilter}
+            setTagFilter={setTagFilter}
           />
         )}
 
@@ -860,6 +891,9 @@ const App: React.FC = () => {
             setPriorityFilter={setPriorityFilter}
             statusFilter={selectedStatuses}
             setStatusFilter={setSelectedStatuses}
+            tags={tags}
+            tagFilter={tagFilter}
+            setTagFilter={setTagFilter}
           />
         )}
       </main>
@@ -897,6 +931,8 @@ const App: React.FC = () => {
         onMarkMissed={handleMarkMissed}
         task={editingTask || undefined}
         tasks={tasks} // Pass all tasks for stats calculation
+        availableTags={tags}
+        onCreateTag={(newTag) => setTags(prev => [...prev, newTag])}
       />
 
 
@@ -910,6 +946,16 @@ const App: React.FC = () => {
           const t = tasks.find(x => x.id === deleteConfirmation.taskId);
           return t ? t.recurrence !== Recurrence.NONE : false;
         })()}
+      />
+      <DeleteConfirmationModal
+        isOpen={isDeleteAllOpen}
+        onConfirm={() => {
+          setTasks([]);
+          setIsDeleteAllOpen(false);
+        }}
+        onCancel={() => setIsDeleteAllOpen(false)}
+        title="Delete All Tasks?"
+        message="This will permanently delete ALL tasks in your workspace. This action cannot be undone."
       />
       <CommandPalette
         tasks={tasks}

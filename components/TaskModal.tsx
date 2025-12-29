@@ -1,7 +1,8 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { Task, Priority, Recurrence, Status, AISuggestion } from '../types';
+import { Task, Priority, Recurrence, Status, AISuggestion, Tag } from '../types';
 import { X, Sparkles, Plus, ChevronDown, Activity, AlertCircle, RotateCcw } from 'lucide-react';
 import { Button } from './Button';
+import { TagPicker } from './TagPicker';
 import { generateTaskSuggestions } from '../services/geminiService';
 import { calculateTaskStats } from '../utils/taskUtils';
 
@@ -14,9 +15,11 @@ interface TaskModalProps {
   onMarkMissed?: (taskId: string) => void;
   task?: Partial<Task>;
   tasks?: Task[];
+  availableTags?: Tag[];
+  onCreateTag?: (tag: Tag) => void;
 }
 
-export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, onDelete, onMarkMissed, task, tasks }) => {
+export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, onDelete, onMarkMissed, task, tasks, availableTags = [], onCreateTag = () => { } }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
@@ -37,6 +40,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   // Progress comments
   const [comments, setComments] = useState<{ id: string; text: string; createdAt: number }[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
+  const [tags, setTags] = useState<Tag[]>([]);
 
   // 'single' = update only this instance (exception). 'series' = update base task.
   const [saveScope, setSaveScope] = useState<'single' | 'series'>('single');
@@ -58,6 +62,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       setRecurrenceStart(task.recurrenceStart ? new Date(task.recurrenceStart).toISOString().split('T')[0] : '');
       setRecurrenceEnd(task.recurrenceEnd ? new Date(task.recurrenceEnd).toISOString().split('T')[0] : '');
       setComments(task.comments || []);
+      setTags(task.tags || []);
     } else {
       resetForm();
     }
@@ -92,6 +97,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setComments([]);
     setNewCommentText('');
     setSuggestions([]);
+    setTags([]);
   };
 
   const handleSave = () => {
@@ -128,6 +134,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       comments,
       status: status,
       createdAt: task?.createdAt || Date.now(),
+      tags: tags,
     }, saveScope);
     onClose();
   };
@@ -277,6 +284,16 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 </ul>
               </div>
             )}
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags (Categories)</label>
+              <TagPicker
+                selectedTags={tags}
+                availableTags={availableTags}
+                onTagsChange={setTags}
+                onCreateTag={onCreateTag}
+              />
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>

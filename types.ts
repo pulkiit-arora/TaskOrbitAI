@@ -21,6 +21,12 @@ export enum Recurrence {
   YEARLY = 'YEARLY'
 }
 
+export interface Tag {
+  id: string;
+  label: string;
+  color: string;
+}
+
 export interface Task {
   id: string;
   seriesId?: string; // ID linking recurrence instances together
@@ -49,6 +55,7 @@ export interface Task {
   excludedDates?: string[];
   // Indicates if this task was detached from a recurrence (is an exception)
   isRecurringException?: boolean;
+  tags?: Tag[];
 }
 
 export interface AISuggestion {

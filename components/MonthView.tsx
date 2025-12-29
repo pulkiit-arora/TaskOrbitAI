@@ -1,7 +1,7 @@
 import React from 'react';
-import { Task, Priority, Status, Recurrence } from '../types';
+import { Task, Priority, Status, Recurrence, Tag } from '../types';
 import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
-import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter } from 'lucide-react';
+import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter, Tag as TagIcon } from 'lucide-react';
 import { StatusFilter } from './StatusFilter';
 
 interface MonthViewProps {
@@ -15,9 +15,12 @@ interface MonthViewProps {
   setPriorityFilter?: (priorities: Priority[]) => void;
   statusFilter?: Status[];
   setStatusFilter?: (statuses: Status[]) => void;
+  tags?: Tag[];
+  tagFilter?: string[];
+  setTagFilter?: (tags: string[]) => void;
 }
 
-export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEditTask, onToggleDone, onAddTask, onDropTask, priorityFilter, setPriorityFilter, statusFilter, setStatusFilter }) => {
+export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEditTask, onToggleDone, onAddTask, onDropTask, priorityFilter, setPriorityFilter, statusFilter, setStatusFilter, tags = [], tagFilter = [], setTagFilter }) => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -309,6 +312,30 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           </>
         )}
 
+        {setTagFilter && tags && tags.length > 0 && (
+          <>
+            <div className="h-4 w-px bg-gray-300 mx-1"></div>
+            <div className="flex items-center gap-1">
+              <TagIcon size={12} className="text-gray-500" />
+              {tags.map(tag => (
+                <button
+                  key={tag.id}
+                  onClick={() => {
+                    const newFilter = tagFilter.includes(tag.id)
+                      ? tagFilter.filter(t => t !== tag.id)
+                      : [...tagFilter, tag.id];
+                    setTagFilter && setTagFilter(newFilter);
+                  }}
+                  className={`w-3 h-3 rounded-full border transition-all ${tagFilter.includes(tag.id) ? `ring-2 ring-offset-1 ring-blue-500 ${tag.color.split(' ')[0]}` : tag.color.split(' ')[0]} ${tag.color.split(' ')[2]}`}
+                  title={tag.label}
+                />
+              ))}
+              {tagFilter.length > 0 && (
+                <button onClick={() => setTagFilter && setTagFilter([])} className="text-[10px] text-gray-400 hover:text-gray-600 ml-1">Clear</button>
+              )}
+            </div>
+          </>
+        )}
 
       </div>
 
@@ -653,6 +680,13 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                           )}
                           {isExpired && (
                             <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium bg-orange-100 text-orange-700 border border-orange-200 flex-shrink-0 whitespace-nowrap">Missed</span>
+                          )}
+                          {task.tags && task.tags.length > 0 && (
+                            <div className="flex gap-0.5 flex-shrink-0">
+                              {task.tags.map(tag => (
+                                <div key={tag.id} className={`w-1.5 h-1.5 rounded-full ${tag.color.split(' ')[0].replace('100', '500')}`} />
+                              ))}
+                            </div>
                           )}
                         </div>
                       </div>

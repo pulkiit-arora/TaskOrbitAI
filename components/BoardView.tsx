@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { BoardColumn } from './BoardColumn';
-import { Task, Status, Priority } from '../types';
-import { Filter } from 'lucide-react';
+import { Task, Status, Priority, Tag } from '../types';
+import { Filter, Tag as TagIcon } from 'lucide-react';
 import { sortTasks, isOpen } from '../utils/taskUtils';
-import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { StatusFilter } from './StatusFilter';
 
 interface BoardViewProps {
@@ -18,11 +17,13 @@ interface BoardViewProps {
   onArchiveTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onDropTask: (taskId: string, newStatus: Status) => void;
-  onDeleteAll?: () => void;
   priorityFilter?: Priority[];
   setPriorityFilter?: (priorities: Priority[]) => void;
   statusFilter?: Status[];
   setStatusFilter?: (statuses: Status[]) => void;
+  tags?: Tag[];
+  tagFilter?: string[];
+  setTagFilter?: (tags: string[]) => void;
 }
 
 export const BoardView: React.FC<BoardViewProps> = ({
@@ -41,13 +42,11 @@ export const BoardView: React.FC<BoardViewProps> = ({
   priorityFilter,
   setPriorityFilter,
   statusFilter,
-  setStatusFilter
+  setStatusFilter,
+  tags = [],
+  tagFilter = [],
+  setTagFilter
 }) => {
-  const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
-  const confirmDeleteAll = () => {
-    if (onDeleteAll) onDeleteAll();
-    setIsDeleteAllOpen(false);
-  };
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const boardWeekStart = new Date(today);
@@ -168,6 +167,31 @@ export const BoardView: React.FC<BoardViewProps> = ({
             </div>
           </>
         )}
+        {setTagFilter && tags && tags.length > 0 && (
+          <>
+            <div className="h-5 w-px bg-gray-300 mx-1"></div>
+            <div className="flex items-center gap-1">
+              <TagIcon size={12} className="text-gray-500" />
+              {tags.map(tag => (
+                <button
+                  key={tag.id}
+                  onClick={() => {
+                    const newFilter = tagFilter.includes(tag.id)
+                      ? tagFilter.filter(t => t !== tag.id)
+                      : [...tagFilter, tag.id];
+                    setTagFilter && setTagFilter(newFilter);
+                  }}
+                  className={`w-3 h-3 rounded-full border transition-all ${tagFilter.includes(tag.id) ? `ring-2 ring-offset-1 ring-blue-500 ${tag.color.split(' ')[0]}` : tag.color.split(' ')[0]} ${tag.color.split(' ')[2]}`}
+                  title={tag.label}
+                />
+              ))}
+              {tagFilter.length > 0 && (
+                <button onClick={() => setTagFilter && setTagFilter([])} className="text-[10px] text-gray-400 hover:text-gray-600 ml-1">Clear</button>
+              )}
+            </div>
+          </>
+        )}
+
         <div className="h-5 w-px bg-gray-300 mx-1"></div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500">Sort</span>
@@ -180,21 +204,6 @@ export const BoardView: React.FC<BoardViewProps> = ({
             <option value="dueDate">Due Date</option>
           </select>
           <div className="h-5 w-px bg-gray-300 mx-1"></div>
-          <button
-            type="button"
-            onClick={() => setIsDeleteAllOpen(true)}
-            className="text-xs ml-2 px-2 py-1 rounded border border-red-200 text-red-700 bg-red-50 hover:bg-red-100"
-            title="Delete all tasks"
-          >
-            Delete All
-          </button>
-          <DeleteConfirmationModal
-            isOpen={isDeleteAllOpen}
-            onConfirm={confirmDeleteAll}
-            onCancel={() => setIsDeleteAllOpen(false)}
-            title="Delete all tasks?"
-            message="This will permanently delete ALL tasks in your workspace. This action cannot be undone."
-          />
         </div>
       </div>
       <div className="h-full flex flex-col md:flex-row gap-6 min-w-[320px] md:min-w-0">

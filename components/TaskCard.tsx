@@ -116,6 +116,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
         </p>
       )}
 
+      {task.tags && task.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {task.tags.map(tag => (
+            <span key={tag.id} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${tag.color}`}>
+              {tag.label}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50 dark:border-gray-700/50">
         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           {task.dueDate && (
