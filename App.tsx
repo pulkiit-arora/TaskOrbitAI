@@ -8,6 +8,7 @@ import { BoardView } from './components/BoardView';
 import { LoadingScreen } from './components/LoadingScreen';
 import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
 import { Tour } from './components/Tour';
+import { Legend } from './components/Legend';
 import { SearchInput } from './components/SearchInput';
 import { CommandPalette } from './components/CommandPalette';
 import { Task, Status, Recurrence, Priority } from './types';
@@ -39,6 +40,22 @@ const App: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [priorityFilter, setPriorityFilter] = useState<Priority[]>([]);
   const [boardFilter, setBoardFilter] = useState<'all' | 'overdue' | 'week' | 'nodue'>('all');
+  const [statusFilter, setStatusFilter] = useLocalStorageString('lifeflow-status-filter', '');
+  // We store as string (JSON) because useLocalStorageString is simpler, need parsing/serializing? 
+  // Actually reusing useLocalStorageString is risky for arrays. 
+  // Let's use simple useState with effect for now or safe parsing.
+  // Better: separate effect for persistence.
+
+  const [selectedStatuses, setSelectedStatuses] = useState<Status[]>(() => {
+    try {
+      const saved = localStorage.getItem('lifeflow-status-filters');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('lifeflow-status-filters', JSON.stringify(selectedStatuses));
+  }, [selectedStatuses]);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean, taskId: string | null }>({
     isOpen: false,
     taskId: null
@@ -705,6 +722,10 @@ const App: React.FC = () => {
       list = list.filter(t => priorityFilter.includes(t.priority));
     }
 
+    if (selectedStatuses.length > 0) {
+      list = list.filter(t => selectedStatuses.includes(t.status));
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(t =>
@@ -714,7 +735,7 @@ const App: React.FC = () => {
     }
 
     return list;
-  }, [tasks, showArchived, searchQuery, priorityFilter]);
+  }, [tasks, showArchived, searchQuery, priorityFilter, selectedStatuses]);
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -742,6 +763,8 @@ const App: React.FC = () => {
           </button>
         </div>
         <div className="flex items-center gap-3">
+          <Legend />
+          <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">|</span>
           <button
             onClick={toggleDarkMode}
             className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
@@ -803,6 +826,8 @@ const App: React.FC = () => {
             onDeleteAll={() => setTasks([])}
             priorityFilter={priorityFilter}
             setPriorityFilter={setPriorityFilter}
+            statusFilter={selectedStatuses}
+            setStatusFilter={setSelectedStatuses}
           />
         )}
 
@@ -816,6 +841,8 @@ const App: React.FC = () => {
             onDropTask={handleDropTaskDate}
             priorityFilter={priorityFilter}
             setPriorityFilter={setPriorityFilter}
+            statusFilter={selectedStatuses}
+            setStatusFilter={setSelectedStatuses}
           />
         )}
 
@@ -831,6 +858,8 @@ const App: React.FC = () => {
             onDropTask={handleDropTaskDate}
             priorityFilter={priorityFilter}
             setPriorityFilter={setPriorityFilter}
+            statusFilter={selectedStatuses}
+            setStatusFilter={setSelectedStatuses}
           />
         )}
       </main>

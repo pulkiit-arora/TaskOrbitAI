@@ -2,6 +2,7 @@ import React from 'react';
 import { Task, Priority, Status, Recurrence } from '../types';
 import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
 import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter } from 'lucide-react';
+import { StatusFilter } from './StatusFilter';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -12,9 +13,11 @@ interface MonthViewProps {
   onDropTask?: (taskId: string, date: Date) => void;
   priorityFilter?: Priority[];
   setPriorityFilter?: (priorities: Priority[]) => void;
+  statusFilter?: Status[];
+  setStatusFilter?: (statuses: Status[]) => void;
 }
 
-export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEditTask, onToggleDone, onAddTask, onDropTask, priorityFilter, setPriorityFilter }) => {
+export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEditTask, onToggleDone, onAddTask, onDropTask, priorityFilter, setPriorityFilter, statusFilter, setStatusFilter }) => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -221,7 +224,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="mb-3 flex items-center gap-2 px-3 pt-3">
+      <div className="mb-3 flex items-center gap-2 px-3 pt-3 flex-wrap">
         <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Summary</span>
         <button
           type="button"
@@ -244,6 +247,16 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
         >
           No due date: {missingDueTasks.length}
         </button>
+
+        {setStatusFilter && statusFilter && (
+          <>
+            <div className="h-4 w-px bg-gray-300 mx-1"></div>
+            <StatusFilter
+              selectedStatuses={statusFilter}
+              onChange={setStatusFilter}
+            />
+          </>
+        )}
 
         {setPriorityFilter && priorityFilter && (
           <>
@@ -296,29 +309,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           </>
         )}
 
-        <div className="ml-auto flex items-center gap-3 text-[10px] text-gray-500 dark:text-gray-400 pl-3 border-l border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-1" title="High Priority">
-            <ArrowUp size={10} className="text-red-500" />
-            <span className="hidden lg:inline">High</span>
-          </div>
-          <div className="flex items-center gap-1" title="Medium Priority">
-            <Minus size={10} className="text-yellow-500" />
-            <span className="hidden lg:inline">Med</span>
-          </div>
-          <div className="flex items-center gap-1" title="Low Priority">
-            <ArrowDown size={10} className="text-blue-500" />
-            <span className="hidden lg:inline">Low</span>
-          </div>
-          <div className="w-px h-3 bg-gray-200 dark:bg-gray-700 mx-1 hidden sm:block"></div>
-          <div className="flex items-center gap-1" title="Recurring Series">
-            <RefreshCw size={10} className="text-gray-400" />
-            <span className="hidden lg:inline">Recurring</span>
-          </div>
-          <div className="flex items-center gap-1" title="Detached Exception">
-            <span className="text-orange-400"><RefreshCw size={10} className="stroke-[2.5]" /></span>
-            <span className="hidden lg:inline">Detached</span>
-          </div>
-        </div>
+
       </div>
 
       {filterMode === 'overdue' && (

@@ -3,6 +3,7 @@ import { Task, Priority, Status, Recurrence } from '../types';
 import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
 import { TaskCard } from './TaskCard';
 import { Plus, Filter } from 'lucide-react';
+import { StatusFilter } from './StatusFilter';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -16,9 +17,11 @@ interface WeekViewProps {
   onDropTask?: (taskId: string, date: Date) => void;
   priorityFilter?: Priority[];
   setPriorityFilter?: (priorities: Priority[]) => void;
+  statusFilter?: Status[];
+  setStatusFilter?: (statuses: Status[]) => void;
 }
 
-export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTask, onMoveTask, onArchiveTask, onDeleteTask, onToggleDone, onAddTask, onDropTask, priorityFilter, setPriorityFilter }) => {
+export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTask, onMoveTask, onArchiveTask, onDeleteTask, onToggleDone, onAddTask, onDropTask, priorityFilter, setPriorityFilter, statusFilter, setStatusFilter }) => {
   const getStartOfWeek = (date: Date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -217,7 +220,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="mb-3 flex items-center gap-2 px-1">
+      <div className="mb-3 flex items-center gap-2 px-1 flex-wrap">
         <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Summary</span>
         <button
           type="button"
@@ -240,6 +243,16 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
         >
           No due date: {missingDueCount}
         </button>
+
+        {setStatusFilter && statusFilter && (
+          <>
+            <div className="h-4 w-px bg-gray-300 mx-1"></div>
+            <StatusFilter
+              selectedStatuses={statusFilter}
+              onChange={setStatusFilter}
+            />
+          </>
+        )}
 
         {setPriorityFilter && priorityFilter && (
           <>

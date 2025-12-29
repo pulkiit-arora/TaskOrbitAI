@@ -4,6 +4,7 @@ import { Task, Status, Priority } from '../types';
 import { Filter } from 'lucide-react';
 import { sortTasks, isOpen } from '../utils/taskUtils';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { StatusFilter } from './StatusFilter';
 
 interface BoardViewProps {
   tasks: Task[];
@@ -20,6 +21,8 @@ interface BoardViewProps {
   onDeleteAll?: () => void;
   priorityFilter?: Priority[];
   setPriorityFilter?: (priorities: Priority[]) => void;
+  statusFilter?: Status[];
+  setStatusFilter?: (statuses: Status[]) => void;
 }
 
 export const BoardView: React.FC<BoardViewProps> = ({
@@ -36,7 +39,9 @@ export const BoardView: React.FC<BoardViewProps> = ({
   onDropTask,
   onDeleteAll,
   priorityFilter,
-  setPriorityFilter
+  setPriorityFilter,
+  statusFilter,
+  setStatusFilter
 }) => {
   const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
   const confirmDeleteAll = () => {
@@ -102,6 +107,16 @@ export const BoardView: React.FC<BoardViewProps> = ({
         >
           No due date: {missingDueTasks.length}
         </button>
+
+        {setStatusFilter && statusFilter && (
+          <>
+            <div className="h-5 w-px bg-gray-300 mx-1"></div>
+            <StatusFilter
+              selectedStatuses={statusFilter}
+              onChange={setStatusFilter}
+            />
+          </>
+        )}
 
         {setPriorityFilter && priorityFilter && (
           <>
