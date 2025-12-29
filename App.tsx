@@ -863,7 +863,7 @@ const App: React.FC = () => {
         onClose={closeModal}
         onSave={(data, scope) => handleSaveTask(data, scope)}
         onSaveMultiple={handleSaveMultipleTasks}
-        onDelete={(id) => confirmDelete('single')} // Default to single delete from modal? Or let modal handle confirm? Modal calls onDelete.
+        onDelete={(id) => handleDeleteTask(id)}
         // We need to pass the mark missed handler to modal if we want it there
         onMarkMissed={handleMarkMissed}
         task={editingTask || undefined}

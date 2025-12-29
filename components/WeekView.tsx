@@ -449,7 +449,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 border border-blue-200">In Progress</span>
                           )}
                           {task.status === Status.EXPIRED && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700 border border-red-200">Missed</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-orange-100 text-orange-700 border border-orange-200">Missed</span>
                           )}
                         </div>
                         <div className={`${task.status === Status.DONE ? 'line-through text-gray-500' : ''} ${task.status === Status.EXPIRED ? 'opacity-80' : ''} ${task.status === Status.IN_PROGRESS ? 'bg-blue-50/40 rounded px-1.5 py-1' : ''}`}>

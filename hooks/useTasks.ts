@@ -51,11 +51,11 @@ export const useTasks = () => {
   // Load from DB on Mount
   useEffect(() => {
     const initData = async () => {
-      console.log('initData starting...');
+
       setIsLoading(true);
       try {
         const loadedTasks = await loadTasksFromDB();
-        console.log('loadedTasks:', loadedTasks);
+
         const hasInitialized = localStorage.getItem('lifeflow-initialized');
 
         if (hasInitialized) {
@@ -73,7 +73,7 @@ export const useTasks = () => {
         console.error("Failed to load DB", e);
         setTasks([]);
       } finally {
-        console.log('initData finished, setting isLoading to false');
+
         setIsLoading(false);
       }
     };

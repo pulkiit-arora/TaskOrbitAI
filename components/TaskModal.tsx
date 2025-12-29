@@ -207,7 +207,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                   </div>
                   <div className="flex flex-col">
                     <span className="text-gray-500 dark:text-gray-400">Missed</span>
-                    <span className="font-bold text-red-600 dark:text-red-400">{stats.expired}</span>
+                    <span className="font-bold text-orange-600 dark:text-orange-400">{stats.expired}</span>
                   </div>
                 </div>
               );
@@ -601,10 +601,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
             </div>
           )}
 
-          <div className="flex justify-between gap-3">
-            <div className="flex gap-2">
-              {task && onDelete && (
-                <Button variant="danger" onClick={() => onDelete(task.id)}>Delete</Button>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-2 flex-wrap">
+              {task?.id && onDelete && (
+                <Button variant="danger" onClick={() => onDelete(task.id!)}>Delete</Button>
               )}
               {task?.id && (
                 task.status === Status.EXPIRED ? (
@@ -629,7 +629,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                         onMarkMissed(task.id!);
                         onClose();
                       }}
-                      className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                      className="!bg-orange-500 !text-white !hover:bg-orange-600 !border-transparent shadow-sm"
                     >
                       <AlertCircle size={16} className="mr-1 inline" />
                       Mark Missed
@@ -638,7 +638,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 )
               )}
             </div>
-            <div className="flex gap-3 ml-auto">
+            <div className="flex gap-3 ml-auto flex-wrap">
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
               <Button onClick={handleSave}>Save Task</Button>
             </div>
