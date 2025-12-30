@@ -56,7 +56,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
   boardWeekEnd.setDate(boardWeekEnd.getDate() + 6);
   boardWeekEnd.setHours(23, 59, 59, 999);
 
-  const overdueTasks = tasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today);
+  const overdueTasks = tasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today && t.status !== Status.EXPIRED);
   const dueThisWeekTasks = tasks.filter(t => {
     if (!t.dueDate || !isOpen(t)) return false;
     const d = new Date(t.dueDate);
@@ -67,7 +67,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
   const applyBoardFilter = (list: Task[]) => {
     switch (boardFilter) {
       case 'overdue':
-        return list.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today);
+        return list.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today && t.status !== Status.EXPIRED);
       case 'week':
         return list.filter(t => {
           if (!t.dueDate || !isOpen(t)) return false;

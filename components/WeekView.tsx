@@ -52,7 +52,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
   weekEnd.setHours(23, 59, 59, 999);
 
   const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Status.ARCHIVED;
-  const overdueTasks = tasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today);
+  const overdueTasks = tasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today && t.status !== Status.EXPIRED);
   const overdueCount = overdueTasks.length;
   const dueThisWeekTasks = tasks.filter(t => {
     if (!t.dueDate || !isOpen(t)) return false;

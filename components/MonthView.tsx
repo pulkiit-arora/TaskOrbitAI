@@ -1,7 +1,7 @@
 import React from 'react';
 import { Task, Priority, Status, Recurrence, Tag } from '../types';
 import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
-import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter, Tag as TagIcon } from 'lucide-react';
+import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter, Tag as TagIcon, XCircle } from 'lucide-react';
 import { StatusFilter } from './StatusFilter';
 
 interface MonthViewProps {
@@ -54,7 +54,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
   monthEnd.setHours(23, 59, 59, 999);
 
   const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Status.ARCHIVED;
-  const overdueTasks = tasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today);
+  const overdueTasks = tasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today && t.status !== Status.EXPIRED);
 
   // Calculate projected recurring tasks due this month
   // NOTE: This relies on `doesTaskOccurOnDate` which is defined BELOW. 
@@ -202,7 +202,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
         const displayTask = isRealInstance ? task : {
           ...task,
-          id: `${task.id}-virtual-${date.getTime()}`,
+          id: `${task.id} -virtual - ${date.getTime()} `,
           dueDate: occurrenceISO,
           status: displayStatus
         };
@@ -232,21 +232,21 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
         <button
           type="button"
           onClick={toggleOverdue}
-          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'}`}
+          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'} `}
         >
           Overdue: {overdueTasks.length}
         </button>
         <button
           type="button"
           onClick={toggleMonth}
-          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'month' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'month' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'} `}
         >
           Due this month: {dueThisMonthCount}
         </button>
         <button
           type="button"
           onClick={toggleNoDue}
-          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'} `}
         >
           No due date: {missingDueTasks.length}
         </button>
@@ -276,7 +276,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.HIGH)
                   ? 'bg-red-100 text-red-800 border-red-200'
                   : 'bg-white text-gray-500 border-gray-200 hover:border-red-200 hover:text-red-700'
-                  }`}
+                  } `}
               >
                 High
               </button>
@@ -290,7 +290,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.MEDIUM)
                   ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
                   : 'bg-white text-gray-500 border-gray-200 hover:border-yellow-200 hover:text-yellow-700'
-                  }`}
+                  } `}
               >
                 Med
               </button>
@@ -304,7 +304,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.LOW)
                   ? 'bg-blue-100 text-blue-800 border-blue-200'
                   : 'bg-white text-gray-500 border-gray-200 hover:border-blue-200 hover:text-blue-700'
-                  }`}
+                  } `}
               >
                 Low
               </button>
@@ -326,7 +326,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                       : [...tagFilter, tag.id];
                     setTagFilter && setTagFilter(newFilter);
                   }}
-                  className={`w-3 h-3 rounded-full border transition-all ${tagFilter.includes(tag.id) ? `ring-2 ring-offset-1 ring-blue-500 ${tag.color.split(' ')[0]}` : tag.color.split(' ')[0]} ${tag.color.split(' ')[2]}`}
+                  className={`w-3 h-3 rounded-full border transition-all ${tagFilter.includes(tag.id) ? `ring-2 ring-offset-1 ring-blue-500 ${tag.color.split(' ')[0]}` : tag.color.split(' ')[0]} ${tag.color.split(' ')[2]} `}
                   title={tag.label}
                 />
               ))}
@@ -356,17 +356,17 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               return b.createdAt - a.createdAt;
             })
             .map(task => (
-              <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]}`}>
+              <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]} `}>
                 <button
                   onClick={(e) => { e.stopPropagation(); onToggleDone(task.id); }}
-                  className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''}`}
+                  className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''} `}
                   title="Toggle done"
                 >
                   {task.status === Status.DONE ? <Check size={14} className="stroke-[3]" /> : <Circle size={14} />}
                 </button>
                 <button
                   onClick={() => onEditTask(task)}
-                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE ? 'line-through text-gray-500' : ''}`}
+                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE ? 'line-through text-gray-500' : ''} `}
                 >
                   {task.title}
                 </button>
@@ -392,17 +392,17 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               return b.createdAt - a.createdAt;
             })
             .map(task => (
-              <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]}`}>
+              <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]} `}>
                 <button
                   onClick={(e) => { e.stopPropagation(); onToggleDone(task.id); }}
-                  className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''}`}
+                  className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''} `}
                   title="Toggle done"
                 >
                   {task.status === Status.DONE ? <Check size={14} className="stroke-[3]" /> : <Circle size={14} />}
                 </button>
                 <button
                   onClick={() => onEditTask(task)}
-                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE ? 'line-through text-gray-500' : ''}`}
+                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE ? 'line-through text-gray-500' : ''} `}
                 >
                   {task.title}
                 </button>
@@ -461,7 +461,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
                   monthTasks.push({
                     ...task,
-                    id: isReal ? task.id : `${task.id}-month-${i}`, // Virtual ID
+                    id: isReal ? task.id : `${task.id} -month - ${i} `, // Virtual ID
                     dueDate: dateISO,
                     // If virtual, it's TODO
                     status: isReal ? task.status : Status.TODO
@@ -494,7 +494,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               // 4. Created At: Newest first
               return (b.createdAt || 0) - (a.createdAt || 0);
             }).map(task => (
-              <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]}`}>
+              <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]} `}>
                 {/* Simplified Task Row - Maybe Read Only or jump to date? For now simple edit/toggle */}
                 <button
                   onClick={(e) => {
@@ -502,16 +502,16 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                     // If virtual, we need to handle creation... 
                     // The `onToggleDone` in MonthView might not handle virtual IDs gracefully unless App.tsx handles it.
                     // App.tsx `handleToggleDone` DOES handle virtual IDs! (logic: `if (taskId.includes('-virtual-'))`)
-                    // Our ID format here is `${task.id}-month-${i}`. 
-                    // App.tsx expects `${baseTaskId}-virtual-${timestamp}`.
+                    // Our ID format here is `${ task.id } -month - ${ i } `. 
+                    // App.tsx expects `${ baseTaskId } -virtual - ${ timestamp } `.
                     // Let's match that format!
-                    // See line 239 in getTasksForDay: `${task.id}-virtual-${date.getTime()}`
+                    // See line 239 in getTasksForDay: `${ task.id } -virtual - ${ date.getTime() } `
                     // Let's fix the ID generation above.
 
                     // Actually, let's just use onToggleDone directly.
                     onToggleDone(task.id, task.dueDate);
                   }}
-                  className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''}`}
+                  className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''} `}
                 >
                   {task.status === Status.DONE ? <Check size={14} /> : <Circle size={14} />}
                 </button>
@@ -542,7 +542,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
         <div className="grid grid-cols-7 auto-rows-[minmax(140px,1fr)] flex-1 bg-gray-200 dark:bg-gray-700 gap-[1px] overflow-y-auto custom-scrollbar">
           {totalSlots.map((slot, index) => {
             if (slot === null) {
-              return <div key={`blank-${index}`} className="bg-gray-50/50 dark:bg-gray-900/50" />;
+              return <div key={`blank - ${index} `} className="bg-gray-50/50 dark:bg-gray-900/50" />;
             }
 
             const day = slot as number; // It's a number here
@@ -575,17 +575,17 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               <div
                 key={index}
                 className={`group min-h-[140px] flex flex-col border-b border-r border-gray-200 dark:border-gray-700 transition-colors ${'bg-white dark:bg-gray-800'
-                  } ${isToday ? 'ring-2 ring-inset ring-blue-500/50 z-10' : ''}`}
+                  } ${isToday ? 'ring-2 ring-inset ring-blue-500/50 z-10' : ''} `}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, day)}
               >
                 <div className={`p-2 flex justify-between items-start sticky top-0 z-10 ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
-                  }`}>
+                  } `}>
                   <div className="flex items-center gap-2">
                     <span className={`text-sm font-medium rounded-full w-7 h-7 flex items-center justify-center ${isToday
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-900 dark:text-gray-100'
-                      }`}>
+                      } `}>
                       {day}
                     </span>
                   </div>
@@ -614,12 +614,12 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                     return (
                       <div
                         key={task.id}
-                        title={`${task.title}${task.description ? '\n' + task.description : ''}${isInProgress ? '\n📍 In Progress' : ''}`}
+                        title={`${task.title}${task.description ? '\n' + task.description : ''}${isInProgress ? '\n📍 In Progress' : ''} `}
                         className={`group flex items-center gap-2 px-1.5 py-1 rounded border transition-all 
                         ${isDone ? 'bg-gray-100 border-gray-100' : isExpired ? 'bg-orange-50 border-orange-200' : priorityColor[task.priority]} 
                         ${shouldShowVirtualIndicator ? 'opacity-60 border-dashed bg-white' : 'hover:shadow-sm'}
                         ${isInProgress ? 'border-blue-400 bg-blue-50/50 ring-1 ring-blue-300' : ''}
-                      `}
+`}
                       >
                         <button
                           onClick={(e) => {
@@ -634,9 +634,9 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                              ${isVirtual ? 'text-gray-300 hover:text-green-600 cursor-pointer' : 'text-gray-400 hover:text-green-600 cursor-pointer'}
                              ${isDone ? 'text-green-600' : ''}
                              ${isExpired ? 'text-orange-600' : ''}
-                             ${isInProgress ? 'text-blue-600' : ''}`}
+                             ${isInProgress ? 'text-blue-600' : ''} `}
                         >
-                          {isDone ? <Check size={14} className="stroke-[3]" /> : <Circle size={14} />}
+                          {isDone ? <Check size={14} className="stroke-[3]" /> : (isExpired ? <XCircle size={14} className="stroke-[2.5]" /> : <Circle size={14} />)}
                         </button>
 
                         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -645,27 +645,27 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                             className={`text-left text-xs truncate flex-1 font-medium cursor-pointer flex items-center gap-1
                                ${isDone ? 'line-through text-gray-500' : ''}
                                ${isExpired ? 'text-orange-600' : ''}
-                           `}
+`}
                           >
                             {task.priority === Priority.HIGH && (
                               <ArrowUp
                                 size={12}
                                 className="text-red-500 flex-shrink-0"
-                                title={`Priority: ${task.priority}`}
+                                title={`Priority: ${task.priority} `}
                               />
                             )}
                             {task.priority === Priority.MEDIUM && (
                               <Minus
                                 size={12}
                                 className="text-yellow-500 flex-shrink-0"
-                                title={`Priority: ${task.priority}`}
+                                title={`Priority: ${task.priority} `}
                               />
                             )}
                             {task.priority === Priority.LOW && (
                               <ArrowDown
                                 size={12}
                                 className="text-blue-500 flex-shrink-0"
-                                title={`Priority: ${task.priority}`}
+                                title={`Priority: ${task.priority} `}
                               />
                             )}
                             <span className="truncate">{task.title}</span>
@@ -684,7 +684,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                           {task.tags && task.tags.length > 0 && (
                             <div className="flex gap-0.5 flex-shrink-0">
                               {task.tags.map(tag => (
-                                <div key={tag.id} className={`w-1.5 h-1.5 rounded-full ${tag.color.split(' ')[0].replace('100', '500')}`} />
+                                <div key={tag.id} className={`w-1.5 h-1.5 rounded-full ${tag.color.split(' ')[0].replace('100', '500')} `} />
                               ))}
                             </div>
                           )}
