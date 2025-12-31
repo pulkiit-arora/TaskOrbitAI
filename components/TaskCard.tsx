@@ -60,7 +60,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
         onClick={(e) => handleButtonClick(e, () => onEdit(task))}
         onMouseDown={handleButtonMouseDown}
       >
-        <span className={`flex items-center gap-1.5 flex-1 ${showStrikethrough && task.status === 'DONE' ? 'line-through text-gray-500' : ''}`}>
+        <span className={`flex items-center gap-1.5 flex-1 ${showStrikethrough && (task.status === 'DONE' || task.status === 'EXPIRED') ? 'line-through text-gray-500' : ''}`}>
           {task.priority === Priority.HIGH && (
             <ArrowUp
               size={14}
@@ -111,7 +111,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
       {/* recurrence summary shown on hover tooltip only */}
 
       {task.description && (
-        <p className={`text-gray-500 dark:text-gray-400 text-xs line-clamp-2 mb-3 pointer-events-none ${showStrikethrough && task.status === 'DONE' ? 'line-through' : ''}`}>
+        <p className={`text-gray-500 dark:text-gray-400 text-xs line-clamp-2 mb-3 pointer-events-none ${showStrikethrough && (task.status === 'DONE' || task.status === 'EXPIRED') ? 'line-through' : ''}`}>
           {task.description}
         </p>
       )}

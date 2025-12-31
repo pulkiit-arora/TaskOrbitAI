@@ -506,7 +506,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                             </div>
                           )}
                         </div>
-                        <div className={`${task.status === Status.DONE ? 'line-through text-gray-500' : ''} ${task.status === Status.EXPIRED ? 'opacity-80' : ''} ${task.status === Status.IN_PROGRESS ? 'bg-blue-50/40 rounded px-1.5 py-1' : ''}`}>
+                        <div className={`${task.status === Status.DONE || task.status === Status.EXPIRED ? 'line-through text-gray-500' : ''} ${task.status === Status.IN_PROGRESS ? 'bg-blue-50/40 rounded px-1.5 py-1' : ''}`}>
                           <TaskCard
                             task={task}
                             onEdit={() => onEditTask(task)}

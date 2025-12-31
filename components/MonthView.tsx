@@ -366,7 +366,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 </button>
                 <button
                   onClick={() => onEditTask(task)}
-                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE ? 'line-through text-gray-500' : ''} `}
+                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE || task.status === Status.EXPIRED ? 'line-through text-gray-500' : ''} `}
                 >
                   {task.title}
                 </button>
@@ -402,7 +402,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 </button>
                 <button
                   onClick={() => onEditTask(task)}
-                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE ? 'line-through text-gray-500' : ''} `}
+                  className={`text-left text-xs truncate flex-1 font-medium ${task.status === Status.DONE || task.status === Status.EXPIRED ? 'line-through text-gray-500' : ''} `}
                 >
                   {task.title}
                 </button>
@@ -648,8 +648,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                           <button
                             onClick={() => onEditTask(task)}
                             className={`text-left text-xs truncate flex-1 font-medium cursor-pointer flex items-center gap-1
-                               ${isDone ? 'line-through text-gray-500' : ''}
-                               ${isExpired ? 'text-orange-600' : ''}
+                               ${isDone || isExpired ? 'line-through text-gray-500' : ''}
 `}
                           >
                             {task.priority === Priority.HIGH && (
