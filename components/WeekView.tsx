@@ -427,9 +427,14 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
           {weekDays.map(day => {
             const dayTasks = getTasksForDay(day);
             const sortedDayTasks = dayTasks.slice().sort((a, b) => {
-              const aDone = a.task.status === Status.DONE ? 1 : 0;
-              const bDone = b.task.status === Status.DONE ? 1 : 0;
-              if (aDone !== bDone) return aDone - bDone;
+              const getStatusWeight = (s: Status) => {
+                if (s === Status.DONE) return 2;
+                if (s === Status.EXPIRED) return 1;
+                return 0; // TODO, IN_PROGRESS
+              };
+              const aWeight = getStatusWeight(a.task.status);
+              const bWeight = getStatusWeight(b.task.status);
+              if (aWeight !== bWeight) return aWeight - bWeight;
               const priorityWeight: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
               const pw = (t: typeof a.task) => priorityWeight[t.priority];
               const pDiff = pw(b.task) - pw(a.task);

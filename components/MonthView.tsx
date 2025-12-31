@@ -552,10 +552,15 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               year === new Date().getFullYear();
 
             const dayTasks = getTasksForDay(day).sort((a, b) => {
-              // 1. Status: Active first (Done last)
-              const aDone = a.task.status === Status.DONE ? 1 : 0;
-              const bDone = b.task.status === Status.DONE ? 1 : 0;
-              if (aDone !== bDone) return aDone - bDone;
+              // 1. Status: Active -> Missed -> Done
+              const getStatusWeight = (s: Status) => {
+                if (s === Status.DONE) return 2;
+                if (s === Status.EXPIRED) return 1;
+                return 0; // TODO, IN_PROGRESS
+              };
+              const aWeight = getStatusWeight(a.task.status);
+              const bWeight = getStatusWeight(b.task.status);
+              if (aWeight !== bWeight) return aWeight - bWeight;
 
               // 2. Priority: High first
               const priorityWeight: Record<string, number> = { [Priority.HIGH]: 3, [Priority.MEDIUM]: 2, [Priority.LOW]: 1 };
