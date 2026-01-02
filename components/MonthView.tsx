@@ -203,7 +203,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
         const displayTask = isRealInstance ? task : {
           ...task,
-          id: `${task.id} -virtual - ${date.getTime()} `,
+          id: `${task.id}-virtual-${date.getTime()}`,
           dueDate: occurrenceISO,
           status: displayStatus
         };
