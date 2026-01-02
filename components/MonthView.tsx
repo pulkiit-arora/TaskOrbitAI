@@ -634,9 +634,12 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                     const shouldShowVirtualIndicator = isVirtual && occurrenceDate > today;
 
                     let completedCount = 0;
+                    let missedCount = 0;
                     if (task.recurrence !== Recurrence.NONE) {
                       const searchId = isVirtual ? baseTaskId : task.id;
-                      completedCount = tasks.filter(t => t.status === Status.DONE && t.seriesId === searchId).length;
+                      const history = tasks.filter(t => t.seriesId === searchId);
+                      completedCount = history.filter(t => t.status === Status.DONE).length;
+                      missedCount = history.filter(t => t.status === Status.EXPIRED).length;
                     }
 
                     return (
@@ -703,11 +706,21 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                             )}
 
                             {/* Recurrence Stats */}
-                            {task.recurrence !== Recurrence.NONE && completedCount > 0 && (
-                              <span className="flex items-center gap-1 text-[10px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 flex-shrink-0" title={`${completedCount} completion${completedCount === 1 ? '' : 's'} so far`}>
-                                <span className="font-bold">{completedCount}</span>
-                                <span className="text-[9px] uppercase opacity-80">Done</span>
-                              </span>
+                            {task.recurrence !== Recurrence.NONE && (
+                              <>
+                                {completedCount > 0 && (
+                                  <span className="flex items-center gap-1 text-[10px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 flex-shrink-0" title={`${completedCount} completion${completedCount === 1 ? '' : 's'} so far`}>
+                                    <span className="font-bold">{completedCount}</span>
+                                    <span className="text-[9px] uppercase opacity-80">Done</span>
+                                  </span>
+                                )}
+                                {missedCount > 0 && (
+                                  <span className="flex items-center gap-1 text-[10px] bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded border border-orange-100 dark:border-orange-800 flex-shrink-0" title={`${missedCount} time${missedCount === 1 ? '' : 's'} missed`}>
+                                    <span className="font-bold">{missedCount}</span>
+                                    <span className="text-[9px] uppercase opacity-80">Miss</span>
+                                  </span>
+                                )}
+                              </>
                             )}
                             {task.comments && task.comments.length > 0 && (
                               <span className="flex items-center gap-1 text-[10px] bg-gray-50 dark:bg-gray-700/50 px-1.5 py-0.5 rounded-full border border-gray-100 dark:border-gray-700 text-gray-500">

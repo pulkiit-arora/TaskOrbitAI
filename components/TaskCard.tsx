@@ -16,6 +16,7 @@ interface TaskCardProps {
   showStrikethrough?: boolean;
   hideMoveButtons?: boolean;
   completedCount?: number;
+  missedCount?: number;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
@@ -28,7 +29,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   showFutureIndicator = false,
   showStrikethrough = true,
   hideMoveButtons = false,
-  completedCount
+  completedCount,
+  missedCount
 }) => {
   const priorityColor = {
     [Priority.HIGH]: 'bg-red-100 text-red-800 border-red-200',
@@ -91,14 +93,26 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           <span className="flex-1 font-semibold text-sm">{task.title}</span>
         </span>
 
-        {/* Recurrence Stats Pill */}
-        {task.recurrence !== Recurrence.NONE && completedCount !== undefined && completedCount > 0 && (
-          <Tooltip content={`${completedCount} completion${completedCount === 1 ? '' : 's'} so far`}>
-            <span className="flex items-center gap-1 text-[10px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 flex-shrink-0">
-              <span className="font-bold">{completedCount}</span>
-              <span className="text-[9px] uppercase opacity-80">Done</span>
-            </span>
-          </Tooltip>
+        {/* Recurrence Stats Pills */}
+        {task.recurrence !== Recurrence.NONE && (
+          <div className="flex gap-1 flex-shrink-0">
+            {completedCount !== undefined && completedCount > 0 && (
+              <Tooltip content={`${completedCount} completion${completedCount === 1 ? '' : 's'} so far`}>
+                <span className="flex items-center gap-1 text-[10px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800">
+                  <span className="font-bold">{completedCount}</span>
+                  <span className="text-[9px] uppercase opacity-80">Done</span>
+                </span>
+              </Tooltip>
+            )}
+            {missedCount !== undefined && missedCount > 0 && (
+              <Tooltip content={`${missedCount} time${missedCount === 1 ? '' : 's'} missed`}>
+                <span className="flex items-center gap-1 text-[10px] bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded border border-orange-100 dark:border-orange-800">
+                  <span className="font-bold">{missedCount}</span>
+                  <span className="text-[9px] uppercase opacity-80">Miss</span>
+                </span>
+              </Tooltip>
+            )}
+          </div>
         )}
 
         {task.recurrence !== Recurrence.NONE && (

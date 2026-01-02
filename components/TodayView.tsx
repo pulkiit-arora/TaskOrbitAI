@@ -230,9 +230,12 @@ export const TodayView: React.FC<TodayViewProps> = ({
                             openTodayTasks.map(({ task, isVirtual }) => {
                                 // Calculate recurrence stats
                                 let completedCount = 0;
+                                let missedCount = 0;
                                 if (task.recurrence !== Recurrence.NONE) {
                                     const baseId = isVirtual ? task.id.split('-virtual-')[0] : task.id;
-                                    completedCount = tasks.filter(t => t.status === Status.DONE && t.seriesId === baseId).length;
+                                    const history = tasks.filter(t => t.seriesId === baseId);
+                                    completedCount = history.filter(t => t.status === Status.DONE).length;
+                                    missedCount = history.filter(t => t.status === Status.EXPIRED).length;
                                 }
 
                                 return (
@@ -249,6 +252,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                             onDelete={onDeleteTask}
                                             isVirtual={isVirtual}
                                             completedCount={completedCount}
+                                            missedCount={missedCount}
                                         />
                                     </div>
                                 );
