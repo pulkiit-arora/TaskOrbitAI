@@ -5,25 +5,24 @@ import { MonthView } from './components/MonthView';
 import { WeekView } from './components/WeekView';
 import { AppHeader } from './components/AppHeader';
 import { BoardView } from './components/BoardView';
+import { TodayView } from './components/TodayView';
 import { LoadingScreen } from './components/LoadingScreen';
 import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
 import { Tour } from './components/Tour';
 import { Legend } from './components/Legend';
 import { SearchInput } from './components/SearchInput';
 import { CommandPalette } from './components/CommandPalette';
-import { Task, Status, Recurrence, Priority, Tag } from './types';
+import { Task, Status, Recurrence, Priority, Tag, ViewMode } from './types';
 import { useTasks } from './hooks/useTasks';
 import { useTaskModal } from './hooks/useTaskModal';
 import { useLocalStorageString } from './hooks/useLocalStorage';
 import { calculateNextDueDate } from './utils/taskUtils';
 
-type ViewMode = 'board' | 'week' | 'month';
-
 const App: React.FC = () => {
   const { tasks, isLoading, setTasks, updateTaskStatus } = useTasks();
   const { isModalOpen, editingTask, openModal, closeModal, openModalWithDate } = useTaskModal();
 
-  const [viewMode, setViewModeState] = useLocalStorageString('lifeflow-view-mode', 'board');
+  const [viewMode, setViewModeState] = useLocalStorageString('lifeflow-view-mode', 'today'); // Default changed to 'today'
   const setViewMode = (mode: ViewMode) => setViewModeState(mode);
   const [showArchived, setShowArchived] = useState(() => {
     try {
@@ -41,10 +40,6 @@ const App: React.FC = () => {
   const [priorityFilter, setPriorityFilter] = useState<Priority[]>([]);
   const [boardFilter, setBoardFilter] = useState<'all' | 'overdue' | 'week' | 'nodue'>('all');
   const [statusFilter, setStatusFilter] = useLocalStorageString('lifeflow-status-filter', '');
-  // We store as string (JSON) because useLocalStorageString is simpler, need parsing/serializing? 
-  // Actually reusing useLocalStorageString is risky for arrays. 
-  // Let's use simple useState with effect for now or safe parsing.
-  // Better: separate effect for persistence.
 
   const [selectedStatuses, setSelectedStatuses] = useState<Status[]>(() => {
     try {
@@ -334,6 +329,7 @@ const App: React.FC = () => {
   };
 
   const handleToggleDone = (taskId: string, onDate?: string) => {
+    // ... logic same as existing handleToggleDone, just ensuring it's wired
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -380,9 +376,8 @@ const App: React.FC = () => {
       return;
     }
 
-    // If toggling a recurring task to DONE without a specific date (e.g., from Board),
-    // materialize a DONE history for the current occurrence and roll the base forward.
     if (!onDate && togglingToDone && task.recurrence !== Recurrence.NONE) {
+      // ... existing logic for no-date recurring toggle
       const occurrenceISO = task.dueDate || new Date().toISOString();
       const anchorISO2 = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
       const nextDue = calculateNextDueDate(
@@ -424,8 +419,6 @@ const App: React.FC = () => {
     }
 
     const newStatus = task.status === Status.DONE ? Status.TODO : Status.DONE;
-    // If toggling to DONE and task has no dueDate, anchor it to today so Week/Month can display it
-    // If toggling to DONE and task has no dueDate, anchor it to today so Week/Month can display it
     if (newStatus === Status.DONE && !task.dueDate) {
       const today = new Date();
       today.setHours(12, 0, 0, 0);
@@ -448,7 +441,6 @@ const App: React.FC = () => {
     const task = tasks.find(t => t.id === targetId);
     if (!task) return;
 
-    // Logic similar to completing a recurring task, but setting status to EXPIRED
     if (task.recurrence !== Recurrence.NONE) {
       const finalOccurrenceISO = occurrenceISO || task.dueDate || new Date().toISOString();
 
@@ -558,6 +550,7 @@ const App: React.FC = () => {
         id: crypto.randomUUID(),
         recurrence: Recurrence.NONE,
         isRecurringException: true,
+        isRecurringException: true,
         dueDate: newDueDateISO,
         createdAt: Date.now(),
       };
@@ -614,19 +607,6 @@ const App: React.FC = () => {
         const task = tasks.find(t => t.id === deleteConfirmation.taskId);
         if (task && task.recurrence !== Recurrence.NONE && scope === 'single') {
           // User wants to delete just this instance of a real recurring task
-          // We can't "exclude" the base task from itself easily without moving the start date.
-          // Simplified logic: If deleting the *anchor* instance, we usually just archive/delete it.
-          // But if the user selects "Single" on the base task, let's treat it as "Finish this instance" or tell them they can't?
-          // BETTER UX: If it's the base task (today) and they say "Delete this event", we actually want to *skip* this occurrence.
-          // Which means advancing the start date or adding to excludedDates?
-          // Actually, if it's the base task, it's the "Current" one. We can just mark it done or delete it.
-          // Deleting the base task literally deletes the record.
-          // So if `scope === 'single'`, we should probably just `excludedDates` the current due date?
-          // BUT wait, if we exclude the current due date, the base task still exists.
-          // Correct approach: Add base task's current due date to `excludedDates`.
-          // AND we need to push the `dueDate` forward to the next occurrence so the base task "moves" to next.
-
-          // To be safe and simple for now: strict deletion only deletes the series for base tasks unless we implement complex "move next" logic.
           setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId));
         } else {
           // Normal delete (series or non-recurring)
@@ -705,9 +685,7 @@ const App: React.FC = () => {
   };
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Task[]>([]); // Keep this if needed, but we'll prefer direct filtering
-
-  // ... (previous effects)
+  const [searchResults, setSearchResults] = useState<Task[]>([]);
 
   // Dark Mode State
   const [darkMode, setDarkMode] = useState(() => {
@@ -824,7 +802,7 @@ const App: React.FC = () => {
       </div>
 
       <AppHeader
-        viewMode={viewMode as ViewMode}
+        viewMode={viewMode}
         setViewMode={setViewMode}
         currentDate={currentDate}
         navigateDate={navigateDate}
@@ -837,6 +815,19 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 overflow-hidden bg-gray-50 p-4 md:p-6">
+        {viewMode === 'today' && (
+          <TodayView
+            tasks={filteredTasks}
+            onEditTask={(task) => openModal(task)}
+            onMoveTask={handleMoveTask}
+            onArchiveTask={handleArchiveTask}
+            onDeleteTask={handleDeleteTask}
+            onToggleDone={handleToggleDone}
+            onDropTask={handleDropTaskDate}
+            onAddTask={() => openModalWithDate(new Date())}
+          />
+        )}
+
         {viewMode === 'board' && (
           <BoardView
             tasks={filteredTasks}
@@ -848,7 +839,9 @@ const App: React.FC = () => {
             onEditTask={(task) => openModal(task)}
             onMoveTask={handleMoveTask}
             onArchiveTask={handleArchiveTask}
+            onDeleteTask={handleDeleteTask}
             onDropTask={handleDropTask}
+            onDeleteAll={() => setIsDeleteAllOpen(true)}
             priorityFilter={priorityFilter}
             setPriorityFilter={setPriorityFilter}
             statusFilter={selectedStatuses}
@@ -885,6 +878,7 @@ const App: React.FC = () => {
             onMoveTask={handleMoveTask}
             onArchiveTask={handleArchiveTask}
             onDeleteTask={handleDeleteTask}
+            onToggleDone={handleToggleDone}
             onAddTask={openModalWithDate}
             onDropTask={handleDropTaskDate}
             priorityFilter={priorityFilter}
@@ -907,8 +901,12 @@ const App: React.FC = () => {
             description: 'Your central hub for productivity. Manage tasks, build habits, and track progress across powerful views.'
           },
           {
+            title: 'New Today View',
+            description: 'Start your day with the focused Today view. See what needs your attention right now in a clean list.'
+          },
+          {
             title: 'Flexible Views',
-            description: 'Switch between Board (Kanban), Week, and Month views to visualize your workload exactly how you prefer.'
+            description: 'Switch between the new Today list, Board (Kanban), Week, and Month views to visualize your workload exactly how you prefer.'
           },
           {
             title: 'Command Palette',
@@ -959,7 +957,7 @@ const App: React.FC = () => {
       />
       <CommandPalette
         tasks={tasks}
-        onNavigate={(view) => setViewMode(view)}
+        onNavigate={(view) => setViewMode(view as ViewMode)}
         onAddTask={() => openModal()}
         onEditTask={(task) => openModal(task)}
         toggleTheme={toggleDarkMode}

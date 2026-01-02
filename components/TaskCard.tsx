@@ -15,9 +15,21 @@ interface TaskCardProps {
   showFutureIndicator?: boolean;
   showStrikethrough?: boolean;
   hideMoveButtons?: boolean;
+  completedCount?: number;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArchive, onDelete, isVirtual = false, showFutureIndicator = false, showStrikethrough = true, hideMoveButtons = false }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({
+  task,
+  onEdit,
+  onMove,
+  onArchive,
+  onDelete,
+  isVirtual = false,
+  showFutureIndicator = false,
+  showStrikethrough = true,
+  hideMoveButtons = false,
+  completedCount
+}) => {
   const priorityColor = {
     [Priority.HIGH]: 'bg-red-100 text-red-800 border-red-200',
     [Priority.MEDIUM]: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -60,30 +72,35 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
         onClick={(e) => handleButtonClick(e, () => onEdit(task))}
         onMouseDown={handleButtonMouseDown}
       >
-        <span className={`flex items-center gap-1.5 flex-1 ${showStrikethrough && (task.status === 'DONE' || task.status === 'EXPIRED') ? 'line-through text-gray-500' : ''}`}>
+        <span className={`flex items-center gap-2 flex-1 ${showStrikethrough && (task.status === 'DONE' || task.status === 'EXPIRED') ? 'line-through text-gray-500' : ''}`}>
           {task.priority === Priority.HIGH && (
-            <ArrowUp
-              size={14}
-              className="text-red-500 flex-shrink-0"
-              title={`Priority: ${task.priority}`}
-            />
+            <span className="flex items-center gap-1 text-red-600 bg-red-50 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide border border-red-100 dark:bg-red-900/20 dark:border-red-900/30 dark:text-red-400">
+              <ArrowUp size={12} strokeWidth={2.5} /> High
+            </span>
           )}
           {task.priority === Priority.MEDIUM && (
-            <Minus
-              size={14}
-              className="text-yellow-500 flex-shrink-0"
-              title={`Priority: ${task.priority}`}
-            />
+            <span className="flex items-center gap-1 text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide border border-yellow-100 dark:bg-yellow-900/20 dark:border-yellow-900/30 dark:text-yellow-400">
+              <Minus size={12} strokeWidth={2.5} /> Medium
+            </span>
           )}
           {task.priority === Priority.LOW && (
-            <ArrowDown
-              size={14}
-              className="text-blue-500 flex-shrink-0"
-              title={`Priority: ${task.priority}`}
-            />
+            <span className="flex items-center gap-1 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide border border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/30 dark:text-blue-400">
+              <ArrowDown size={12} strokeWidth={2.5} /> Low
+            </span>
           )}
-          <span className="flex-1">{task.title}</span>
+          <span className="flex-1 font-semibold text-sm">{task.title}</span>
         </span>
+
+        {/* Recurrence Stats Pill */}
+        {task.recurrence !== Recurrence.NONE && completedCount !== undefined && completedCount > 0 && (
+          <Tooltip content={`${completedCount} completion${completedCount === 1 ? '' : 's'} so far`}>
+            <span className="flex items-center gap-1 text-[10px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 flex-shrink-0">
+              <span className="font-bold">{completedCount}</span>
+              <span className="text-[9px] uppercase opacity-80">Done</span>
+            </span>
+          </Tooltip>
+        )}
+
         {task.recurrence !== Recurrence.NONE && (
           <Tooltip content={formatRecurrenceSummary(task)}>
             <span className="text-gray-400 flex-shrink-0">
@@ -100,9 +117,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
         )}
         {task.comments && task.comments.length > 0 && (
           <CommentPopover comments={task.comments}>
-            <span className="ml-2 text-gray-400 flex items-center gap-1 text-xs hover:text-blue-600 transition-colors">
-              <MessageSquare size={14} />
-              <span className="text-[11px]">{task.comments.length}</span>
+            <span className="ml-2 text-gray-400 flex items-center gap-1 text-xs hover:text-blue-600 transition-colors bg-gray-50 dark:bg-gray-700/50 px-1.5 py-0.5 rounded-full border border-gray-100 dark:border-gray-700">
+              <MessageSquare size={12} />
+              <span className="text-[10px] font-medium">{task.comments.length}</span>
             </span>
           </CommentPopover>
         )}
@@ -111,15 +128,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onMove, onArch
       {/* recurrence summary shown on hover tooltip only */}
 
       {task.description && (
-        <p className={`text-gray-500 dark:text-gray-400 text-xs line-clamp-2 mb-3 pointer-events-none ${showStrikethrough && (task.status === 'DONE' || task.status === 'EXPIRED') ? 'line-through' : ''}`}>
+        <p className={`text-gray-500 dark:text-gray-400 text-xs line-clamp-2 mb-3 mt-1 pointer-events-none ${showStrikethrough && (task.status === 'DONE' || task.status === 'EXPIRED') ? 'line-through' : ''}`}>
           {task.description}
         </p>
       )}
 
       {task.tags && task.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-3">
+        <div className="flex flex-wrap gap-2 mb-3 mt-2">
           {task.tags.map(tag => (
-            <span key={tag.id} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${tag.color}`}>
+            <span key={tag.id} className={`text-xs px-2 py-1 rounded-md border font-medium ${tag.color} opacity-90`}>
               {tag.label}
             </span>
           ))}

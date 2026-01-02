@@ -2,9 +2,8 @@ import React from 'react';
 import { Button } from './Button';
 import { SearchInput } from './SearchInput';
 import { CheckSquare, Archive, Plus, Layout, Calendar, ChevronLeft, ChevronRight, Grid, Download, Upload, Filter } from 'lucide-react';
-import { Task, Priority } from '../types';
+import { Task, Priority, ViewMode } from '../types';
 
-type ViewMode = 'board' | 'week' | 'month';
 
 interface AppHeaderProps {
   viewMode: ViewMode;
@@ -34,15 +33,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex-shrink-0 transition-colors duration-200 flex flex-col md:flex-row items-center justify-between sticky top-0 z-20 gap-4">
       {/* Logo & Primary Actions */}
-      <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+      <div className="flex items-center gap-3 md:w-auto justify-between md:justify-start flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="bg-blue-600 p-2 rounded-lg text-white">
             <CheckSquare size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent truncate">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent truncate whitespace-nowrap">
               TaskOrbit AI
-            </h1>  <p className="text-xs text-gray-500 mt-1">Personal Task Manager</p>
+            </h1>
+            <p className="text-xs text-gray-500 mt-1 hidden sm:block">Personal Task Manager</p>
           </div>
         </div>
 
@@ -55,17 +55,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       </div>
 
       {/* Center Section: View Switcher & Navigator */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+      <div className="flex flex-col sm:flex-row items-center gap-3 md:w-auto flex-shrink-0">
         <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-full sm:w-auto justify-center">
           <button
-            onClick={() => setViewMode('board')}
-            className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'board'
+            onClick={() => setViewMode('today')}
+            className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'today'
               ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
               : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
               }`}
           >
-            <Layout size={18} />
-            <span className="inline">Board</span>
+            <CheckSquare size={18} />
+            <span className="hidden sm:inline">Today</span>
+            <span className="inline sm:hidden">Today</span>
           </button>
           <button
             onClick={() => setViewMode('week')}
@@ -75,7 +76,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               }`}
           >
             <Grid size={18} />
-            <span className="inline">Week</span>
+            <span className="hidden sm:inline">Week</span>
+            <span className="inline sm:hidden">Week</span>
           </button>
           <button
             onClick={() => setViewMode('month')}
@@ -85,21 +87,34 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               }`}
           >
             <Calendar size={18} />
-            <span className="inline">Month</span>
+            <span className="hidden sm:inline">Month</span>
+            <span className="inline sm:hidden">Month</span>
+          </button>
+          <button
+            onClick={() => setViewMode('board')}
+            className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'board'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              }`}
+          >
+            <Layout size={18} />
+            <span className="hidden sm:inline">Board</span>
+            <span className="inline sm:hidden">Board</span>
           </button>
         </div>
 
-        {viewMode !== 'board' && (
+        {(viewMode !== 'board' && viewMode !== 'today') && (
           <>
             <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm w-full sm:w-auto justify-between sm:justify-start">
               <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-l-lg border-r border-gray-100 dark:border-gray-700">
                 <ChevronLeft size={18} />
               </button>
               <div className="flex items-center">
-                <span className="px-4 text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[140px] text-center">
+                <span className="px-4 text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[140px] text-center whitespace-nowrap">
                   {viewMode === 'month'
                     ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                     : (() => {
+                      // Week view logic
                       const d = new Date(currentDate);
                       const day = d.getDay();
                       const diff = d.getDate() - day;
@@ -126,7 +141,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       </div>
 
       {/* Right Section: Search & Actions */}
-      <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+      <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-shrink-0">
         {/* Global Search Input */}
         <div className="w-full md:w-64">
           <SearchInput

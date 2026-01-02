@@ -6,6 +6,8 @@ export enum Status {
   EXPIRED = 'EXPIRED'
 }
 
+export type ViewMode = 'board' | 'week' | 'month' | 'today';
+
 export enum Priority {
   LOW = 'LOW',
   MEDIUM = 'MEDIUM',

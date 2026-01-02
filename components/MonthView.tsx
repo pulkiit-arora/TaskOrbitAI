@@ -1,7 +1,7 @@
 import React from 'react';
 import { Task, Priority, Status, Recurrence, Tag } from '../types';
 import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
-import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter, Tag as TagIcon, XCircle } from 'lucide-react';
+import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter, Tag as TagIcon, XCircle, LayoutGrid, List, MessageSquare } from 'lucide-react';
 import { StatusFilter } from './StatusFilter';
 
 interface MonthViewProps {
@@ -127,6 +127,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
   // Filter mode for Month view
   const [filterMode, setFilterMode] = React.useState<'all' | 'overdue' | 'month' | 'nodue'>('all');
+  const [viewLayout, setViewLayout] = React.useState<'grid' | 'list'>('grid');
   const toggleOverdue = () => setFilterMode(m => (m === 'overdue' ? 'all' : 'overdue'));
   const toggleMonth = () => setFilterMode(m => (m === 'month' ? 'all' : 'month'));
   const toggleNoDue = () => setFilterMode(m => (m === 'nodue' ? 'all' : 'nodue'));
@@ -227,116 +228,134 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="mb-3 flex items-center gap-2 px-3 pt-3 flex-wrap">
-        <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Summary</span>
-        <button
-          type="button"
-          onClick={toggleOverdue}
-          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'} `}
-        >
-          Overdue: {overdueTasks.length}
-        </button>
-        <button
-          type="button"
-          onClick={toggleMonth}
-          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'month' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'} `}
-        >
-          Due this month: {dueThisMonthCount}
-        </button>
-        <button
-          type="button"
-          onClick={toggleNoDue}
-          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'} `}
-        >
-          No due date: {missingDueTasks.length}
-        </button>
+      <div className="mb-3 flex items-center justify-between px-3 pt-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Summary</span>
+          <button
+            type="button"
+            onClick={toggleOverdue}
+            className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'} `}
+          >
+            Overdue: {overdueTasks.length}
+          </button>
+          <button
+            type="button"
+            onClick={toggleMonth}
+            className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'month' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'} `}
+          >
+            Due this month: {dueThisMonthCount}
+          </button>
+          <button
+            type="button"
+            onClick={toggleNoDue}
+            className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'} `}
+          >
+            No due date: {missingDueTasks.length}
+          </button>
 
-        {setStatusFilter && statusFilter && (
-          <>
-            <div className="h-4 w-px bg-gray-300 mx-1"></div>
-            <StatusFilter
-              selectedStatuses={statusFilter}
-              onChange={setStatusFilter}
-            />
-          </>
-        )}
+          {setStatusFilter && statusFilter && (
+            <>
+              <div className="h-4 w-px bg-gray-300 mx-1"></div>
+              <StatusFilter
+                selectedStatuses={statusFilter}
+                onChange={setStatusFilter}
+              />
+            </>
+          )}
 
-        {setPriorityFilter && priorityFilter && (
-          <>
-            <div className="h-4 w-px bg-gray-300 mx-1"></div>
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-gray-500 mr-1">Priority:</span>
-              <button
-                onClick={() => {
-                  const newFilter = priorityFilter.includes(Priority.HIGH)
-                    ? priorityFilter.filter(p => p !== Priority.HIGH)
-                    : [...priorityFilter, Priority.HIGH];
-                  setPriorityFilter(newFilter);
-                }}
-                className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.HIGH)
-                  ? 'bg-red-100 text-red-800 border-red-200'
-                  : 'bg-white text-gray-500 border-gray-200 hover:border-red-200 hover:text-red-700'
-                  } `}
-              >
-                High
-              </button>
-              <button
-                onClick={() => {
-                  const newFilter = priorityFilter.includes(Priority.MEDIUM)
-                    ? priorityFilter.filter(p => p !== Priority.MEDIUM)
-                    : [...priorityFilter, Priority.MEDIUM];
-                  setPriorityFilter(newFilter);
-                }}
-                className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.MEDIUM)
-                  ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                  : 'bg-white text-gray-500 border-gray-200 hover:border-yellow-200 hover:text-yellow-700'
-                  } `}
-              >
-                Med
-              </button>
-              <button
-                onClick={() => {
-                  const newFilter = priorityFilter.includes(Priority.LOW)
-                    ? priorityFilter.filter(p => p !== Priority.LOW)
-                    : [...priorityFilter, Priority.LOW];
-                  setPriorityFilter(newFilter);
-                }}
-                className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.LOW)
-                  ? 'bg-blue-100 text-blue-800 border-blue-200'
-                  : 'bg-white text-gray-500 border-gray-200 hover:border-blue-200 hover:text-blue-700'
-                  } `}
-              >
-                Low
-              </button>
-            </div>
-          </>
-        )}
-
-        {setTagFilter && tags && tags.length > 0 && (
-          <>
-            <div className="h-4 w-px bg-gray-300 mx-1"></div>
-            <div className="flex items-center gap-1">
-              <TagIcon size={12} className="text-gray-500" />
-              {tags.map(tag => (
+          {setPriorityFilter && priorityFilter && (
+            <>
+              <div className="h-4 w-px bg-gray-300 mx-1"></div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-500 mr-1">Priority:</span>
                 <button
-                  key={tag.id}
                   onClick={() => {
-                    const newFilter = tagFilter.includes(tag.id)
-                      ? tagFilter.filter(t => t !== tag.id)
-                      : [...tagFilter, tag.id];
-                    setTagFilter && setTagFilter(newFilter);
+                    const newFilter = priorityFilter.includes(Priority.HIGH)
+                      ? priorityFilter.filter(p => p !== Priority.HIGH)
+                      : [...priorityFilter, Priority.HIGH];
+                    setPriorityFilter(newFilter);
                   }}
-                  className={`w-3 h-3 rounded-full border transition-all ${tagFilter.includes(tag.id) ? `ring-2 ring-offset-1 ring-blue-500 ${tag.color.split(' ')[0]}` : tag.color.split(' ')[0]} ${tag.color.split(' ')[2]} `}
-                  title={tag.label}
-                />
-              ))}
-              {tagFilter.length > 0 && (
-                <button onClick={() => setTagFilter && setTagFilter([])} className="text-[10px] text-gray-400 hover:text-gray-600 ml-1">Clear</button>
-              )}
-            </div>
-          </>
-        )}
+                  className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.HIGH)
+                    ? 'bg-red-100 text-red-800 border-red-200'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-red-200 hover:text-red-700'
+                    } `}
+                >
+                  High
+                </button>
+                <button
+                  onClick={() => {
+                    const newFilter = priorityFilter.includes(Priority.MEDIUM)
+                      ? priorityFilter.filter(p => p !== Priority.MEDIUM)
+                      : [...priorityFilter, Priority.MEDIUM];
+                    setPriorityFilter(newFilter);
+                  }}
+                  className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.MEDIUM)
+                    ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-yellow-200 hover:text-yellow-700'
+                    } `}
+                >
+                  Med
+                </button>
+                <button
+                  onClick={() => {
+                    const newFilter = priorityFilter.includes(Priority.LOW)
+                      ? priorityFilter.filter(p => p !== Priority.LOW)
+                      : [...priorityFilter, Priority.LOW];
+                    setPriorityFilter(newFilter);
+                  }}
+                  className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors ${priorityFilter.includes(Priority.LOW)
+                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-blue-200 hover:text-blue-700'
+                    } `}
+                >
+                  Low
+                </button>
+              </div>
+            </>
+          )}
 
+          {setTagFilter && tags && tags.length > 0 && (
+            <>
+              <div className="h-4 w-px bg-gray-300 mx-1"></div>
+              <div className="flex items-center gap-1">
+                <TagIcon size={12} className="text-gray-500" />
+                {tags.map(tag => (
+                  <button
+                    key={tag.id}
+                    onClick={() => {
+                      const newFilter = tagFilter.includes(tag.id)
+                        ? tagFilter.filter(t => t !== tag.id)
+                        : [...tagFilter, tag.id];
+                      setTagFilter && setTagFilter(newFilter);
+                    }}
+                    className={`w-3 h-3 rounded-full border transition-all ${tagFilter.includes(tag.id) ? `ring-2 ring-offset-1 ring-blue-500 ${tag.color.split(' ')[0]}` : tag.color.split(' ')[0]} ${tag.color.split(' ')[2]} `}
+                    title={tag.label}
+                  />
+                ))}
+                {tagFilter.length > 0 && (
+                  <button onClick={() => setTagFilter && setTagFilter([])} className="text-[10px] text-gray-400 hover:text-gray-600 ml-1">Clear</button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center bg-gray-100 dark:bg-gray-700 p-0.5 rounded-lg">
+          <button
+            onClick={() => setViewLayout('grid')}
+            className={`p-1 rounded-md transition-colors ${viewLayout === 'grid' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+            title="Grid View"
+          >
+            <LayoutGrid size={16} />
+          </button>
+          <button
+            onClick={() => setViewLayout('list')}
+            className={`p-1 rounded-md transition-colors ${viewLayout === 'list' ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+            title="List View"
+          >
+            <List size={16} />
+          </button>
+        </div>
       </div>
 
       {filterMode === 'overdue' && (
@@ -526,8 +545,8 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           })()}
         </div>
       )}
-      {/* Weekday Headers */}
-      {filterMode === 'all' && (
+      {/* Weekday Headers - Hide in List Mode */}
+      {filterMode === 'all' && viewLayout === 'grid' && (
         <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
             <div key={day} className="py-2 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">
@@ -537,8 +556,187 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
         </div>
       )}
 
+      {/* List View */}
+      {viewLayout === 'list' && filterMode === 'all' && (
+        <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-gray-900 p-2 md:p-4 space-y-4">
+          {days.map(day => {
+            const dayTasks = getTasksForDay(day);
+            // Filter logic for List View? (Use same sorts)
+            // If day has no tasks, do we show it? User "continuous rather than each entry for a day" 
+            // usually implies showing dates with tasks, avoiding blanks.
+            // Let's filter out days with no tasks to keep it "continuous" and dense.
+            if (dayTasks.length === 0) return null;
+
+            const date = new Date(year, month, day);
+            const isToday = day === new Date().getDate() &&
+              month === new Date().getMonth() &&
+              year === new Date().getFullYear();
+
+            const sortedTasks = dayTasks.sort((a, b) => {
+              // Sort Logic (Copy from Grid)
+              const getStatusWeight = (s: Status) => {
+                if (s === Status.DONE) return 2;
+                if (s === Status.EXPIRED) return 1;
+                return 0; // TODO, IN_PROGRESS
+              };
+              const aWeight = getStatusWeight(a.task.status);
+              const bWeight = getStatusWeight(b.task.status);
+              if (aWeight !== bWeight) return aWeight - bWeight;
+
+              const priorityWeight: Record<string, number> = { [Priority.HIGH]: 3, [Priority.MEDIUM]: 2, [Priority.LOW]: 1 };
+              const pDiff = (priorityWeight[b.task.priority] || 0) - (priorityWeight[a.task.priority] || 0);
+              if (pDiff !== 0) return pDiff;
+
+              const ad = a.task.dueDate ? new Date(a.task.dueDate).getTime() : Infinity;
+              const bd = b.task.dueDate ? new Date(b.task.dueDate).getTime() : Infinity;
+              if (ad !== bd) return ad - bd;
+
+              return (b.task.createdAt || 0) - (a.task.createdAt || 0);
+            });
+
+            return (
+              <div
+                key={day}
+                ref={isToday ? (el) => {
+                  if (el && viewLayout === 'list') {
+                    // Scroll to today when list view is active
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                } : null}
+                className={`bg-white dark:bg-gray-800 rounded-xl border ${isToday ? 'border-blue-400 dark:border-blue-500 ring-1 ring-blue-400' : 'border-gray-200 dark:border-gray-700'} overflow-hidden shadow-sm`}
+              >
+                <div className={`px-4 py-2 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center ${isToday ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200' : 'bg-gray-50/50 dark:bg-gray-800'}`}>
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <span className={`${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {date.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase()}
+                    </span>
+                    <span className="text-lg">
+                      {date.getDate()}
+                    </span>
+                  </h3>
+                  <button
+                    onClick={() => onAddTask(date)}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-400 hover:text-blue-600 transition-colors"
+                    title="Add Task"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+                <div className="p-2 space-y-1">
+                  {sortedTasks.map(({ task, isVirtual, baseTaskId, baseTask, occurrenceISO }) => {
+                    const isDone = task.status === Status.DONE;
+                    const isExpired = task.status === Status.EXPIRED;
+                    const isInProgress = task.status === Status.IN_PROGRESS;
+                    const occurrenceDate = new Date(occurrenceISO);
+                    occurrenceDate.setHours(0, 0, 0, 0);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const shouldShowVirtualIndicator = isVirtual && occurrenceDate > today;
+
+                    let completedCount = 0;
+                    if (task.recurrence !== Recurrence.NONE) {
+                      const searchId = isVirtual ? baseTaskId : task.id;
+                      completedCount = tasks.filter(t => t.status === Status.DONE && t.seriesId === searchId).length;
+                    }
+
+                    return (
+                      <div
+                        key={task.id}
+                        className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all 
+                                 ${isDone ? 'bg-gray-50 border-transparent' : isExpired ? 'bg-orange-50/50 border-orange-100' : 'bg-white hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700'}
+                                 ${shouldShowVirtualIndicator ? 'opacity-70 border-dashed' : ''}
+                                 ${isInProgress ? 'border-blue-200 bg-blue-50/30' : ''}
+                               `}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isVirtual) {
+                              onToggleDone(baseTaskId, occurrenceISO);
+                            } else {
+                              onToggleDone(task.id);
+                            }
+                          }}
+                          className={`flex-shrink-0 transition-colors 
+                                     ${isDone ? 'text-green-500' : 'text-gray-300 hover:text-green-500'}
+                                     ${isExpired ? 'text-orange-500' : ''}
+                                     ${isInProgress ? 'text-blue-500' : ''}`}
+                        >
+                          {isDone ? <Check size={18} className="stroke-[3]" /> : (isExpired ? <XCircle size={18} /> : <Circle size={18} />)}
+                        </button>
+                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onEditTask(task)}>
+                          <div className={`flex items-center gap-2 mb-1 ${isDone ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                            {task.priority === Priority.HIGH && (
+                              <span className="flex items-center gap-1 text-red-600 bg-red-50 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide border border-red-100 dark:bg-red-900/20 dark:border-red-900/30 dark:text-red-400 flex-shrink-0">
+                                <ArrowUp size={12} strokeWidth={2.5} /> High
+                              </span>
+                            )}
+                            {task.priority === Priority.MEDIUM && (
+                              <span className="flex items-center gap-1 text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide border border-yellow-100 dark:bg-yellow-900/20 dark:border-yellow-900/30 dark:text-yellow-400 flex-shrink-0">
+                                <Minus size={12} strokeWidth={2.5} /> Medium
+                              </span>
+                            )}
+                            {task.priority === Priority.LOW && (
+                              <span className="flex items-center gap-1 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide border border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/30 dark:text-blue-400 flex-shrink-0">
+                                <ArrowDown size={12} strokeWidth={2.5} /> Low
+                              </span>
+                            )}
+                            <span className="font-semibold text-sm truncate flex-1">{task.title}</span>
+                            {task.isRecurringException && (
+                              <RefreshCw size={12} className="text-orange-400 stroke-[2.5]" title="Exception" />
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs text-gray-500">
+                            {task.description && <span className="truncate max-w-[200px] opacity-80">{task.description}</span>}
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-2">
+                            {task.tags && task.tags.length > 0 && (
+                              <div className="flex gap-1 flex-wrap">
+                                {task.tags.map(tag => (
+                                  <span key={tag.id} className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${tag.color} opacity-90`}>
+                                    {tag.label}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Recurrence Stats */}
+                            {task.recurrence !== Recurrence.NONE && completedCount > 0 && (
+                              <span className="flex items-center gap-1 text-[10px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 flex-shrink-0" title={`${completedCount} completion${completedCount === 1 ? '' : 's'} so far`}>
+                                <span className="font-bold">{completedCount}</span>
+                                <span className="text-[9px] uppercase opacity-80">Done</span>
+                              </span>
+                            )}
+                            {task.comments && task.comments.length > 0 && (
+                              <span className="flex items-center gap-1 text-[10px] bg-gray-50 dark:bg-gray-700/50 px-1.5 py-0.5 rounded-full border border-gray-100 dark:border-gray-700 text-gray-500">
+                                <MessageSquare size={10} /> {task.comments.length}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {/* If no tasks at all for the month */}
+          {days.every(d => getTasksForDay(d).length === 0) && (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                <List size={32} />
+              </div>
+              <p>No tasks for this month.</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Calendar Grid */}
-      {filterMode === 'all' && (
+      {filterMode === 'all' && viewLayout === 'grid' && (
         <div className="grid grid-cols-7 auto-rows-[minmax(140px,1fr)] flex-1 bg-gray-200 dark:bg-gray-700 gap-[1px] overflow-y-auto custom-scrollbar">
           {totalSlots.map((slot, index) => {
             if (slot === null) {
@@ -552,11 +750,11 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               year === new Date().getFullYear();
 
             const dayTasks = getTasksForDay(day).sort((a, b) => {
-              // 1. Status: Active -> Missed -> Done
+              // 1. Status: Active (TODO/IN_PROGRESS) -> Missed -> Done
               const getStatusWeight = (s: Status) => {
-                if (s === Status.DONE) return 2;
-                if (s === Status.EXPIRED) return 1;
-                return 0; // TODO, IN_PROGRESS
+                if (s === Status.DONE) return 3; // Done last
+                if (s === Status.EXPIRED) return 2; // Expired middle
+                return 1; // Active first
               };
               const aWeight = getStatusWeight(a.task.status);
               const bWeight = getStatusWeight(b.task.status);
@@ -701,7 +899,8 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
             );
           })}
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
