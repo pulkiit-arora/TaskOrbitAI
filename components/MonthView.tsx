@@ -805,13 +805,20 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                       {day}
                     </span>
                   </div>
-                  <button
-                    onClick={() => onAddTask(date)}
-                    className="p-1 text-gray-400 hover:text-blue-600 rounded full transition-all"
-                    title="Add task on this day"
-                  >
-                    <Plus size={14} />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    {dayTasks.length > 0 && (
+                      <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300 rounded-full border border-blue-100 dark:border-blue-800">
+                        {dayTasks.length}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => onAddTask(date)}
+                      className="p-1 text-gray-400 hover:text-blue-600 rounded full transition-all"
+                      title="Add task on this day"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar max-h-[160px] flex-1">

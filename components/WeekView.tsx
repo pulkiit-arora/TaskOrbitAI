@@ -360,6 +360,9 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 onArchive={onArchiveTask}
                 onDelete={onDeleteTask}
                 hideMoveButtons={true}
+                compactPriority={true}
+                onToggleDone={(id) => onToggleDone(id)}
+                layoutMode="sidebar"
               />
             ))}
         </div>
@@ -390,6 +393,9 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 onArchive={onArchiveTask}
                 onDelete={onDeleteTask}
                 hideMoveButtons={true}
+                compactPriority={true}
+                onToggleDone={(id) => onToggleDone(id)}
+                layoutMode="sidebar"
               />
             ))}
         </div>
@@ -417,6 +423,9 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 onArchive={onArchiveTask}
                 onDelete={onDeleteTask}
                 hideMoveButtons={true}
+                compactPriority={true}
+                onToggleDone={(id) => onToggleDone(id)}
+                layoutMode="sidebar"
               />
             ))}
         </div>
@@ -465,15 +474,22 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                         {day.getDate()} <span className="text-sm font-normal text-gray-400 dark:text-gray-500">{day.toLocaleDateString('en-US', { month: 'short' })}</span>
                       </div>
                     </div>
-                    {onAddTask && (
-                      <button
-                        onClick={() => onAddTask(day)}
-                        className="p-1.5 rounded-md hover:bg-gray-200/50 text-gray-500 hover:text-blue-600 transition-colors"
-                        title="Add task"
-                      >
-                        <Plus size={16} />
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {sortedDayTasks.length > 0 && (
+                        <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[11px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300 rounded-full border border-blue-100 dark:border-blue-800">
+                          {sortedDayTasks.length}
+                        </span>
+                      )}
+                      {onAddTask && (
+                        <button
+                          onClick={() => onAddTask(day)}
+                          className="p-1.5 rounded-md hover:bg-gray-200/50 text-gray-500 hover:text-blue-600 transition-colors"
+                          title="Add task"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -488,25 +504,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
 
                     return (
                       <div key={task.id} className="space-y-1 overflow-visible">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {task.status === Status.DONE && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 border border-green-200">Done</span>
-                          )}
-                          {task.status === Status.IN_PROGRESS && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 border border-blue-200">In Progress</span>
-                          )}
-                          {task.status === Status.EXPIRED && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-orange-100 text-orange-700 border border-orange-200">Missed</span>
-                          )}
-                          {task.tags && task.tags.length > 0 && (
-                            <div className="flex gap-0.5 flex-shrink-0">
-                              {task.tags.map(tag => (
-                                <div key={tag.id} className={`w-1.5 h-1.5 rounded-full ${tag.color.split(' ')[0].replace('100', '500')}`} />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className={`${task.status === Status.DONE || task.status === Status.EXPIRED ? 'line-through text-gray-500' : ''} ${task.status === Status.IN_PROGRESS ? 'bg-blue-50/40 rounded px-1.5 py-1' : ''}`}>
+                        <div>
                           <TaskCard
                             task={task}
                             onEdit={() => onEditTask(task)}
@@ -516,6 +514,9 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                             isVirtual={isVirtual}
                             showFutureIndicator={shouldShowVirtualIndicator}
                             hideMoveButtons={true}
+                            compactPriority={true}
+                            onToggleDone={() => isVirtual ? onToggleDone(baseTask.id, task.dueDate) : onToggleDone(task.id)}
+                            layoutMode="sidebar"
                           />
                         </div>
                       </div>
@@ -531,7 +532,8 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             );
           })}
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };

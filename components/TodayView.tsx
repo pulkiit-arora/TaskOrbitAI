@@ -229,10 +229,10 @@ export const TodayView: React.FC<TodayViewProps> = ({
                         ) : (
                             openTodayTasks.map(({ task, isVirtual }) => {
                                 // Calculate recurrence stats
+                                const baseId = isVirtual ? task.id.split('-virtual-')[0] : task.id;
                                 let completedCount = 0;
                                 let missedCount = 0;
                                 if (task.recurrence !== Recurrence.NONE) {
-                                    const baseId = isVirtual ? task.id.split('-virtual-')[0] : task.id;
                                     const history = tasks.filter(t => t.seriesId === baseId);
                                     completedCount = history.filter(t => t.status === Status.DONE).length;
                                     missedCount = history.filter(t => t.status === Status.EXPIRED).length;
@@ -253,6 +253,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                             isVirtual={isVirtual}
                                             completedCount={completedCount}
                                             missedCount={missedCount}
+                                            onToggleDone={() => onToggleDone(baseId, task.dueDate)}
                                         />
                                     </div>
                                 );
@@ -275,18 +276,14 @@ export const TodayView: React.FC<TodayViewProps> = ({
                         {showCompleted && (
                             <div className="space-y-2 opacity-75">
                                 {completedTodayTasks.map(({ task, isVirtual }) => {
-                                    // Calculate recurrence stats if applicable
+                                    // Calculate recurrence stats
+                                    const baseId = isVirtual ? task.id.split('-virtual-')[0] : task.id;
                                     let completedCount = 0;
-                                    if (task.recurrence !== Recurrence.NONE && !isVirtual) {
-                                        completedCount = tasks.filter(t => t.status === Status.DONE && t.seriesId === task.id).length;
-                                    } else if (task.recurrence !== Recurrence.NONE && isVirtual) {
-                                        // For virtual tasks, the 'task' is the display task. We need the base task ID.
-                                        // task.id is virtual. 'task.seriesId' might not be set or might be wrong on virtual? 
-                                        const baseId = task.id.split('-virtual-')[0]; // or task.id if it's the base
-                                        // Actually, for virtual tasks, we constructed them in getTasksForToday.
-                                        // We didn't explicitly set seriesId on them to match the base. 
-                                        // But we CAN match by the baseId we know.
-                                        completedCount = tasks.filter(t => t.status === Status.DONE && t.seriesId === baseId).length;
+                                    let missedCount = 0;
+                                    if (task.recurrence !== Recurrence.NONE) {
+                                        const history = tasks.filter(t => t.seriesId === baseId);
+                                        completedCount = history.filter(t => t.status === Status.DONE).length;
+                                        missedCount = history.filter(t => t.status === Status.EXPIRED).length;
                                     }
 
                                     return (
@@ -300,6 +297,8 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                                 isVirtual={isVirtual}
                                                 hideMoveButtons={true}
                                                 completedCount={completedCount}
+                                                missedCount={missedCount}
+                                                onToggleDone={() => onToggleDone(baseId, task.dueDate)}
                                             />
                                         </div>
                                     )
