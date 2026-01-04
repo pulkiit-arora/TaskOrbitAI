@@ -259,6 +259,9 @@ export const doesTaskOccurOnDate = (task: Task, date: Date): boolean => {
   // Check for exclusions (deleted/moved occurrences)
   if (task.excludedDates && task.excludedDates.some(d => {
     const ex = new Date(d);
+    // Robust check: Compare local date strings to avoid timestamp/hour issues
+    if (ex.toDateString() === checkDate.toDateString()) return true;
+
     ex.setHours(0, 0, 0, 0);
     return ex.getTime() === checkDate.getTime();
   })) {
