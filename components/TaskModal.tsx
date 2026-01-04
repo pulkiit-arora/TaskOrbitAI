@@ -17,9 +17,11 @@ interface TaskModalProps {
   tasks?: Task[];
   availableTags?: Tag[];
   onCreateTag?: (tag: Tag) => void;
+  onUpdateTag?: (tag: Tag) => void;
+  onDeleteTag?: (tagId: string) => void;
 }
 
-export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, onDelete, onMarkMissed, task, tasks, availableTags = [], onCreateTag = () => { } }) => {
+export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, onSaveMultiple, onDelete, onMarkMissed, task, tasks, availableTags = [], onCreateTag = () => { }, onUpdateTag, onDeleteTag }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
@@ -292,6 +294,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 availableTags={availableTags}
                 onTagsChange={setTags}
                 onCreateTag={onCreateTag}
+                onUpdateTag={onUpdateTag}
+                onDeleteTag={onDeleteTag}
               />
             </div>
 

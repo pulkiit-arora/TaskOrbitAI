@@ -301,14 +301,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveMultipleTasks = (tasksData: Partial<Task>[]) => {
-    const newTasks = tasksData.map(t => ({
-      ...t,
-      id: crypto.randomUUID(),
-      createdAt: Date.now(),
-    } as Task));
-    setTasks(prev => [...prev, ...newTasks]);
-  };
 
   const handleMoveTask = (taskId: string, direction: 'prev' | 'next') => {
     const task = tasks.find(t => t.id === taskId);
@@ -550,7 +542,6 @@ const App: React.FC = () => {
         id: crypto.randomUUID(),
         recurrence: Recurrence.NONE,
         isRecurringException: true,
-        isRecurringException: true,
         dueDate: newDueDateISO,
         createdAt: Date.now(),
       };
@@ -637,6 +628,42 @@ const App: React.FC = () => {
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleUpdateTag = (updatedTag: Tag) => {
+    setTags(prev => prev.map(t => t.id === updatedTag.id ? updatedTag : t));
+    // Also update tags in tasks if they store a copy? Yes, Task interface has tags: Tag[]
+    // So we need to update all tasks that have this tag
+    setTasks(prev => prev.map(task => {
+      if (!task.tags) return task;
+      const hasTag = task.tags.some(t => t.id === updatedTag.id);
+      if (!hasTag) return task;
+      return {
+        ...task,
+        tags: task.tags.map(t => t.id === updatedTag.id ? updatedTag : t)
+      };
+    }));
+  };
+
+  const handleDeleteTag = (tagId: string) => {
+    setTags(prev => prev.filter(t => t.id !== tagId));
+    // Remove from all tasks
+    setTasks(prev => prev.map(task => {
+      if (!task.tags) return task;
+      return {
+        ...task,
+        tags: task.tags.filter(t => t.id !== tagId)
+      };
+    }));
+  };
+
+  const handleSaveMultipleTasks = (newTasks: Partial<Task>[]) => {
+    const tasksToAdd = newTasks.map(t => ({
+      ...t,
+      id: crypto.randomUUID(),
+      tags: t.tags || [],
+    } as Task));
+    setTasks(prev => [...prev, ...tasksToAdd]);
   };
 
   const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -849,6 +876,8 @@ const App: React.FC = () => {
             tags={tags}
             tagFilter={tagFilter}
             setTagFilter={setTagFilter}
+            onUpdateTag={handleUpdateTag}
+            onDeleteTag={handleDeleteTag}
           />
         )}
 
@@ -867,6 +896,8 @@ const App: React.FC = () => {
             tags={tags}
             tagFilter={tagFilter}
             setTagFilter={setTagFilter}
+            onUpdateTag={handleUpdateTag}
+            onDeleteTag={handleDeleteTag}
           />
         )}
 
@@ -888,6 +919,8 @@ const App: React.FC = () => {
             tags={tags}
             tagFilter={tagFilter}
             setTagFilter={setTagFilter}
+            onUpdateTag={handleUpdateTag}
+            onDeleteTag={handleDeleteTag}
           />
         )}
       </main>
@@ -925,12 +958,13 @@ const App: React.FC = () => {
         onSave={(data, scope) => handleSaveTask(data, scope)}
         onSaveMultiple={handleSaveMultipleTasks}
         onDelete={(id) => handleDeleteTask(id)}
-        // We need to pass the mark missed handler to modal if we want it there
         onMarkMissed={handleMarkMissed}
         task={editingTask || undefined}
         tasks={tasks} // Pass all tasks for stats calculation
         availableTags={tags}
         onCreateTag={(newTag) => setTags(prev => [...prev, newTag])}
+        onUpdateTag={handleUpdateTag}
+        onDeleteTag={handleDeleteTag}
       />
 
 

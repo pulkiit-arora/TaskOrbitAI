@@ -4,6 +4,7 @@ import { Task, Status, Priority, Tag } from '../types';
 import { Filter, Tag as TagIcon } from 'lucide-react';
 import { sortTasks, isOpen } from '../utils/taskUtils';
 import { StatusFilter } from './StatusFilter';
+import { TagFilterBar } from './TagFilterBar';
 
 interface BoardViewProps {
   tasks: Task[];
@@ -17,6 +18,7 @@ interface BoardViewProps {
   onArchiveTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onDropTask: (taskId: string, newStatus: Status) => void;
+  onDeleteAll: () => void;
   priorityFilter?: Priority[];
   setPriorityFilter?: (priorities: Priority[]) => void;
   statusFilter?: Status[];
@@ -24,6 +26,8 @@ interface BoardViewProps {
   tags?: Tag[];
   tagFilter?: string[];
   setTagFilter?: (tags: string[]) => void;
+  onUpdateTag?: (tag: Tag) => void;
+  onDeleteTag?: (tagId: string) => void;
 }
 
 export const BoardView: React.FC<BoardViewProps> = ({
@@ -45,7 +49,9 @@ export const BoardView: React.FC<BoardViewProps> = ({
   setStatusFilter,
   tags = [],
   tagFilter = [],
-  setTagFilter
+  setTagFilter,
+  onUpdateTag,
+  onDeleteTag
 }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -79,6 +85,14 @@ export const BoardView: React.FC<BoardViewProps> = ({
       default:
         return list;
     }
+  };
+
+  const handleToggleTag = (tagId: string) => {
+    if (!setTagFilter) return;
+    const newFilter = tagFilter.includes(tagId)
+      ? tagFilter.filter(t => t !== tagId)
+      : [...tagFilter, tagId];
+    setTagFilter(newFilter);
   };
 
   return (
@@ -172,22 +186,14 @@ export const BoardView: React.FC<BoardViewProps> = ({
             <div className="h-5 w-px bg-gray-300 mx-1"></div>
             <div className="flex items-center gap-1">
               <TagIcon size={12} className="text-gray-500" />
-              {tags.map(tag => (
-                <button
-                  key={tag.id}
-                  onClick={() => {
-                    const newFilter = tagFilter.includes(tag.id)
-                      ? tagFilter.filter(t => t !== tag.id)
-                      : [...tagFilter, tag.id];
-                    setTagFilter && setTagFilter(newFilter);
-                  }}
-                  className={`w-3 h-3 rounded-full border transition-all ${tagFilter.includes(tag.id) ? `ring-2 ring-offset-1 ring-blue-500 ${tag.color.split(' ')[0]}` : tag.color.split(' ')[0]} ${tag.color.split(' ')[2]}`}
-                  title={tag.label}
-                />
-              ))}
-              {tagFilter.length > 0 && (
-                <button onClick={() => setTagFilter && setTagFilter([])} className="text-[10px] text-gray-400 hover:text-gray-600 ml-1">Clear</button>
-              )}
+              <TagFilterBar
+                tags={tags}
+                selectedTags={tagFilter}
+                onToggleTag={handleToggleTag}
+                onUpdateTag={onUpdateTag}
+                onDeleteTag={onDeleteTag}
+                onClear={() => setTagFilter && setTagFilter([])}
+              />
             </div>
           </>
         )}

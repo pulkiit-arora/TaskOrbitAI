@@ -3,13 +3,14 @@ import { Task, Priority, Status, Recurrence, Tag } from '../types';
 import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
 import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter, Tag as TagIcon, XCircle, LayoutGrid, List, MessageSquare } from 'lucide-react';
 import { StatusFilter } from './StatusFilter';
+import { TagFilterBar } from './TagFilterBar';
 
 interface MonthViewProps {
   currentDate: Date;
   tasks: Task[];
   onEditTask: (task: Task) => void;
   onToggleDone: (taskId: string, onDate?: string) => void;
-  onAddTask?: (date: Date) => void;
+  onAddTask: (date: Date) => void;
   onDropTask?: (taskId: string, date: Date) => void;
   priorityFilter?: Priority[];
   setPriorityFilter?: (priorities: Priority[]) => void;
@@ -18,9 +19,11 @@ interface MonthViewProps {
   tags?: Tag[];
   tagFilter?: string[];
   setTagFilter?: (tags: string[]) => void;
+  onUpdateTag?: (tag: Tag) => void;
+  onDeleteTag?: (tagId: string) => void;
 }
 
-export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEditTask, onToggleDone, onAddTask, onDropTask, priorityFilter, setPriorityFilter, statusFilter, setStatusFilter, tags = [], tagFilter = [], setTagFilter }) => {
+export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEditTask, onToggleDone, onAddTask, onDropTask, priorityFilter, setPriorityFilter, statusFilter, setStatusFilter, tags = [], tagFilter = [], setTagFilter, onUpdateTag, onDeleteTag }) => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -319,22 +322,19 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               <div className="h-4 w-px bg-gray-300 mx-1"></div>
               <div className="flex items-center gap-1">
                 <TagIcon size={12} className="text-gray-500" />
-                {tags.map(tag => (
-                  <button
-                    key={tag.id}
-                    onClick={() => {
-                      const newFilter = tagFilter.includes(tag.id)
-                        ? tagFilter.filter(t => t !== tag.id)
-                        : [...tagFilter, tag.id];
-                      setTagFilter && setTagFilter(newFilter);
-                    }}
-                    className={`w-3 h-3 rounded-full border transition-all ${tagFilter.includes(tag.id) ? `ring-2 ring-offset-1 ring-blue-500 ${tag.color.split(' ')[0]}` : tag.color.split(' ')[0]} ${tag.color.split(' ')[2]} `}
-                    title={tag.label}
-                  />
-                ))}
-                {tagFilter.length > 0 && (
-                  <button onClick={() => setTagFilter && setTagFilter([])} className="text-[10px] text-gray-400 hover:text-gray-600 ml-1">Clear</button>
-                )}
+                <TagFilterBar
+                  tags={tags}
+                  selectedTags={tagFilter}
+                  onToggleTag={(tagId) => {
+                    const newFilter = tagFilter.includes(tagId)
+                      ? tagFilter.filter(t => t !== tagId)
+                      : [...tagFilter, tagId];
+                    setTagFilter(newFilter);
+                  }}
+                  onUpdateTag={onUpdateTag}
+                  onDeleteTag={onDeleteTag}
+                  onClear={() => setTagFilter([])}
+                />
               </div>
             </>
           )}

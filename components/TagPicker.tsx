@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Tag } from '../types';
-import { Plus, X, Tag as TagIcon } from 'lucide-react';
+import { Plus, X, Tag as TagIcon, Check } from 'lucide-react';
 
 interface TagPickerProps {
     selectedTags: Tag[];
     availableTags: Tag[];
     onTagsChange: (tags: Tag[]) => void;
     onCreateTag: (tag: Tag) => void;
+    onUpdateTag?: (tag: Tag) => void;
+    onDeleteTag?: (tagId: string) => void;
 }
 
 const TAG_COLORS = [
@@ -29,10 +31,15 @@ const TAG_COLORS = [
     'bg-rose-100 text-rose-800 border-rose-200',
 ];
 
-export const TagPicker: React.FC<TagPickerProps> = ({ selectedTags, availableTags, onTagsChange, onCreateTag }) => {
+import { TagManager } from './TagManager';
+
+export const TagPicker: React.FC<TagPickerProps> = ({ selectedTags, availableTags, onTagsChange, onCreateTag, onUpdateTag, onDeleteTag }) => {
     const [isCreating, setIsCreating] = useState(false);
+    const [isManaging, setIsManaging] = useState(false);
+
     const [newTagLabel, setNewTagLabel] = useState('');
     const [newTagColor, setNewTagColor] = useState(TAG_COLORS[0]);
+
 
     const toggleTag = (tag: Tag) => {
         if (selectedTags.find(t => t.id === tag.id)) {
@@ -55,6 +62,7 @@ export const TagPicker: React.FC<TagPickerProps> = ({ selectedTags, availableTag
         setIsCreating(false);
     };
 
+
     return (
         <div className="space-y-2">
             <div className="flex flex-wrap gap-2 items-center">
@@ -72,15 +80,24 @@ export const TagPicker: React.FC<TagPickerProps> = ({ selectedTags, availableTag
                 ))}
                 <button
                     type="button"
-                    onClick={() => setIsCreating(!isCreating)}
+                    onClick={() => { setIsCreating(!isCreating); setIsManaging(false); }}
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 bg-white"
                 >
                     <Plus size={10} /> Tag
                 </button>
+                {availableTags.length > 0 && onUpdateTag && onDeleteTag && (
+                    <button
+                        type="button"
+                        onClick={() => { setIsManaging(!isManaging); setIsCreating(false); }}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors ${isManaging ? 'bg-blue-50 text-blue-600 border-blue-200' : 'border-gray-200 text-gray-400 hover:text-gray-600 bg-white'}`}
+                    >
+                        <TagIcon size={10} /> {isManaging ? 'Done' : 'Manage'}
+                    </button>
+                )}
             </div>
 
             {isCreating && (
-                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 space-y-3">
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 space-y-3 animate-in fade-in zoom-in-95 duration-200">
                     <input
                         type="text"
                         value={newTagLabel}
@@ -119,7 +136,17 @@ export const TagPicker: React.FC<TagPickerProps> = ({ selectedTags, availableTag
                 </div>
             )}
 
-            {availableTags.length > 0 && !isCreating && (
+            {/* Manage Mode */}
+            {isManaging && onUpdateTag && onDeleteTag && (
+                <TagManager
+                    availableTags={availableTags}
+                    onUpdateTag={onUpdateTag}
+                    onDeleteTag={onDeleteTag}
+                    onClose={() => setIsManaging(false)}
+                />
+            )}
+
+            {!isCreating && !isManaging && availableTags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                     <span className="text-xs text-gray-400 w-full mb-1">Available:</span>
                     {availableTags.filter(t => !selectedTags.find(st => st.id === t.id)).map(tag => (
