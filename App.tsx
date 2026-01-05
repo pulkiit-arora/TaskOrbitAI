@@ -696,12 +696,18 @@ const App: React.FC = () => {
     setIsTourOpen(false);
   };
 
-  const navigateDate = (direction: 'prev' | 'next' | 'today') => {
-    if (direction === 'today') {
+  const navigateDate = (arg: 'prev' | 'next' | 'today' | Date) => {
+    if (arg instanceof Date) {
+      setCurrentDate(arg);
+      return;
+    }
+
+    if (arg === 'today') {
       setCurrentDate(new Date());
       return;
     }
 
+    const direction = arg;
     const newDate = new Date(currentDate);
     if (viewMode === 'month') {
       newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));

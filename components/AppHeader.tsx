@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from './Button';
 import { SearchInput } from './SearchInput';
 import { CheckSquare, Archive, Plus, Layout, Calendar, ChevronLeft, ChevronRight, Grid, Download, Upload, Filter } from 'lucide-react';
 import { Task, Priority, ViewMode } from '../types';
+import { DateNavigator } from './DateNavigator';
 
 
 interface AppHeaderProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   currentDate: Date;
-  navigateDate: (direction: 'prev' | 'next' | 'today') => void;
+  navigateDate: (arg: 'prev' | 'next' | 'today' | Date) => void;
   showArchived: boolean;
   setShowArchived: (show: boolean) => void;
   onAddTask: () => void;
@@ -30,6 +31,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   searchQuery,
   setSearchQuery
 }) => {
+  const [isDateNavOpen, setIsDateNavOpen] = useState(false);
+  const dateNavRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dateNavRef.current && !dateNavRef.current.contains(event.target as Node)) {
+        setIsDateNavOpen(false);
+      }
+    };
+    if (isDateNavOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isDateNavOpen]);
+
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex-shrink-0 transition-colors duration-200 flex flex-col md:flex-row items-center justify-between sticky top-0 z-20 gap-4">
       {/* Logo & Primary Actions */}
@@ -105,12 +119,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
         {(viewMode !== 'board' && viewMode !== 'today') && (
           <>
-            <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm w-full sm:w-auto justify-between sm:justify-start">
+            <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm w-full sm:w-auto justify-between sm:justify-start relative">
               <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-l-lg border-r border-gray-100 dark:border-gray-700">
                 <ChevronLeft size={18} />
               </button>
-              <div className="flex items-center">
-                <span className="px-4 text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[140px] text-center whitespace-nowrap">
+
+              <div className="relative">
+                <button
+                  onClick={() => setIsDateNavOpen(!isDateNavOpen)}
+                  className="px-4 py-2 text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[140px] text-center whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
                   {viewMode === 'month'
                     ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                     : (() => {
@@ -122,8 +140,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                       return `Week of ${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
                     })()
                   }
-                </span>
+                </button>
+
+                {isDateNavOpen && (
+                  <div ref={dateNavRef} className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                    <DateNavigator
+                      currentDate={currentDate}
+                      onDateSelect={navigateDate}
+                      onClose={() => setIsDateNavOpen(false)}
+                    />
+                  </div>
+                )}
               </div>
+
               <button onClick={() => navigateDate('next')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-r-lg border-l border-gray-100 dark:border-gray-700">
                 <ChevronRight size={18} />
               </button>
