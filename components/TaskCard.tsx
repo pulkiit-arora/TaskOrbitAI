@@ -152,7 +152,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 </Tooltip>
               )}
               {task.comments && task.comments.length > 0 && (
-                <MessageSquare size={10} className="text-gray-400 flex-shrink-0" />
+                <CommentPopover comments={task.comments}>
+                  <MessageSquare size={10} className="text-gray-400 flex-shrink-0 cursor-pointer hover:text-blue-600 transition-colors" />
+                </CommentPopover>
               )}
             </h3>
 

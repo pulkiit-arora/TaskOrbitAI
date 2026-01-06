@@ -69,14 +69,22 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({ comments, childr
     }
   };
 
+  const closeTimeoutRef = useRef<number | null>(null);
+
   const handleMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      window.clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
     updatePosition();
     setIsVisible(true);
   };
 
   const handleMouseLeave = () => {
-    setIsVisible(false);
-    setPopoverStyle(null);
+    closeTimeoutRef.current = window.setTimeout(() => {
+      setIsVisible(false);
+      setPopoverStyle(null);
+    }, 300); // 300ms delay to allow moving to popover
   };
 
   // Close on scroll to prevent detached popover
@@ -96,7 +104,7 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({ comments, childr
     <div
       className="fixed w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[9999] p-4 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
       style={popoverStyle}
-      onMouseEnter={() => setIsVisible(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <div className="flex items-center justify-between mb-3 flex-shrink-0">
@@ -125,8 +133,24 @@ export const CommentPopover: React.FC<CommentPopoverProps> = ({ comments, childr
                 {formatDate(comment.createdAt)}
               </span>
             </div>
-            <p className="text-sm text-gray-700 leading-relaxed break-words">
-              {comment.text}
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words whitespace-pre-wrap">
+              {comment.text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => {
+                if (part.match(/^https?:\/\/[^\s]+$/)) {
+                  return (
+                    <a
+                      key={i}
+                      href={part}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {part}
+                    </a>
+                  );
+                }
+                return part;
+              })}
             </p>
           </div>
         ))}
