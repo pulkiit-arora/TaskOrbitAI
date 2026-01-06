@@ -76,7 +76,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   const SidebarLayout = () => (
-    <div className="flex w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200 overflow-hidden">
+    <div className="flex w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200 overflow-hidden min-h-[88px]">
       {/* Left Indicator Column */}
       <div className={`w-8 flex flex-col items-center justify-between py-2 bg-gray-50 dark:bg-gray-800/50 border-r border-gray-100 dark:border-gray-700 ${task.priority === Priority.HIGH ? 'bg-red-50/20' : task.priority === Priority.MEDIUM ? 'bg-yellow-50/20' : 'bg-blue-50/20'}`}>
         {/* Priority (Top) */}
@@ -119,7 +119,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               onClick={(e) => handleButtonClick(e, () => onEdit(task))}
               onMouseDown={handleButtonMouseDown}
             >
-              <span className="line-clamp-2 break-words text-left block w-full">{task.title}</span>
+              <span className="line-clamp-2 break-words text-left">{task.title}</span>
               {/* Recurrence Stats Pills */}
               {task.recurrence !== Recurrence.NONE && (
                 <div className="flex gap-1 flex-shrink-0 ml-1">
@@ -141,8 +141,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   )}
                 </div>
               )}
-              {task.recurrence !== Recurrence.NONE && (
-                <RefreshCw size={10} className="text-purple-400 flex-shrink-0" />
+              {task.recurrence !== Recurrence.NONE && !task.isRecurringException && (
+                <Tooltip content={formatRecurrenceSummary(task)}>
+                  <RefreshCw size={10} className="text-purple-400 flex-shrink-0" />
+                </Tooltip>
+              )}
+              {task.isRecurringException && (
+                <Tooltip content={`Detached from series: ${formatRecurrenceSummary(task)}`}>
+                  <RefreshCw size={10} className="text-orange-400 flex-shrink-0 stroke-[2.5]" />
+                </Tooltip>
               )}
               {task.comments && task.comments.length > 0 && (
                 <MessageSquare size={10} className="text-gray-400 flex-shrink-0" />
@@ -239,7 +246,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </div>
             )}
 
-            {task.recurrence !== Recurrence.NONE && (
+            {task.recurrence !== Recurrence.NONE && !task.isRecurringException && (
               <Tooltip content={formatRecurrenceSummary(task)}>
                 <span className="text-gray-400 flex-shrink-0">
                   <RefreshCw size={14} />
@@ -247,7 +254,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </Tooltip>
             )}
             {task.isRecurringException && (
-              <Tooltip content="This task is detached from its recurrence series">
+              <Tooltip content={`Detached from series: ${formatRecurrenceSummary(task)}`}>
                 <span className="text-orange-400 flex-shrink-0">
                   <RefreshCw size={14} className="stroke-[2.5]" />
                 </span>

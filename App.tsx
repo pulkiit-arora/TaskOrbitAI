@@ -351,7 +351,8 @@ const App: React.FC = () => {
           status: Status.DONE,
           dueDate: occurrenceISO,
           recurrence: Recurrence.NONE,
-
+          isRecurringException: true, // Mark as detached/history
+          originalRecurrence: base.recurrence, // Preserve original recurrence type for display
           createdAt: Date.now(),
           seriesId: base.id,
         };
@@ -393,7 +394,8 @@ const App: React.FC = () => {
           status: Status.DONE,
           dueDate: occurrenceISO,
           recurrence: Recurrence.NONE,
-
+          isRecurringException: true, // Mark as detached/history
+          originalRecurrence: base.recurrence, // Preserve original recurrence type for display
           createdAt: Date.now(),
           seriesId: base.id,
         };

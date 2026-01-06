@@ -196,12 +196,16 @@ export const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Stat
  *  - "Monthly on day 15"
  */
 export const formatRecurrenceSummary = (task: Task): string => {
-  if (!task || task.recurrence === Recurrence.NONE) return '';
+  if (!task) return '';
+  const recurrenceType = (task.recurrence !== Recurrence.NONE) ? task.recurrence : task.originalRecurrence;
+
+  if (!recurrenceType || recurrenceType === Recurrence.NONE) return '';
+
   const interval = task.recurrenceInterval && task.recurrenceInterval > 0 ? Math.floor(task.recurrenceInterval) : 1;
 
   const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  switch (task.recurrence) {
+  switch (recurrenceType) {
     case Recurrence.DAILY:
       return interval === 1 ? 'Daily' : `Every ${interval} days`;
 

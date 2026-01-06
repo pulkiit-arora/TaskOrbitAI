@@ -57,6 +57,8 @@ export interface Task {
   excludedDates?: string[];
   // Indicates if this task was detached from a recurrence (is an exception)
   isRecurringException?: boolean;
+  // If detached, this stores the original recurrence type for display purposes
+  originalRecurrence?: Recurrence;
   tags?: Tag[];
 }
 
