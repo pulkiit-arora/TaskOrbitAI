@@ -321,7 +321,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 {comments.map(c => (
                   <div key={c.id} className="flex items-start gap-2 bg-gray-50 p-2 rounded">
                     <div className="text-xs text-gray-500">{new Date(c.createdAt).toLocaleString()}</div>
-                    <div className="text-sm text-gray-800 flex-1 break-words whitespace-pre-wrap">
+                    <div className="text-sm text-gray-800 flex-1 break-words break-all whitespace-pre-wrap">
                       {c.text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => (
                         part.match(/https?:\/\/[^\s]+/) ? (
                           <a
@@ -329,7 +329,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                             href={part}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
+                            className="text-blue-600 hover:underline break-all"
                           >{part}</a>
                         ) : (
                           <span key={i}>{part}</span>
