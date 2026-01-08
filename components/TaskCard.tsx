@@ -76,7 +76,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   const SidebarLayout = () => (
-    <div className="flex w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200 overflow-hidden min-h-[88px]">
+    <div
+      draggable={!isVirtual && task.status !== Status.ARCHIVED}
+      onDragStart={handleDragStart}
+      className={`flex w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200 overflow-hidden min-h-[88px]
+        ${!isVirtual ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
+      `}
+    >
       {/* Left Indicator Column */}
       <div className={`w-8 flex flex-col items-center justify-between py-2 bg-gray-50 dark:bg-gray-800/50 border-r border-gray-100 dark:border-gray-700 ${task.priority === Priority.HIGH ? 'bg-red-50/20' : task.priority === Priority.MEDIUM ? 'bg-yellow-50/20' : 'bg-blue-50/20'}`}>
         {/* Priority (Top) */}
@@ -169,7 +175,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               {task.tags && task.tags.length > 0 && (
                 <div className="flex gap-1">
                   {task.tags.map(tag => (
-                    <div key={tag.id} className={`w-1.5 h-1.5 rounded-full ${tag.color.split(' ')[0].replace('100', '400')}`} title={tag.label} />
+                    <div key={tag.id} className={`w-2 h-2 rounded-full border ${tag.color}`} title={tag.label} />
                   ))}
                 </div>
               )}

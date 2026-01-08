@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Task, Priority, Recurrence, Status, AISuggestion, Tag } from '../types';
 import { X, Sparkles, Plus, ChevronDown, Activity, AlertCircle, RotateCcw } from 'lucide-react';
 import { Button } from './Button';
@@ -322,7 +322,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                   <div key={c.id} className="flex items-start gap-2 bg-gray-50 p-2 rounded">
                     <div className="text-xs text-gray-500">{new Date(c.createdAt).toLocaleString()}</div>
                     <div className="text-sm text-gray-800 flex-1 break-words break-all whitespace-pre-wrap">
-                      {c.text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => (
+                      {(c.text || '').split(/(https?:\/\/[^\s]+)/g).map((part, i) => (
                         part.match(/https?:\/\/[^\s]+/) ? (
                           <a
                             key={i}
