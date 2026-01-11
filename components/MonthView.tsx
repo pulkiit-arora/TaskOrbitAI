@@ -320,8 +320,8 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           {setTagFilter && tags && tags.length > 0 && (
             <>
               <div className="h-4 w-px bg-gray-300 mx-1"></div>
-              <div className="flex items-center gap-1">
-                <TagIcon size={12} className="text-gray-500" />
+              <div className="flex items-center gap-2">
+                <TagIcon size={14} className="text-gray-500" />
                 <TagFilterBar
                   tags={tags}
                   selectedTags={tagFilter}
@@ -695,15 +695,19 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                           </div>
 
                           <div className="flex items-center gap-2 mt-2">
-                            {task.tags && task.tags.length > 0 && (
-                              <div className="flex gap-1 flex-wrap">
-                                {task.tags.map(tag => (
+                            <div className="flex gap-1 flex-wrap">
+                              {task.tags && task.tags.length > 0 ? (
+                                task.tags.map(tag => (
                                   <span key={tag.id} className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${tag.color} opacity-90`}>
                                     {tag.label}
                                   </span>
-                                ))}
-                              </div>
-                            )}
+                                ))
+                              ) : (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium border-gray-300 bg-gray-100 text-gray-500 opacity-90">
+                                  No Category
+                                </span>
+                              )}
+                            </div>
 
                             {/* Recurrence Stats */}
                             {task.recurrence !== Recurrence.NONE && (
@@ -903,13 +907,15 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                           {isExpired && (
                             <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium bg-orange-100 text-orange-700 border border-orange-200 flex-shrink-0 whitespace-nowrap">Missed</span>
                           )}
-                          {task.tags && task.tags.length > 0 && (
-                            <div className="flex gap-0.5 flex-shrink-0">
-                              {task.tags.map(tag => (
+                          <div className="flex gap-0.5 flex-shrink-0">
+                            {task.tags && task.tags.length > 0 ? (
+                              task.tags.map(tag => (
                                 <div key={tag.id} className={`w-1.5 h-1.5 rounded-full ${tag.color.split(' ')[0].replace('100', '500')} `} />
-                              ))}
-                            </div>
-                          )}
+                              ))
+                            ) : (
+                              <div className="w-1.5 h-1.5 rounded-full bg-gray-400 opacity-60" title="Uncategorized" />
+                            )}
+                          </div>
                         </div>
                       </div>
                     );

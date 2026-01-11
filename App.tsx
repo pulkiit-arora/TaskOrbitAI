@@ -13,6 +13,7 @@ import { Legend } from './components/Legend';
 import { SearchInput } from './components/SearchInput';
 import { CommandPalette } from './components/CommandPalette';
 import { SettingsMenu } from './components/SettingsMenu';
+import { AnalyticsView } from './components/AnalyticsView';
 import { Task, Status, Recurrence, Priority, Tag, ViewMode } from './types';
 import { useTasks } from './hooks/useTasks';
 import { useTaskModal } from './hooks/useTaskModal';
@@ -755,7 +756,11 @@ const App: React.FC = () => {
     }
 
     if (tagFilter.length > 0) {
-      list = list.filter(t => t.tags && t.tags.some(tag => tagFilter.includes(tag.id)));
+      list = list.filter(t => {
+        const isUncategorized = !t.tags || t.tags.length === 0;
+        if (tagFilter.includes('uncategorized') && isUncategorized) return true;
+        return t.tags && t.tags.some(tag => tagFilter.includes(tag.id));
+      });
     }
 
     if (searchQuery.trim()) {
@@ -907,6 +912,10 @@ const App: React.FC = () => {
             onUpdateTag={handleUpdateTag}
             onDeleteTag={handleDeleteTag}
           />
+        )}
+
+        {viewMode === 'analytics' && (
+          <AnalyticsView tasks={tasks} />
         )}
       </main>
 

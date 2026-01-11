@@ -172,13 +172,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' })}
                 </span>
               )}
-              {task.tags && task.tags.length > 0 && (
-                <div className="flex gap-1">
-                  {task.tags.map(tag => (
+              <div className="flex gap-1">
+                {task.tags && task.tags.length > 0 ? (
+                  task.tags.map(tag => (
                     <div key={tag.id} className={`w-2 h-2 rounded-full border ${tag.color}`} title={tag.label} />
-                  ))}
-                </div>
-              )}
+                  ))
+                ) : (
+                  <div className="w-2 h-2 rounded-full border border-gray-400 bg-gray-400 opacity-60" title="Uncategorized" />
+                )}
+              </div>
             </div>
           </div>
         </div>

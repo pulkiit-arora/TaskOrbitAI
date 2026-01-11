@@ -45,6 +45,22 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
 
     return (
         <div className={`flex items-center flex-wrap gap-2 ${className}`}>
+            {/* Uncategorized Filter Toggle */}
+            <button
+                onClick={() => onToggleTag('uncategorized')}
+                className={`
+                    w-3 h-3 rounded-full border transition-all flex items-center justify-center
+                    ${selectedTags.includes('uncategorized')
+                        ? 'bg-gray-600 border-gray-700 ring-2 ring-offset-1 ring-gray-500'
+                        : 'bg-gray-400 border-gray-400 opacity-60 hover:opacity-100'
+                    }
+                `}
+                title="Filter Tasks with No Category"
+            />
+
+            {/* Separator - increased margin using separate self-center */}
+            <div className="h-3 w-px bg-gray-300 mx-1.5 self-center"></div>
+
             {tags.map(tag => {
                 const isActive = selectedTags.includes(tag.id);
                 // Parse tag color classes to handle active state styling

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from './Button';
 import { SearchInput } from './SearchInput';
-import { CheckSquare, Archive, Plus, Layout, Calendar, ChevronLeft, ChevronRight, Grid, Download, Upload, Filter } from 'lucide-react';
+import { CheckSquare, Archive, Plus, Layout, Calendar, ChevronLeft, ChevronRight, Grid, Download, Upload, Filter, BarChart2 } from 'lucide-react';
 import { Task, Priority, ViewMode } from '../types';
 import { DateNavigator } from './DateNavigator';
 
@@ -92,9 +92,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               <Layout size={18} />
               <span className="hidden xl:inline">Board</span>
             </button>
+            <button
+              onClick={() => setViewMode('analytics')}
+              className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'analytics'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                }`}
+            >
+              <BarChart2 size={18} />
+              <span className="hidden xl:inline">Analytics</span>
+            </button>
           </div>
 
-          {(viewMode !== 'board' && viewMode !== 'today') && (
+          {(viewMode === 'week' || viewMode === 'month') && (
             <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm w-full sm:w-auto justify-between sm:justify-start relative">
               <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-l-lg border-r border-gray-100 dark:border-gray-700">
                 <ChevronLeft size={18} />
@@ -134,7 +144,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </div>
           )}
 
-          {(viewMode !== 'board' && viewMode !== 'today') && (
+          {(viewMode === 'week' || viewMode === 'month') && (
             <Button
               variant="secondary"
               onClick={() => navigateDate('today')}
