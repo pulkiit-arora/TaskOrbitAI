@@ -231,53 +231,46 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
             computedInstances = instances;
 
             // Post-process counts from instances
-            // Note: `instances` contains:
-            // - Completed tasks (on day of completion)
-            // - Expired tasks (on day of due date)
-            // - Active occurrences (on day of occurrence)
 
-            // Filter by Status of the INSTANCE (which is the task status)
-            // Wait. A recurring task is Status.TODO.
-            // So all active occurrences are TODO.
-
+            // 1. In-View Metrics
             completedCount = computedInstances.filter(t => t.status === Status.DONE).length;
             activeCount = computedInstances.filter(t => t.status === Status.TODO || t.status === Status.IN_PROGRESS).length;
-
             const missedInView = computedInstances.filter(t => t.status === Status.EXPIRED).length;
 
-            // What about Overdue?
-            // Overdue means "Due Date < Today && Status != Done".
-            // In a Past View (e.g. Yesterday), an Active occurrence is technically "Overdue now".
-            // But for the View metrics, do we count it?
-            // Analytics "Missed / Overdue" usually implies "Problematic".
-            // If I look at "Today", and I have a task due "Today", it's Active, not Overdue.
-            // If I look at "Last Week", and a task was due last Monday (and still not done), it appeared in "Monday".
-            // Is it "Overdue" on Monday? No, it was "Due" on Monday.
-            // It BECAME overdue on Tuesday.
-            // Simplicity: Count "Missed" (Expired).
-            // Plus Global Overdue?
-            // If I select "Today", I want to know "What is Overdue RIGHT NOW"? Yes.
-            // Overdue is a Current State property.
-            // So we should ADD any tasks that are CURRENTLY overdue (regardless of whether they occur in the view range?)
-            // Or only if they occurred in the range?
-            // "Missed / Overdue" -> Missed (Historical) + Overdue (Current Actionable).
-            // Let's calc Global Overdue again.
-            const globalOverdue = tasks.filter(t => {
-                if (t.status !== Status.TODO && t.status !== Status.IN_PROGRESS) return false; // Overdue must be active
+            // 2. Drag-Along / Backlog Overdue
+            // Tasks that are Active (TODO/IN_PROGRESS) but were due BEFORE the rangeStart.
+            // These are strictly "Overdue" and NOT in the view (filtered out by date range).
+            // This prevents double counting.
+            const backlogOverdueTasks = tasks.filter(t => {
+                if (t.status !== Status.TODO && t.status !== Status.IN_PROGRESS) return false;
                 if (t.status === Status.ARCHIVED) return false;
                 if (!t.dueDate) return false;
                 const d = new Date(t.dueDate); d.setHours(0, 0, 0, 0);
-                return d < startOfToday;
-            }).length;
 
-            missedOverdueCount = missedInView + globalOverdue;
+                // Strict check: Due Date < Range Start
+                // If Range Start is today, and tasks due yesterday -> Backlog.
+                // If Range Start is Last Week, tasks due 2 weeks ago -> Backlog.
+                // Tasks due Last Week -> Are in `computedInstances` (Active).
+                return d < (rangeStart || new Date(0)); // new Date(0) fallback shouldn't happen here
+            });
+
+            // Merge for Charts
+            // We want to visualize the Total Workload = In-View + Backlog.
+            // Because 'computedInstances' might contain duplicates (recurrence), but 'backlogOverdueTasks' are singular.
+            // This is acceptable for "Volume" analysis.
+            const allAnalyzedTasks = [...computedInstances, ...backlogOverdueTasks];
+
+            missedOverdueCount = missedInView + backlogOverdueTasks.length;
             archivedCount = tasks.filter(t => t.status === Status.ARCHIVED).length;
+
+            // Re-assign computedInstances to the merged set so Priority/Category charts use it?
+            // YES. The user wants "missed and overdue include in all panels".
+            computedInstances = allAnalyzedTasks;
         }
 
         // derived stats
-        const total = activeCount + completedCount + missedOverdueCount; // "Total Productivity Volume"
-        // This 'total' might differ from 'computedInstances.length' because of the global overdue addition.
-        // But that's fair.
+        const total = activeCount + completedCount + missedOverdueCount;
+
 
         const gradedTotal = completedCount + missedOverdueCount;
         const rate = gradedTotal > 0 ? Math.round((completedCount / gradedTotal) * 100) : 0;
@@ -297,15 +290,35 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
 
         const taskLists = {
             completed: computedInstances.filter(t => t.status === Status.DONE),
-            active: computedInstances.filter(t => t.status === Status.TODO || t.status === Status.IN_PROGRESS),
-            missedOverdue: [...computedInstances.filter(t => t.status === Status.EXPIRED), ...tasks.filter(t => {
-                // Re-calc global overdue for the list
+            // Active List: Must exclude Backlog Overdue tasks if they were merged into computedInstances.
+            // Backlog Overdue tasks are TODO/IN_PROGRESS but due before rangeStart.
+            active: computedInstances.filter(t => {
                 if (t.status !== Status.TODO && t.status !== Status.IN_PROGRESS) return false;
-                if (t.status === Status.ARCHIVED) return false;
-                if (!t.dueDate) return false;
-                const d = new Date(t.dueDate); d.setHours(0, 0, 0, 0);
-                return d < startOfToday;
-            })]
+                // Exclude if it's strictly a backlog item (due < range Start)
+                // BUT wait, `computedInstances` now HAS them merged in.
+                // WE need to distinguish "Active Scheduled In View" vs "Backlog Overdue".
+                // Active Count used `activeCount` variable calculated BEFORE merge.
+                // We should replicate that logic or use the `instances` array if we had kept it.
+                // Since we didn't keep it, we re-check date.
+                if (rangeStart && t.dueDate) {
+                    const d = new Date(t.dueDate); d.setHours(0, 0, 0, 0);
+                    if (d < rangeStart) return false; // It's backlog overdue
+                }
+                return true;
+            }),
+            // Missed/Overdue List: 
+            // 1. Expired In View
+            // 2. Backlog Overdue (which are in computedInstances now as TODO/IN_PROGRESS)
+            missedOverdue: computedInstances.filter(t => {
+                if (t.status === Status.EXPIRED) return true;
+                if (t.status === Status.TODO || t.status === Status.IN_PROGRESS) {
+                    if (rangeStart && t.dueDate) {
+                        const d = new Date(t.dueDate); d.setHours(0, 0, 0, 0);
+                        if (d < rangeStart) return true; // It's backlog overdue
+                    }
+                }
+                return false;
+            })
         };
 
 
