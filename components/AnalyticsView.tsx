@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { Task, Status, Priority } from '../types';
+import { Task, Status, Priority, Recurrence } from '../types';
 import { CheckCircle, Clock, AlertCircle, Activity, TrendingUp, Calendar, Filter } from 'lucide-react';
 import { doesTaskOccurOnDate } from '../utils/taskUtils';
 
@@ -345,7 +345,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
                         targetTime = t.completedAt;
                     } else if (t.dueDate) {
                         targetTime = new Date(t.dueDate).getTime(); // dueDate is string ISO usually, check type
-                        // Check if t.dueDate is string or number? in Task type it is string ISO. 
+                        // Check if t.dueDate is string or number? in Task type it is string ISO.
                         // But wait, t.createdAt is number (timestamp).
                         // t.completedAt is number (timestamp).
                         // So we need to convert dueDate string to timestamp.
@@ -354,13 +354,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
                     }
                 }
 
-                // Correction: t.dueDate is string ISO. 
+                // Correction: t.dueDate is string ISO.
                 // We need strict types.
                 if (t.status === Status.DONE) {
                     if (t.completedAt) {
                         targetTime = t.completedAt;
                     } else if (t.dueDate) {
-                        // Use noon to avoid timezone edge cases with day boundaries? 
+                        // Use noon to avoid timezone edge cases with day boundaries?
                         // Actually "Planned Day" usually means 00:00 local.
                         // But we want it to fall into the "dayStart" to "dayEnd" bucket.
                         // "dayStart" is set to 00:00 of that day.
@@ -375,6 +375,67 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
             }).length;
             return { day: dayStr, count };
         });
+
+        // RECURRING TASK INSIGHTS
+        // 1. Identify "Heads" of recurring series (Active recurring tasks)
+        // Group by seriesId OR if no seriesId, use ID (if it's the head).
+        // Actually, older recurring implementation might not have set seriesId on the first one?
+        // Let's rely on tasks where recurrence != NONE.
+        const recurringHeads = tasks.filter(t => t.recurrence !== Recurrence.NONE && t.status !== Status.ARCHIVED);
+
+        const recurringStats = recurringHeads.map(head => {
+            // Find all history items for this series.
+            // History items usually have seriesId === head.id (or shared seriesId).
+            // AND they are usually DONE or EXPIRED.
+            const seriesId = head.seriesId || head.id;
+
+            // Find history: tasks with seriesId == uniqueId, OR tasks that ARE this head (if completed? no head is TODO).
+            // Actually, when a task is completed, it's cloned. The finished one is DONE. The new one is TODO.
+            // Do they share a seriesId?
+            // If legacy didn't set seriesId, we might lose history linking. 
+            // Assume seriesId is being used or title matching fallback?
+            // Let's try seriesId match first, then Title + Recurrence match fallback.
+
+            const history = tasks.filter(t => {
+                if (t.id === head.id) return false; // don't count the active head as history
+                if (t.status === Status.ARCHIVED) return false;
+
+                // 1. Rigid Series ID Match (Best)
+                if (seriesId && t.seriesId === seriesId) return true;
+
+                // 2. Fallback: Title + Recurrence Match (Legacy / Missing seriesId)
+                // Only check this if seriesId is missing on either side or didn't match
+                // (If both have seriesId but different, they are different series)
+                if (!t.seriesId || !head.seriesId) {
+                    if (t.title === head.title && t.recurrence === head.recurrence) return true;
+                }
+
+                return false;
+            });
+
+            const completed = history.filter(t => t.status === Status.DONE).length;
+            // "Missed" for generic recurring stats?
+            const missed = history.filter(t => t.status === Status.EXPIRED).length;
+            const total = completed + missed;
+            const ratio = total > 0 ? Math.round((completed / total) * 100) : 100; // Default to 100% (New habit / No misses yet)
+            // If total is 0 (new habit), ratio 100% or 0%?
+            // User wants "Completion Ratio", usually 0 if nothing done.
+
+            // Latest Activity Timestamp
+            // Max of history completedAt/createdAt
+            const latestTime = history.reduce((max, t) => {
+                const time = t.completedAt || t.createdAt;
+                return time > max ? time : max;
+            }, 0);
+
+            return {
+                task: head,
+                ratio,
+                total,
+                completed,
+                latestTime
+            };
+        }).sort((a, b) => b.latestTime - a.latestTime); // Order by latest
 
         const byCategory: Record<string, number> = {};
         const tagColors: Record<string, string> = {};
@@ -407,6 +468,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
             byPriority,
             byStatus,
             activity,
+            recurringStats, // Export this
             byCategory,
             tagColors,
             taskLists
@@ -514,8 +576,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
                             {/* CSS Conic Gradient Ring */}
                             <div className="relative w-40 h-40 rounded-full" style={{
                                 background: `conic-gradient(
-                #3b82f6 0% ${getStatusPercentage(metrics.byStatus[Status.TODO], metrics.total)}%, 
-                #f59e0b ${getStatusPercentage(metrics.byStatus[Status.TODO], metrics.total)}% ${getStatusPercentage(metrics.byStatus[Status.TODO] + metrics.byStatus[Status.IN_PROGRESS], metrics.total)}%, 
+                #3b82f6 0% ${getStatusPercentage(metrics.byStatus[Status.TODO], metrics.total)}%,
+                #f59e0b ${getStatusPercentage(metrics.byStatus[Status.TODO], metrics.total)}% ${getStatusPercentage(metrics.byStatus[Status.TODO] + metrics.byStatus[Status.IN_PROGRESS], metrics.total)}%,
                 #22c55e ${getStatusPercentage(metrics.byStatus[Status.TODO] + metrics.byStatus[Status.IN_PROGRESS], metrics.total)}% ${getStatusPercentage(metrics.byStatus[Status.TODO] + metrics.byStatus[Status.IN_PROGRESS] + metrics.byStatus[Status.DONE], metrics.total)}%,
                 #ef4444 ${getStatusPercentage(metrics.byStatus[Status.TODO] + metrics.byStatus[Status.IN_PROGRESS] + metrics.byStatus[Status.DONE], metrics.total)}% 100%
                 )`
@@ -561,13 +623,48 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
                         </div>
                     </div>
 
+                    {/* Recurring Habits (New Panel) */}
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6">Recurring Habits</h3>
+                        <div className="h-48 overflow-y-auto custom-scrollbar space-y-4 pr-2">
+                            {metrics.recurringStats.length === 0 ? (
+                                <p className="text-sm text-gray-500 italic text-center py-4">No recurring tasks found.</p>
+                            ) : (
+                                metrics.recurringStats.map((stat) => (
+                                    <div key={stat.task.id} className="flex items-center justify-between group">
+                                        <div className="flex-1 min-w-0 mr-3">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate" title={stat.task.title}>
+                                                    {stat.task.title}
+                                                </h4>
+                                                <span className={`text-xs font-bold ${stat.ratio >= 80 ? 'text-green-600' :
+                                                    stat.ratio >= 50 ? 'text-yellow-600' : 'text-red-500'
+                                                    }`}>
+                                                    {stat.ratio}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                                                <div
+                                                    className={`h-1.5 rounded-full transition-all duration-500 ${stat.ratio >= 80 ? 'bg-green-500' :
+                                                        stat.ratio >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                                                        }`}
+                                                    style={{ width: `${stat.ratio}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
                     {/* Category Distribution (Tags) */}
                     <div className="col-span-1 lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
                             <Filter size={18} className="text-gray-400" /> Category Distribution
                         </h3>
                         {Object.keys(metrics.byCategory).length === 0 ? (
-                            <p className="text-sm text-gray-500 italic">No tags found.</p>
+                            <p className="text-sm text-gray-500 italic text-center">No tags found.</p>
                         ) : (
                             <div className="flex items-end gap-3 h-48 overflow-x-auto pb-2 custom-scrollbar">
                                 {Object.entries(metrics.byCategory).map(([label, count]: [string, any]) => {

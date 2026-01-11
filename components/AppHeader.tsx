@@ -158,13 +158,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
         {/* Right Section: Search & Actions */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-shrink-0 z-10">
-          <div className="w-full md:w-48 lg:w-64">
-            <SearchInput
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search..."
-            />
-          </div>
+          {viewMode !== 'analytics' && (
+            <div className="w-full md:w-48 lg:w-64">
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search..."
+              />
+            </div>
+          )}
 
           <Button
             variant="ghost"
