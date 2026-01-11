@@ -98,7 +98,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
   return (
     <div className="h-full overflow-x-auto">
       <div className="mb-3 flex items-center gap-2 flex-wrap px-1">
-        <span className="text-sm text-gray-600 font-medium">Summary</span>
+
         <button
           type="button"
           onClick={() => setBoardFilter(boardFilter === 'overdue' ? 'all' : 'overdue')}

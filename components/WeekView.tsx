@@ -227,7 +227,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="mb-3 flex items-center gap-2 px-1 flex-wrap">
-        <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Summary</span>
+
         <button
           type="button"
           onClick={toggleOverdue}

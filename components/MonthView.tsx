@@ -233,7 +233,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="mb-3 flex items-center justify-between px-3 pt-3 flex-wrap gap-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Summary</span>
+
           <button
             type="button"
             onClick={toggleOverdue}
