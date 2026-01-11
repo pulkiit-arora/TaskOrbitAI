@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layout, Calendar as CalendarIcon, List, Search, Moon, Sun, Trash2 } from 'lucide-react';
+import { Layout, Calendar as CalendarIcon, List, Search, Moon, Sun, Trash2, CheckSquare } from 'lucide-react';
 import { TaskModal } from './components/TaskModal';
 import { MonthView } from './components/MonthView';
 import { WeekView } from './components/WeekView';
@@ -12,6 +12,7 @@ import { Tour } from './components/Tour';
 import { Legend } from './components/Legend';
 import { SearchInput } from './components/SearchInput';
 import { CommandPalette } from './components/CommandPalette';
+import { SettingsMenu } from './components/SettingsMenu';
 import { Task, Status, Recurrence, Priority, Tag, ViewMode } from './types';
 import { useTasks } from './hooks/useTasks';
 import { useTaskModal } from './hooks/useTaskModal';
@@ -782,57 +783,33 @@ const App: React.FC = () => {
         className="hidden"
       />
       {/* Top Banner (Global Toolbar) */}
-      <div className="sticky top-0 z-[60] bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-xs px-4 py-1 flex items-center justify-between shadow-sm h-8 transition-colors duration-200">
+      <div className="sticky top-0 z-[60] bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex items-center justify-between shadow-sm min-h-[3.5rem] transition-colors duration-200">
+
+        {/* Left: Branding */}
         <div className="flex items-center gap-3">
-          <span className="font-semibold text-gray-500 dark:text-gray-400 hidden sm:inline">Build: {import.meta.env.VITE_BUILD_TIME || 'Dev'}</span>
-          <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">|</span>
-          <button
-            onClick={() => setIsTourOpen(true)}
-            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
-          >
-            Tour
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="bg-blue-600 p-1.5 rounded-lg text-white shadow-sm">
+              <CheckSquare size={18} />
+            </div>
+            <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent whitespace-nowrap">
+              TaskOrbit AI
+            </h1>
+          </div>
+          <div className="hidden sm:block h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
+          <p className="text-xs text-gray-500 font-medium hidden sm:block mt-0.5">Personal Task Manager</p>
         </div>
-        <div className="flex items-center gap-3">
+
+        {/* Right: Legend & Settings */}
+        <div className="flex items-center gap-4">
           <Legend />
-          <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">|</span>
-          <button
-            onClick={toggleDarkMode}
-            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
-            title="Toggle Theme"
-          >
-            {darkMode ? <Sun size={12} /> : <Moon size={12} />}
-            <span className="hidden sm:inline">{darkMode ? 'Light' : 'Dark'}</span>
-          </button>
-          <span className="text-gray-300 dark:text-gray-600">|</span>
-          <a href="mailto:pulkiit.arora@gmail.com" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-            Contact Me
-          </a>
-          <span className="text-gray-300 dark:text-gray-600">|</span>
-          <button
-            onClick={handleExportData}
-            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
-            title="Backup Tasks"
-          >
-            Export
-          </button>
-          <span className="text-gray-300 dark:text-gray-600">|</span>
-          <button
-            onClick={handleImportClick}
-            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
-            title="Restore Tasks"
-          >
-            Import
-          </button>
-          <span className="text-gray-300 dark:text-gray-600">|</span>
-          <button
-            onClick={() => setIsDeleteAllOpen(true)}
-            className="hover:text-red-600 dark:hover:text-red-400 transition-colors flex items-center gap-1"
-            title="Delete All Tasks"
-          >
-            <Trash2 size={12} />
-            <span className="hidden sm:inline">Delete All</span>
-          </button>
+          <SettingsMenu
+            darkMode={darkMode}
+            toggleDarkMode={toggleDarkMode}
+            onExport={handleExportData}
+            onImportClick={handleImportClick}
+            onDeleteAll={() => setIsDeleteAllOpen(true)}
+            onOpenTour={() => setIsTourOpen(true)}
+          />
         </div>
       </div>
 
