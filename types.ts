@@ -60,6 +60,7 @@ export interface Task {
   // If detached, this stores the original recurrence type for display purposes
   originalRecurrence?: Recurrence;
   tags?: Tag[];
+  completedAt?: number;
 }
 
 export interface AISuggestion {

@@ -75,7 +75,7 @@ export const processTaskStatusChange = (tasks: Task[], taskId: string, newStatus
             }
         }
 
-        return pruned.map(t => t.id === taskId ? ({ ...t, status: newStatus }) : t);
+        return pruned.map(t => t.id === taskId ? ({ ...t, status: newStatus, completedAt: undefined }) : t);
     }
 
     // Case 2: Completing a recurring task (TODO/IN_PROGRESS -> DONE)
@@ -104,9 +104,22 @@ export const processTaskStatusChange = (tasks: Task[], taskId: string, newStatus
             recurrenceMonthWeekday: task.recurrenceMonthWeekday,
             createdAt: Date.now()
         };
-        return [...tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t), nextTask];
+        // Ensure we set completedAt for the finished recurring task
+        return [...tasks.map(t => t.id === taskId ? { ...t, status: newStatus, completedAt: Date.now() } : t), nextTask];
     }
 
     // Case 3: Simple status update
-    return tasks.map(t => t.id === taskId ? ({ ...t, status: newStatus }) : t);
+    return tasks.map(t => {
+        if (t.id === taskId) {
+            const updates: any = { status: newStatus };
+            if (newStatus === Status.DONE) {
+                updates.completedAt = Date.now();
+            } else if (t.status === Status.DONE) {
+                // Moving away from DONE
+                updates.completedAt = undefined;
+            }
+            return { ...t, ...updates };
+        }
+        return t;
+    });
 };

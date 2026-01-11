@@ -914,9 +914,7 @@ const App: React.FC = () => {
           />
         )}
 
-        {viewMode === 'analytics' && (
-          <AnalyticsView tasks={tasks} />
-        )}
+        {viewMode === 'analytics' && <AnalyticsView tasks={tasks} onEditTask={openModal} onToggleDone={(id) => updateTaskStatus(id, tasks.find(t => t.id === id)?.status === Status.DONE ? Status.TODO : Status.DONE)} />}
       </main>
 
       <Tour
