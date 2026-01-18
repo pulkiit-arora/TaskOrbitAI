@@ -1044,7 +1044,9 @@ const App: React.FC = () => {
             id: crypto.randomUUID(),
             description: taskData.description || '',
             status: Status.TODO,
-            recurrence: Recurrence.NONE,
+            recurrence: taskData.recurrence || Recurrence.NONE,
+            recurrenceInterval: taskData.recurrenceInterval,
+            recurrenceStart: taskData.dueDate,
             createdAt: Date.now(),
           } as Task;
           setTasks(prev => [...prev, newTask]);

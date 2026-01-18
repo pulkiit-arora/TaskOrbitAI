@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, X, Zap } from 'lucide-react';
-import { Priority, Tag, Task } from '../types';
+import { Priority, Tag, Task, Recurrence } from '../types';
 import { parseQuickAdd, formatParsedTaskPreview } from '../utils/quickAddParser';
 
 interface QuickAddBarProps {
@@ -50,6 +50,8 @@ export const QuickAddBar: React.FC<QuickAddBarProps> = ({
             description: '',
             priority: parsed.priority || Priority.MEDIUM,
             dueDate: parsed.dueDate,
+            recurrence: parsed.recurrence || Recurrence.NONE,
+            recurrenceInterval: parsed.recurrenceInterval,
         };
 
         // Map tag names/IDs to actual Tag objects
@@ -106,12 +108,12 @@ export const QuickAddBar: React.FC<QuickAddBarProps> = ({
                     )}
 
                     <div className="px-4 py-2 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
-                        <div className="text-xs text-gray-400">
+                        <div className="text-xs text-gray-400 flex flex-wrap gap-1">
                             <span className="font-mono bg-gray-200 dark:bg-gray-700 px-1 rounded">#tag</span>
-                            {' '}
                             <span className="font-mono bg-gray-200 dark:bg-gray-700 px-1 rounded">!high</span>
-                            {' '}
                             <span className="font-mono bg-gray-200 dark:bg-gray-700 px-1 rounded">tomorrow</span>
+                            <span className="font-mono bg-gray-200 dark:bg-gray-700 px-1 rounded">daily</span>
+                            <span className="font-mono bg-gray-200 dark:bg-gray-700 px-1 rounded">monthly</span>
                         </div>
                         <button
                             type="submit"

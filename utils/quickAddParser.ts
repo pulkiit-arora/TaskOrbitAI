@@ -1,10 +1,12 @@
-import { Priority, Tag } from '../types';
+import { Priority, Tag, Recurrence } from '../types';
 
 export interface ParsedTask {
     title: string;
     dueDate?: string;
     priority?: Priority;
     tags?: string[];
+    recurrence?: Recurrence;
+    recurrenceInterval?: number;
 }
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -17,14 +19,19 @@ const DAY_ABBREVS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
  * - `#tagname` → adds a tag
  * - `!high`, `!medium`, `!low`, `!1`, `!2`, `!3` → sets priority
  * - `today`, `tomorrow`, `next week`, `monday`, etc. → sets due date
+ * - `daily`, `weekly`, `monthly`, `yearly` → sets recurrence
+ * - `every 2 days`, `every 3 weeks`, `every month` → sets recurrence with interval
  * 
- * Example: "Pay rent tomorrow #bills !high"
+ * Example: "Pay rent monthly #bills !high"
+ * Example: "Exercise every 2 days !medium"
  */
 export function parseQuickAdd(input: string, existingTags: Tag[] = []): ParsedTask {
     let remaining = input.trim();
     const tags: string[] = [];
     let priority: Priority | undefined;
     let dueDate: string | undefined;
+    let recurrence: Recurrence | undefined;
+    let recurrenceInterval: number | undefined;
 
     // Extract tags (#word)
     const tagRegex = /#(\w+)/g;
@@ -53,6 +60,35 @@ export function parseQuickAdd(input: string, existingTags: Tag[] = []): ParsedTa
         else if (p === 'low' || p === '3') priority = Priority.LOW;
     }
     remaining = remaining.replace(priorityRegex, '').trim();
+
+    // Extract recurrence with interval (every N days/weeks/months/years)
+    const intervalRegex = /\bevery\s+(\d+)\s+(day|days|week|weeks|month|months|year|years)\b/gi;
+    const intervalMatch = intervalRegex.exec(remaining);
+    if (intervalMatch) {
+        recurrenceInterval = parseInt(intervalMatch[1], 10);
+        const unit = intervalMatch[2].toLowerCase();
+        if (unit.startsWith('day')) recurrence = Recurrence.DAILY;
+        else if (unit.startsWith('week')) recurrence = Recurrence.WEEKLY;
+        else if (unit.startsWith('month')) recurrence = Recurrence.MONTHLY;
+        else if (unit.startsWith('year')) recurrence = Recurrence.YEARLY;
+        remaining = remaining.replace(intervalRegex, '').trim();
+    }
+
+    // Extract simple recurrence (daily, weekly, monthly, quarterly, yearly)
+    if (!recurrence) {
+        const recurrenceRegex = /\b(daily|weekly|monthly|quarterly|yearly|every\s+day|every\s+week|every\s+month|every\s+year)\b/gi;
+        const recurrenceMatch = recurrenceRegex.exec(remaining);
+        if (recurrenceMatch) {
+            const r = recurrenceMatch[1].toLowerCase().replace('every ', '');
+            if (r === 'daily' || r === 'day') recurrence = Recurrence.DAILY;
+            else if (r === 'weekly' || r === 'week') recurrence = Recurrence.WEEKLY;
+            else if (r === 'monthly' || r === 'month') recurrence = Recurrence.MONTHLY;
+            else if (r === 'quarterly') recurrence = Recurrence.QUARTERLY;
+            else if (r === 'yearly' || r === 'year') recurrence = Recurrence.YEARLY;
+            recurrenceInterval = 1;
+            remaining = remaining.replace(recurrenceRegex, '').trim();
+        }
+    }
 
     // Extract relative dates
     const today = new Date();
@@ -103,6 +139,48 @@ export function parseQuickAdd(input: string, existingTags: Tag[] = []): ParsedTa
         }
     }
 
+    // Check for "next month"
+    if (!dueDate && lowerRemaining.includes('next month')) {
+        const nextMonth = new Date(today);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        nextMonth.setDate(1); // First day of next month
+        dueDate = nextMonth.toISOString();
+        remaining = remaining.replace(/\bnext month\b/gi, '').trim();
+    }
+
+    // Check for month names (january, february, etc.)
+    const MONTH_NAMES = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+    const MONTH_ABBREVS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+    if (!dueDate) {
+        for (let i = 0; i < MONTH_NAMES.length; i++) {
+            const monthName = MONTH_NAMES[i];
+            const monthAbbrev = MONTH_ABBREVS[i];
+            // Match "January", "Jan", "January 15", "Jan 15"
+            const regex = new RegExp(`\\b(${monthName}|${monthAbbrev})(?:\\s+(\\d{1,2}))?\\b`, 'gi');
+            const match = regex.exec(remaining);
+            if (match) {
+                const targetMonth = i;
+                const dayOfMonth = match[2] ? parseInt(match[2], 10) : 1;
+                const targetDate = new Date(today.getFullYear(), targetMonth, dayOfMonth, 12, 0, 0, 0);
+
+                // If the date is in the past, use next year
+                if (targetDate < today) {
+                    targetDate.setFullYear(targetDate.getFullYear() + 1);
+                }
+
+                dueDate = targetDate.toISOString();
+                remaining = remaining.replace(regex, '').trim();
+                break;
+            }
+        }
+    }
+
+    // If recurrence is set but no due date, default to today
+    if (recurrence && !dueDate) {
+        dueDate = today.toISOString();
+    }
+
     // Clean up extra whitespace
     remaining = remaining.replace(/\s+/g, ' ').trim();
 
@@ -110,7 +188,9 @@ export function parseQuickAdd(input: string, existingTags: Tag[] = []): ParsedTa
         title: remaining || 'New Task',
         dueDate,
         priority,
-        tags: tags.length > 0 ? tags : undefined
+        tags: tags.length > 0 ? tags : undefined,
+        recurrence,
+        recurrenceInterval
     };
 }
 
@@ -120,7 +200,31 @@ export function parseQuickAdd(input: string, existingTags: Tag[] = []): ParsedTa
 export function formatParsedTaskPreview(parsed: ParsedTask): string {
     const parts: string[] = [parsed.title];
 
-    if (parsed.dueDate) {
+    if (parsed.recurrence) {
+        const recurrenceLabels: Record<Recurrence, string> = {
+            [Recurrence.NONE]: '',
+            [Recurrence.DAILY]: '🔄 Daily',
+            [Recurrence.WEEKLY]: '🔄 Weekly',
+            [Recurrence.MONTHLY]: '🔄 Monthly',
+            [Recurrence.QUARTERLY]: '🔄 Quarterly',
+            [Recurrence.YEARLY]: '🔄 Yearly'
+        };
+        let label = recurrenceLabels[parsed.recurrence];
+        if (parsed.recurrenceInterval && parsed.recurrenceInterval > 1) {
+            const units: Record<Recurrence, string> = {
+                [Recurrence.NONE]: '',
+                [Recurrence.DAILY]: 'days',
+                [Recurrence.WEEKLY]: 'weeks',
+                [Recurrence.MONTHLY]: 'months',
+                [Recurrence.QUARTERLY]: 'quarters',
+                [Recurrence.YEARLY]: 'years'
+            };
+            label = `🔄 Every ${parsed.recurrenceInterval} ${units[parsed.recurrence]}`;
+        }
+        if (label) parts.push(label);
+    }
+
+    if (parsed.dueDate && !parsed.recurrence) {
         const date = new Date(parsed.dueDate);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
