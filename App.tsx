@@ -14,11 +14,15 @@ import { SearchInput } from './components/SearchInput';
 import { CommandPalette } from './components/CommandPalette';
 import { SettingsMenu } from './components/SettingsMenu';
 import { AnalyticsView } from './components/AnalyticsView';
+import { ShortcutsModal } from './components/ShortcutsModal';
+import { QuickAddBar } from './components/QuickAddBar';
 import { Task, Status, Recurrence, Priority, Tag, ViewMode } from './types';
 import { useTasks } from './hooks/useTasks';
 import { useTaskModal } from './hooks/useTaskModal';
 import { useLocalStorageString } from './hooks/useLocalStorage';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { calculateNextDueDate } from './utils/taskUtils';
+import { parseSearchQuery, SearchFilters } from './utils/searchParser';
 
 const App: React.FC = () => {
   const { tasks, isLoading, setTasks, updateTaskStatus } = useTasks();
@@ -72,7 +76,32 @@ const App: React.FC = () => {
     taskId: null
   });
   const [isTourOpen, setIsTourOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onNewTask: () => openModal(),
+    onNavigate: (view) => setViewMode(view),
+    onToggleDarkMode: () => setDarkMode(prev => !prev),
+    onShowShortcuts: () => setIsShortcutsOpen(true),
+  }, !isModalOpen && !isTourOpen && !isQuickAddOpen);
+
+  // Quick add keyboard shortcut (Q key)
+  useEffect(() => {
+    const handleQuickAddKey = (e: KeyboardEvent) => {
+      if (isModalOpen || isTourOpen || isShortcutsOpen || isQuickAddOpen) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+      if (e.key.toLowerCase() === 'q' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setIsQuickAddOpen(true);
+      }
+    };
+    document.addEventListener('keydown', handleQuickAddKey);
+    return () => document.removeEventListener('keydown', handleQuickAddKey);
+  }, [isModalOpen, isTourOpen, isShortcutsOpen, isQuickAddOpen]);
 
 
   // Persist showArchived
@@ -926,20 +955,32 @@ const App: React.FC = () => {
             description: 'Your central hub for productivity. Manage tasks, build habits, and track progress across powerful views.'
           },
           {
-            title: 'New Today View',
-            description: 'Start your day with the focused Today view. See what needs your attention right now in a clean list.'
+            title: 'Quick Add (Press Q)',
+            description: 'Press Q anywhere to quickly add tasks with natural language. Try: "Pay rent tomorrow #bills !high" to set date, tag, and priority instantly.'
+          },
+          {
+            title: 'Keyboard Shortcuts (Press ?)',
+            description: 'Press ? to see all shortcuts. Use N for new task, T/W/M/B/A to switch views, D for dark mode, and Ctrl+K for command palette.'
+          },
+          {
+            title: 'Subtasks & Checklists',
+            description: 'Break down complex tasks into subtasks. Open any task and add checklist items with progress tracking.'
+          },
+          {
+            title: 'Streak Tracking',
+            description: 'Build habits with streak tracking for recurring tasks. Complete tasks consistently to earn badges: ✨ (3+), ⭐ (7+), 🔥 (14+), 🏆 (30+).'
+          },
+          {
+            title: 'Task Templates',
+            description: 'Save common task configurations as templates. Create once, reuse with a single click.'
           },
           {
             title: 'Flexible Views',
-            description: 'Switch between the new Today list, Board (Kanban), Week, and Month views to visualize your workload exactly how you prefer.'
+            description: 'Switch between Today, Board (Kanban), Week, Month, and Analytics views to visualize your workload.'
           },
           {
-            title: 'Command Palette',
-            description: 'Power User Tip: Press Ctrl+K (or Cmd+K) to instantly access the Command Palette. Create tasks, navigate views, or toggle themes without lifting your hands.'
-          },
-          {
-            title: 'Global Actions',
-            description: 'Access global controls in the top bar to toggle Dark Mode, Export your data for safekeeping, or Import backups.'
+            title: 'Command Palette (Ctrl+K)',
+            description: 'Power User Tip: Press Ctrl+K (or Cmd+K) for the Command Palette. Create tasks, navigate, or toggle themes instantly.'
           },
         ]}
       />
@@ -988,6 +1029,26 @@ const App: React.FC = () => {
         onEditTask={(task) => openModal(task)}
         toggleTheme={toggleDarkMode}
         darkMode={darkMode}
+      />
+      <ShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+      />
+      <QuickAddBar
+        isVisible={isQuickAddOpen}
+        onClose={() => setIsQuickAddOpen(false)}
+        availableTags={tags}
+        onAddTask={(taskData) => {
+          const newTask: Task = {
+            ...taskData,
+            id: crypto.randomUUID(),
+            description: taskData.description || '',
+            status: Status.TODO,
+            recurrence: Recurrence.NONE,
+            createdAt: Date.now(),
+          } as Task;
+          setTasks(prev => [...prev, newTask]);
+        }}
       />
     </div>
   );

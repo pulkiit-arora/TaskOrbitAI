@@ -29,38 +29,41 @@ export interface Tag {
   color: string;
 }
 
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+  order: number;
+}
+
 export interface Task {
   id: string;
-  seriesId?: string; // ID linking recurrence instances together
+  seriesId?: string;
   title: string;
   description: string;
   status: Status;
   priority: Priority;
-  dueDate?: string; // ISO Date string
+  dueDate?: string;
   recurrence: Recurrence;
-  // Interval for recurrence (e.g., every 2 months). Defaults to 1 when not provided.
   recurrenceInterval?: number;
-  // For weekly recurrence: array of weekdays to occur on (0 = Sunday, 6 = Saturday).
   recurrenceWeekdays?: number[];
-  // For monthly recurrence: specific day of month (1-31). If absent, the original dueDate's day is used.
   recurrenceMonthDay?: number;
-  // For monthly-by-weekday rules: nth (1..4 or -1 for last) and weekday (0=Sun..6=Sat)
-  recurrenceMonthNth?: number; // e.g., 1 = first, 2 = second, -1 = last
-  recurrenceMonthWeekday?: number; // 0..6
-  recurrenceMonths?: number[]; // 0..11, specific months to occur in
-  recurrenceStart?: string; // ISO Date string
-  recurrenceEnd?: string; // ISO Date string
+  recurrenceMonthNth?: number;
+  recurrenceMonthWeekday?: number;
+  recurrenceMonths?: number[];
+  recurrenceStart?: string;
+  recurrenceEnd?: string;
   createdAt: number;
-  // Progress comments for the task. Users can add multiple comments to track progress.
   comments?: TaskComment[];
-  // Array of ISO date strings to exclude from recurrence (deleted/moved occurrences)
   excludedDates?: string[];
-  // Indicates if this task was detached from a recurrence (is an exception)
   isRecurringException?: boolean;
-  // If detached, this stores the original recurrence type for display purposes
   originalRecurrence?: Recurrence;
   tags?: Tag[];
   completedAt?: number;
+  // Subtasks for checklist functionality
+  subtasks?: Subtask[];
+  // Task dependencies - IDs of tasks that block this one
+  blockedBy?: string[];
 }
 
 export interface AISuggestion {
@@ -72,5 +75,19 @@ export interface AISuggestion {
 export interface TaskComment {
   id: string;
   text: string;
+  createdAt: number;
+}
+
+export interface TaskTemplate {
+  id: string;
+  name: string;
+  title: string;
+  description: string;
+  priority: Priority;
+  recurrence: Recurrence;
+  recurrenceInterval?: number;
+  recurrenceWeekdays?: number[];
+  tags?: Tag[];
+  subtasks?: Subtask[];
   createdAt: number;
 }

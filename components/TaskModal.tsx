@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Task, Priority, Recurrence, Status, AISuggestion, Tag } from '../types';
+import { Task, Priority, Recurrence, Status, AISuggestion, Tag, Subtask } from '../types';
 import { X, Sparkles, Plus, ChevronDown, Activity, AlertCircle, RotateCcw } from 'lucide-react';
 import { Button } from './Button';
 import { TagPicker } from './TagPicker';
+import { SubtaskList } from './SubtaskList';
 import { generateTaskSuggestions } from '../services/geminiService';
 import { calculateTaskStats } from '../utils/taskUtils';
 
@@ -43,6 +44,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   const [comments, setComments] = useState<{ id: string; text: string; createdAt: number }[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
   const [tags, setTags] = useState<Tag[]>([]);
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
 
   // 'single' = update only this instance (exception). 'series' = update base task.
   const [saveScope, setSaveScope] = useState<'single' | 'series'>('single');
@@ -65,6 +67,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       setRecurrenceEnd(task.recurrenceEnd ? new Date(task.recurrenceEnd).toISOString().split('T')[0] : '');
       setComments(task.comments || []);
       setTags(task.tags || []);
+      setSubtasks(task.subtasks || []);
     } else {
       resetForm();
     }
@@ -100,6 +103,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setNewCommentText('');
     setSuggestions([]);
     setTags([]);
+    setSubtasks([]);
   };
 
   const handleSave = () => {
@@ -137,6 +141,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       status: status,
       createdAt: task?.createdAt || Date.now(),
       tags: tags,
+      subtasks: subtasks,
     }, saveScope);
     onClose();
   };
@@ -181,7 +186,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
           <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">{task?.id ? 'Edit Task' : 'New Task'}</h2>
@@ -307,6 +312,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 placeholder="Details about the task..."
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+
+            {/* Subtasks section */}
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+              <SubtaskList
+                subtasks={subtasks}
+                onChange={setSubtasks}
               />
             </div>
 
