@@ -200,6 +200,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                             onDelete={onDeleteTask}
                                             hideMoveButtons={true}
                                             compact={false} // Use full rows
+                                            onToggleDone={() => onToggleDone(task.id, task.dueDate)}
                                         />
                                     </div>
                                 </div>
