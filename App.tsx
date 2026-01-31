@@ -607,9 +607,9 @@ const App: React.FC = () => {
       if (deleteConfirmation.taskId.includes('-virtual-')) {
         // It's a virtual occurrence
         if (scope === 'series') {
-          // Delete the BASE task (entire series)
+          // Delete the BASE task (entire series) AND all related history items
           const baseTaskId = deleteConfirmation.taskId.split('-virtual-')[0];
-          setTasks(prev => prev.filter(t => t.id !== baseTaskId));
+          setTasks(prev => prev.filter(t => t.id !== baseTaskId && t.seriesId !== baseTaskId));
         } else {
           // Delete just this occurrence (default)
           const baseTaskId = deleteConfirmation.taskId.split('-virtual-')[0];
@@ -634,7 +634,8 @@ const App: React.FC = () => {
           setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId));
         } else {
           // Normal delete (series or non-recurring)
-          setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId));
+          // Also delete all history items that have seriesId pointing to this task
+          setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId && t.seriesId !== deleteConfirmation.taskId));
         }
       }
 
