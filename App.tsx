@@ -611,7 +611,7 @@ const App: React.FC = () => {
           const baseTaskId = deleteConfirmation.taskId.split('-virtual-')[0];
           setTasks(prev => prev.filter(t => t.id !== baseTaskId && t.seriesId !== baseTaskId));
         } else {
-          // Delete just this occurrence (default)
+          // Delete just this occurrence (default) - add to excluded dates
           const baseTaskId = deleteConfirmation.taskId.split('-virtual-')[0];
           const timestamp = Number(deleteConfirmation.taskId.split('-virtual-')[1]);
           const dateISO = new Date(timestamp).toISOString();
@@ -627,15 +627,17 @@ const App: React.FC = () => {
           }));
         }
       } else {
-        // It's a real task (could be base recurring or normal)
+        // It's a real task (could be base recurring, history item, or normal task)
         const task = tasks.find(t => t.id === deleteConfirmation.taskId);
-        if (task && task.recurrence !== Recurrence.NONE && scope === 'single') {
-          // User wants to delete just this instance of a real recurring task
-          setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId));
-        } else {
-          // Normal delete (series or non-recurring)
-          // Also delete all history items that have seriesId pointing to this task
+
+        if (task && task.recurrence !== Recurrence.NONE && scope === 'series') {
+          // User wants to delete the entire series of a base recurring task
+          // Delete the base task AND all related history items
           setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId && t.seriesId !== deleteConfirmation.taskId));
+        } else {
+          // Single occurrence delete OR history item delete OR non-recurring task
+          // Only delete this specific task, not related items
+          setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId));
         }
       }
 
