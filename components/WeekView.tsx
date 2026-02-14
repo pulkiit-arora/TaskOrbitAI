@@ -75,7 +75,8 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
       }
 
       // Case 2: Recurring tasks — scan past dates for missed occurrences
-      if (!isOpen(task)) return; // Only active recurring series
+      // Note: don't filter by isOpen() here — a DONE base task still generates
+      // virtual TODO occurrences (consistent with getTasksForDay behavior)
 
       const scanStart = new Date(Math.max(lookbackStart.getTime(),
         task.recurrenceStart ? new Date(task.recurrenceStart).setHours(0, 0, 0, 0) :
@@ -83,18 +84,6 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             task.createdAt));
       scanStart.setHours(0, 0, 0, 0);
 
-      console.log('[OVERDUE-DEBUG] Scanning recurring task:', task.title, {
-        recurrence: task.recurrence,
-        interval: task.recurrenceInterval,
-        recurrenceStart: task.recurrenceStart,
-        dueDate: task.dueDate,
-        status: task.status,
-        scanStart: scanStart.toISOString(),
-        today: today.toISOString(),
-        excludedDates: task.excludedDates,
-      });
-
-      let foundCount = 0;
       for (let d = new Date(scanStart); d < today; d.setDate(d.getDate() + 1)) {
         if (doesTaskOccurOnDate(task, d)) {
           // Check if a completed or expired history record exists for this date
@@ -105,10 +94,8 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             t.dueDate &&
             new Date(t.dueDate).setHours(0, 0, 0, 0) === dateTime
           );
-          console.log('[OVERDUE-DEBUG]   Occurrence found:', new Date(d).toDateString(), 'hasHistory:', hasHistoryRecord);
           if (!hasHistoryRecord) {
             // This is an overdue occurrence — create a virtual entry
-            foundCount++;
             result.push({
               ...task,
               id: `${task.id}-overdue-${d.getTime()}`,
@@ -118,7 +105,6 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
           }
         }
       }
-      console.log('[OVERDUE-DEBUG] Total overdue occurrences for', task.title, ':', foundCount);
     });
 
     return result;

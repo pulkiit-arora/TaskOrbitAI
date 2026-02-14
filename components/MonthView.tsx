@@ -77,7 +77,8 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
       }
 
       // Case 2: Recurring tasks — scan past dates for missed occurrences
-      if (!isOpen(task)) return;
+      // Note: don't filter by isOpen() here — a DONE base task still generates
+      // virtual TODO occurrences (consistent with getTasksForDay behavior)
 
       const scanStart = new Date(Math.max(lookbackStart.getTime(),
         task.recurrenceStart ? new Date(task.recurrenceStart).setHours(0, 0, 0, 0) :
