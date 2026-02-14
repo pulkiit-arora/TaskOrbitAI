@@ -57,7 +57,57 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
   monthEnd.setHours(23, 59, 59, 999);
 
   const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Status.ARCHIVED;
-  const overdueTasks = tasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today && t.status !== Status.EXPIRED);
+
+  // Build overdue list: includes both simple overdue tasks AND missed recurring occurrences
+  const overdueTasks: Task[] = (() => {
+    const result: Task[] = [];
+    const MAX_LOOKBACK_DAYS = 365;
+    const lookbackStart = new Date(today);
+    lookbackStart.setDate(lookbackStart.getDate() - MAX_LOOKBACK_DAYS);
+
+    tasks.forEach(task => {
+      if (task.status === Status.ARCHIVED || task.status === Status.EXPIRED) return;
+
+      // Case 1: Non-recurring tasks
+      if (task.recurrence === Recurrence.NONE) {
+        if (task.dueDate && isOpen(task) && new Date(task.dueDate) < today) {
+          result.push(task);
+        }
+        return;
+      }
+
+      // Case 2: Recurring tasks — scan past dates for missed occurrences
+      if (!isOpen(task)) return;
+
+      const scanStart = new Date(Math.max(lookbackStart.getTime(),
+        task.recurrenceStart ? new Date(task.recurrenceStart).setHours(0, 0, 0, 0) :
+          task.dueDate ? new Date(task.dueDate).setHours(0, 0, 0, 0) :
+            task.createdAt));
+      scanStart.setHours(0, 0, 0, 0);
+
+      for (let d = new Date(scanStart); d < today; d.setDate(d.getDate() + 1)) {
+        if (doesTaskOccurOnDate(task, d)) {
+          const dateTime = new Date(d).setHours(0, 0, 0, 0);
+          const hasHistoryRecord = tasks.some(t =>
+            (t.status === Status.DONE || t.status === Status.EXPIRED) &&
+            t.title === task.title &&
+            t.dueDate &&
+            new Date(t.dueDate).setHours(0, 0, 0, 0) === dateTime
+          );
+          if (!hasHistoryRecord) {
+            result.push({
+              ...task,
+              id: `${task.id}-overdue-${d.getTime()}`,
+              dueDate: new Date(d).toISOString(),
+              status: Status.TODO
+            });
+          }
+        }
+      }
+    });
+
+    return result;
+  })();
 
   // Calculate projected recurring tasks due this month
   // NOTE: This relies on `doesTaskOccurOnDate` which is defined BELOW. 
@@ -377,7 +427,16 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
             .map(task => (
               <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]} `}>
                 <button
-                  onClick={(e) => { e.stopPropagation(); onToggleDone(task.id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Virtual overdue entries have id format: baseId-overdue-timestamp
+                    if (task.id.includes('-overdue-')) {
+                      const baseId = task.id.substring(0, task.id.indexOf('-overdue-'));
+                      onToggleDone(baseId, task.dueDate);
+                    } else {
+                      onToggleDone(task.id);
+                    }
+                  }}
                   className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''} `}
                   title="Toggle done"
                 >

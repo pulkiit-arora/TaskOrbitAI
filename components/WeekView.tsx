@@ -55,7 +55,59 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
   weekEnd.setHours(23, 59, 59, 999);
 
   const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Status.ARCHIVED;
-  const overdueTasks = tasks.filter(t => t.dueDate && isOpen(t) && new Date(t.dueDate) < today && t.status !== Status.EXPIRED);
+
+  // Build overdue list: includes both simple overdue tasks AND missed recurring occurrences
+  const overdueTasks: Task[] = (() => {
+    const result: Task[] = [];
+    const MAX_LOOKBACK_DAYS = 365; // Cap lookback to avoid perf issues
+    const lookbackStart = new Date(today);
+    lookbackStart.setDate(lookbackStart.getDate() - MAX_LOOKBACK_DAYS);
+
+    tasks.forEach(task => {
+      if (task.status === Status.ARCHIVED || task.status === Status.EXPIRED) return;
+
+      // Case 1: Non-recurring tasks — simple dueDate < today check
+      if (task.recurrence === Recurrence.NONE) {
+        if (task.dueDate && isOpen(task) && new Date(task.dueDate) < today) {
+          result.push(task);
+        }
+        return;
+      }
+
+      // Case 2: Recurring tasks — scan past dates for missed occurrences
+      if (!isOpen(task)) return; // Only active recurring series
+
+      const scanStart = new Date(Math.max(lookbackStart.getTime(),
+        task.recurrenceStart ? new Date(task.recurrenceStart).setHours(0, 0, 0, 0) :
+          task.dueDate ? new Date(task.dueDate).setHours(0, 0, 0, 0) :
+            task.createdAt));
+      scanStart.setHours(0, 0, 0, 0);
+
+      for (let d = new Date(scanStart); d < today; d.setDate(d.getDate() + 1)) {
+        if (doesTaskOccurOnDate(task, d)) {
+          // Check if a completed or expired history record exists for this date
+          const dateTime = new Date(d).setHours(0, 0, 0, 0);
+          const hasHistoryRecord = tasks.some(t =>
+            (t.status === Status.DONE || t.status === Status.EXPIRED) &&
+            t.title === task.title &&
+            t.dueDate &&
+            new Date(t.dueDate).setHours(0, 0, 0, 0) === dateTime
+          );
+          if (!hasHistoryRecord) {
+            // This is an overdue occurrence — create a virtual entry
+            result.push({
+              ...task,
+              id: `${task.id}-overdue-${d.getTime()}`,
+              dueDate: new Date(d).toISOString(),
+              status: Status.TODO
+            });
+          }
+        }
+      }
+    });
+
+    return result;
+  })();
   const overdueCount = overdueTasks.length;
   const dueThisWeekTasks = tasks.filter(t => {
     if (!t.dueDate || !isOpen(t)) return false;
@@ -361,7 +413,15 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 onDelete={onDeleteTask}
                 hideMoveButtons={true}
                 compactPriority={true}
-                onToggleDone={(id) => onToggleDone(id)}
+                onToggleDone={(id) => {
+                  // Virtual overdue entries have id format: baseId-overdue-timestamp
+                  if (id.includes('-overdue-')) {
+                    const baseId = id.substring(0, id.indexOf('-overdue-'));
+                    onToggleDone(baseId, task.dueDate);
+                  } else {
+                    onToggleDone(id);
+                  }
+                }}
                 layoutMode="sidebar"
               />
             ))}
