@@ -6,7 +6,7 @@ export enum Status {
   EXPIRED = 'EXPIRED'
 }
 
-export type ViewMode = 'board' | 'week' | 'month' | 'today' | 'analytics';
+export type ViewMode = 'board' | 'week' | 'month' | 'today' | 'analytics' | 'planner' | 'eisenhower';
 
 export enum Priority {
   LOW = 'LOW',
@@ -34,6 +34,14 @@ export interface Subtask {
   title: string;
   completed: boolean;
   order: number;
+}
+
+export interface TimeEntry {
+  id: string;
+  startTime: number;
+  endTime: number;
+  duration: number; // in seconds
+  label?: string;
 }
 
 export interface Task {
@@ -64,6 +72,17 @@ export interface Task {
   subtasks?: Subtask[];
   // Task dependencies - IDs of tasks that block this one
   blockedBy?: string[];
+  // Pinning
+  pinned?: boolean;
+  // Snooze/Defer
+  snoozedUntil?: string;
+  // Time tracking
+  timeEntries?: TimeEntry[];
+  // Daily planner
+  estimatedMinutes?: number;
+  planOrder?: number;
+  // Custom board status
+  customStatus?: string;
 }
 
 export interface AISuggestion {

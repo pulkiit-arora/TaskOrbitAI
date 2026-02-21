@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from './Button';
 import { SearchInput } from './SearchInput';
-import { CheckSquare, Archive, Plus, Layout, Calendar, ChevronLeft, ChevronRight, Grid, Download, Upload, Filter, BarChart2 } from 'lucide-react';
+import { CheckSquare, Archive, Plus, Layout, Calendar, ChevronLeft, ChevronRight, Grid, Download, Upload, Filter, BarChart2, ClipboardList, Crosshair } from 'lucide-react';
 import { Task, Priority, ViewMode } from '../types';
 import { DateNavigator } from './DateNavigator';
 
@@ -101,6 +101,26 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             >
               <BarChart2 size={18} />
               <span className="hidden xl:inline">Analytics</span>
+            </button>
+            <button
+              onClick={() => setViewMode('planner')}
+              className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'planner'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                }`}
+            >
+              <ClipboardList size={18} />
+              <span className="hidden xl:inline">Planner</span>
+            </button>
+            <button
+              onClick={() => setViewMode('eisenhower')}
+              className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'eisenhower'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                }`}
+            >
+              <Crosshair size={18} />
+              <span className="hidden xl:inline">Matrix</span>
             </button>
           </div>
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Task, Priority, Recurrence, Status, AISuggestion, Tag, Subtask } from '../types';
+import { Task, Priority, Recurrence, Status, AISuggestion, Tag, Subtask, TimeEntry } from '../types';
 import { X, Sparkles, Plus, ChevronDown, Activity, AlertCircle, RotateCcw } from 'lucide-react';
 import { Button } from './Button';
 import { TagPicker } from './TagPicker';
 import { SubtaskList } from './SubtaskList';
+import { TimeTracker } from './TimeTracker';
+import { RecurrencePreview } from './RecurrencePreview';
 import { generateTaskSuggestions } from '../services/geminiService';
 import { calculateTaskStats } from '../utils/taskUtils';
 
@@ -45,6 +47,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   const [newCommentText, setNewCommentText] = useState('');
   const [tags, setTags] = useState<Tag[]>([]);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [estimatedMinutes, setEstimatedMinutes] = useState<number>(25);
 
   // 'single' = update only this instance (exception). 'series' = update base task.
   const [saveScope, setSaveScope] = useState<'single' | 'series'>('single');
@@ -68,6 +72,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       setComments(task.comments || []);
       setTags(task.tags || []);
       setSubtasks(task.subtasks || []);
+      setTimeEntries(task.timeEntries || []);
+      setEstimatedMinutes(task.estimatedMinutes || 25);
     } else {
       resetForm();
     }
@@ -104,6 +110,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setSuggestions([]);
     setTags([]);
     setSubtasks([]);
+    setTimeEntries([]);
+    setEstimatedMinutes(25);
   };
 
   const handleSave = () => {
@@ -142,6 +150,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       createdAt: task?.createdAt || Date.now(),
       tags: tags,
       subtasks: subtasks,
+      timeEntries: timeEntries,
+      estimatedMinutes: estimatedMinutes,
     }, saveScope);
     onClose();
   };
@@ -601,6 +611,38 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 )}
               </div>
             </div>
+
+            {/* Time Tracking section */}
+            {task?.id && (
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+                <TimeTracker
+                  timeEntries={timeEntries}
+                  onChange={setTimeEntries}
+                />
+              </div>
+            )}
+
+            {/* Estimated Duration */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estimated Duration (minutes)</label>
+              <input
+                type="number"
+                min={5}
+                step={5}
+                value={estimatedMinutes}
+                onChange={(e) => setEstimatedMinutes(Math.max(5, parseInt(e.target.value) || 25))}
+                className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+
+            {/* Recurrence Preview */}
+            {recurrence !== Recurrence.NONE && (
+              <RecurrencePreview task={{
+                recurrence, recurrenceInterval, recurrenceWeekdays,
+                recurrenceMonthDay, dueDate: dueDate ? new Date(`${dueDate}T12:00:00`).toISOString() : undefined,
+                recurrenceStart: recurrenceStart ? new Date(`${recurrenceStart}T12:00:00`).toISOString() : undefined,
+              } as Partial<Task>} />
+            )}
 
           </div>
         </div>

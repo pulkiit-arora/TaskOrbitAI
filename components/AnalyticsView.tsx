@@ -1,8 +1,12 @@
-
 import React, { useMemo } from 'react';
 import { Task, Status, Priority, Recurrence } from '../types';
 import { CheckCircle, Clock, AlertCircle, Activity, TrendingUp, Calendar, Filter } from 'lucide-react';
 import { doesTaskOccurOnDate } from '../utils/taskUtils';
+import { HeatmapPanel } from './HeatmapPanel';
+import { TagAnalyticsPanel } from './TagAnalyticsPanel';
+import { WeeklyReport } from './WeeklyReport';
+import { AchievementsPanel } from './AchievementsPanel';
+import { StreakPanel } from './StreakPanel';
 
 interface AnalyticsViewProps {
     tasks: Task[];
@@ -691,6 +695,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
                         )}
                     </div>
 
+                </div>
+
+                {/* New Analytics Panels */}
+                <HeatmapPanel tasks={tasks} />
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <WeeklyReport tasks={tasks} />
+                    <TagAnalyticsPanel tasks={tasks} />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <StreakPanel tasks={tasks} />
+                    <AchievementsPanel tasks={tasks} />
                 </div>
 
                 <DrillDownModal

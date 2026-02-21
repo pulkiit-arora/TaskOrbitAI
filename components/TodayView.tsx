@@ -14,6 +14,9 @@ interface TodayViewProps {
     onToggleDone: (taskId: string, onDate?: string) => void;
     onDropTask?: (taskId: string, date: Date) => void;
     onAddTask: () => void;
+    onSnoozeTask?: (taskId: string, until: string) => void;
+    onTogglePin?: (taskId: string) => void;
+    onStartPomodoro?: (taskId: string) => void;
 }
 
 export const TodayView: React.FC<TodayViewProps> = ({
@@ -24,7 +27,10 @@ export const TodayView: React.FC<TodayViewProps> = ({
     onDeleteTask,
     onToggleDone,
     onDropTask,
-    onAddTask
+    onAddTask,
+    onSnoozeTask,
+    onTogglePin,
+    onStartPomodoro
 }) => {
     const [showCompleted, setShowCompleted] = useState(false);
 
@@ -51,7 +57,9 @@ export const TodayView: React.FC<TodayViewProps> = ({
 
         tasks.forEach(task => {
             if (task.status === Status.ARCHIVED) return;
-            if (task.status === Status.EXPIRED) return; // Don't show expired in Today list (unless we want to?)
+            if (task.status === Status.EXPIRED) return;
+            // Filter snoozed tasks
+            if (task.snoozedUntil && new Date(task.snoozedUntil) > today) return;
 
             if (doesTaskOccurOnDate(task, today)) {
                 let isRealInstance = false;
@@ -101,8 +109,11 @@ export const TodayView: React.FC<TodayViewProps> = ({
     const openTodayTasks = allTodayTasks.filter(item => item.task.status !== Status.DONE);
     const completedTodayTasks = allTodayTasks.filter(item => item.task.status === Status.DONE);
 
-    // Sorting: Priority -> Unscheduled(if any?) -> Created
+    // Sorting: Pinned first -> Priority -> Created
     const sortFn = (a: { task: Task }, b: { task: Task }) => {
+        // Pinned tasks always come first
+        if (a.task.pinned && !b.task.pinned) return -1;
+        if (!a.task.pinned && b.task.pinned) return 1;
         const pw: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
         const pDiff = pw[b.task.priority] - pw[a.task.priority];
         if (pDiff !== 0) return pDiff;

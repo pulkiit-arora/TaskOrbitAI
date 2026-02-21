@@ -16,17 +16,30 @@ import { SettingsMenu } from './components/SettingsMenu';
 import { AnalyticsView } from './components/AnalyticsView';
 import { ShortcutsModal } from './components/ShortcutsModal';
 import { QuickAddBar } from './components/QuickAddBar';
+import { UndoToast } from './components/UndoToast';
+import { PomodoroTimer } from './components/PomodoroTimer';
+import { PlannerView } from './components/PlannerView';
+import { EisenhowerView } from './components/EisenhowerView';
+import { XPBar } from './components/XPBar';
 import { Task, Status, Recurrence, Priority, Tag, ViewMode } from './types';
 import { useTasks } from './hooks/useTasks';
 import { useTaskModal } from './hooks/useTaskModal';
 import { useLocalStorageString } from './hooks/useLocalStorage';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useUndoManager } from './hooks/useUndoManager';
+import { useTabSync } from './hooks/useTabSync';
 import { calculateNextDueDate } from './utils/taskUtils';
 import { parseSearchQuery, SearchFilters } from './utils/searchParser';
 
 const App: React.FC = () => {
   const { tasks, isLoading, setTasks, updateTaskStatus } = useTasks();
   const { isModalOpen, editingTask, openModal, closeModal, openModalWithDate } = useTaskModal();
+  const undoManager = useUndoManager();
+  useTabSync(tasks, setTasks);
+
+  // Pomodoro state
+  const [pomodoroTaskId, setPomodoroTaskId] = useState<string | null>(null);
+  const pomodoroTask = pomodoroTaskId ? tasks.find(t => t.id === pomodoroTaskId) : null;
 
   const [viewMode, setViewModeState] = useLocalStorageString('lifeflow-view-mode', 'today'); // Default changed to 'today'
   const setViewMode = (mode: ViewMode) => setViewModeState(mode);
@@ -518,6 +531,35 @@ const App: React.FC = () => {
     setDeleteConfirmation({ isOpen: true, taskId });
   };
 
+  // Snooze handler
+  const handleSnoozeTask = (taskId: string, until: string) => {
+    setTasks(prev => prev.map(t =>
+      t.id === taskId ? { ...t, snoozedUntil: until } : t
+    ));
+  };
+
+  // Pin/unpin handler
+  const handleTogglePin = (taskId: string) => {
+    setTasks(prev => prev.map(t =>
+      t.id === taskId ? { ...t, pinned: !t.pinned } : t
+    ));
+  };
+
+  // Pomodoro log time handler
+  const handlePomodoroLogTime = (taskId: string, seconds: number) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id !== taskId) return t;
+      const entry = {
+        id: crypto.randomUUID(),
+        startTime: Date.now() - seconds * 1000,
+        endTime: Date.now(),
+        duration: seconds,
+        label: 'Pomodoro session',
+      };
+      return { ...t, timeEntries: [...(t.timeEntries || []), entry] };
+    }));
+  };
+
   const handleDropTaskDate = (taskId: string, newDate: Date) => {
     // Check if it's a virtual task
     if (taskId.includes('-virtual-')) {
@@ -603,6 +645,8 @@ const App: React.FC = () => {
 
 
   const confirmDelete = (scope?: 'single' | 'series') => {
+    // Save snapshot for undo
+    undoManager.pushUndo('Task deleted', tasks);
     if (deleteConfirmation.taskId) {
       if (deleteConfirmation.taskId.includes('-virtual-')) {
         // It's a virtual occurrence
@@ -836,8 +880,9 @@ const App: React.FC = () => {
           <p className="text-xs text-gray-500 font-medium hidden sm:block mt-0.5">Personal Task Manager</p>
         </div>
 
-        {/* Right: Legend & Settings */}
+        {/* Right: XP Bar, Legend & Settings */}
         <div className="flex items-center gap-4">
+          <XPBar tasks={tasks} />
           <Legend />
           <SettingsMenu
             darkMode={darkMode}
@@ -874,6 +919,9 @@ const App: React.FC = () => {
             onToggleDone={handleToggleDone}
             onDropTask={handleDropTaskDate}
             onAddTask={() => openModalWithDate(new Date())}
+            onSnoozeTask={handleSnoozeTask}
+            onTogglePin={handleTogglePin}
+            onStartPomodoro={(id) => setPomodoroTaskId(id)}
           />
         )}
 
@@ -947,6 +995,27 @@ const App: React.FC = () => {
         )}
 
         {viewMode === 'analytics' && <AnalyticsView tasks={tasks} onEditTask={openModal} onToggleDone={(id) => updateTaskStatus(id, tasks.find(t => t.id === id)?.status === Status.DONE ? Status.TODO : Status.DONE)} />}
+
+        {viewMode === 'planner' && (
+          <PlannerView
+            tasks={filteredTasks}
+            onEditTask={(task) => openModal(task)}
+            onToggleDone={handleToggleDone}
+            onUpdateTask={(taskId, updates) => {
+              setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+            }}
+            onStartPomodoro={(id) => setPomodoroTaskId(id)}
+          />
+        )}
+
+        {viewMode === 'eisenhower' && (
+          <EisenhowerView
+            tasks={filteredTasks}
+            onEditTask={(task) => openModal(task)}
+            onToggleDone={handleToggleDone}
+            onDeleteTask={handleDeleteTask}
+          />
+        )}
       </main>
 
       <Tour
@@ -1055,6 +1124,22 @@ const App: React.FC = () => {
           setTasks(prev => [...prev, newTask]);
         }}
       />
+      {/* Undo Toast */}
+      {undoManager.canUndo && undoManager.lastAction && (
+        <UndoToast
+          message={undoManager.lastAction.description}
+          onUndo={() => undoManager.undo(setTasks)}
+          onDismiss={undoManager.dismiss}
+        />
+      )}
+      {/* Pomodoro Timer */}
+      {pomodoroTask && (
+        <PomodoroTimer
+          task={pomodoroTask}
+          onClose={() => setPomodoroTaskId(null)}
+          onLogTime={(seconds) => handlePomodoroLogTime(pomodoroTask.id, seconds)}
+        />
+      )}
     </div>
   );
 };
