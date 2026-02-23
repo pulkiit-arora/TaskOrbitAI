@@ -1,7 +1,7 @@
 import React from 'react';
 import { Task, Priority, Status, Recurrence, Tag } from '../types';
 import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
-import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter, Tag as TagIcon, XCircle, LayoutGrid, List, MessageSquare } from 'lucide-react';
+import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter, Tag as TagIcon, XCircle, LayoutGrid, List, MessageSquare, Flame, Clock } from 'lucide-react';
 import { StatusFilter } from './StatusFilter';
 import { TagFilterBar } from './TagFilterBar';
 
@@ -33,22 +33,14 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
 
-  // Create array for empty cells before start of month
   const blanks = Array(firstDay).fill(null);
-
-  // Create array of day numbers
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-  // Combine logic
   let totalSlots = [...blanks, ...days];
-
-  // Fill remaining slots to complete the week rows (so grid looks complete)
   const remainingSlots = 7 - (totalSlots.length % 7);
   if (remainingSlots < 7) {
     totalSlots = [...totalSlots, ...Array(remainingSlots).fill(null)];
   }
 
-  // Summary: overdue and due-this-month
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -58,7 +50,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
   const isOpen = (t: Task) => t.status !== Status.DONE && t.status !== Status.ARCHIVED;
 
-  // Build overdue list: includes both simple overdue tasks AND missed recurring occurrences
+  // Build overdue list
   const overdueTasks: Task[] = (() => {
     const result: Task[] = [];
     const MAX_LOOKBACK_DAYS = 365;
@@ -68,17 +60,12 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
     tasks.forEach(task => {
       if (task.status === Status.ARCHIVED || task.status === Status.EXPIRED) return;
 
-      // Case 1: Non-recurring tasks
       if (task.recurrence === Recurrence.NONE) {
         if (task.dueDate && isOpen(task) && new Date(task.dueDate) < today) {
           result.push(task);
         }
         return;
       }
-
-      // Case 2: Recurring tasks — scan past dates for missed occurrences
-      // Note: don't filter by isOpen() here — a DONE base task still generates
-      // virtual TODO occurrences (consistent with getTasksForDay behavior)
 
       const scanStart = new Date(Math.max(lookbackStart.getTime(),
         task.recurrenceStart ? new Date(task.recurrenceStart).setHours(0, 0, 0, 0) :
@@ -110,36 +97,8 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
     return result;
   })();
 
-  // Calculate projected recurring tasks due this month
-  // NOTE: This relies on `doesTaskOccurOnDate` which is defined BELOW. 
-  // We need to move `doesTaskOccurOnDate` UP before this calculation, or use a separate effect, 
-  // but simpler to just move the function definition up or copy the logic structure.
-  // Actually, to avoid big refactors, let's define `doesTaskOccurOnDate` first.
-
-  /* MOVED doesTaskOccurOnDate UP via `multi_replace` or just refer to it if hoisting works? 
-     Function declarations are hoisted but consts are not. 
-     The `doesTaskOccurOnDate` is currently a const. I will assume I need to move it up.
-     Refactoring plan:
-     1. Move helper up.
-     2. Compute count.
-  */
-
-  // ... Wait, I can't easily move code blocks with `replace_file_content` if they are far apart without massive context.
-  // I will assume the user context allows me to re-order or I will use a placeholder and fix it.
-  // A better strategy: Just inject the calculation AFTER `doesTaskOccurOnDate` is defined.
-  // But `doesTaskOccurOnDate` is defined at line 80.
-  // And `dueThisWeekTasks` is at 52.
-
-  // Let's replace the block at lines 40-64 with JUST the constants, 
-  // and do the aggregation later after the helper is defined?
-  // No, `MonthView` returns JSX that uses these values.
-
-
-
   const finalDueThisMonthCount = tasks.reduce((acc, task) => {
     if (task.status === Status.ARCHIVED) return acc;
-
-    // Case 1: Real Task (Non-recurring or ONE-OFF exception)
     if (task.recurrence === Recurrence.NONE) {
       if (task.status === Status.DONE) return acc;
       if (task.dueDate) {
@@ -149,19 +108,13 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
       }
       return acc;
     }
-
-    // Case 2: Recurring Task - Count valid occurrences in the month
     if (task.status === Status.DONE) return acc;
-
-    // Iterate all days in the month
     let occurrences = 0;
-    const daysInMonth = getDaysInMonth(year, month);
-    for (let i = 1; i <= daysInMonth; i++) {
+    const dim = getDaysInMonth(year, month);
+    for (let i = 1; i <= dim; i++) {
       const d = new Date(year, month, i);
       d.setHours(0, 0, 0, 0);
-
       if (doesTaskOccurOnDate(task, d)) {
-        // Check for existing DONE history
         const hasDoneInstance = tasks.some(t =>
           t.status === Status.DONE &&
           t.title === task.title &&
@@ -179,28 +132,34 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
   const dueThisMonthCount = finalDueThisMonthCount;
   const missingDueTasks = tasks.filter(t => !t.dueDate && isOpen(t));
 
-  // Filter mode for Month view
   const [filterMode, setFilterMode] = React.useState<'all' | 'overdue' | 'month' | 'nodue'>('all');
   const [viewLayout, setViewLayout] = React.useState<'grid' | 'list'>('grid');
   const toggleOverdue = () => setFilterMode(m => (m === 'overdue' ? 'all' : 'overdue'));
   const toggleMonth = () => setFilterMode(m => (m === 'month' ? 'all' : 'month'));
   const toggleNoDue = () => setFilterMode(m => (m === 'nodue' ? 'all' : 'nodue'));
 
-  const handleDragOver = (e: React.DragEvent) => {
+  // [Enhancement 12] Drag feedback state
+  const [dragOverDay, setDragOverDay] = React.useState<number | null>(null);
+
+  const handleDragOver = (e: React.DragEvent, day?: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    if (day !== undefined) setDragOverDay(day);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverDay(null);
   };
 
   const handleDrop = (e: React.DragEvent, day: number) => {
     e.preventDefault();
+    setDragOverDay(null);
     const taskId = e.dataTransfer.getData('taskId');
     if (taskId && onDropTask) {
       const dropDate = new Date(year, month, day);
       onDropTask(taskId, dropDate);
     }
   };
-
-
 
   const getTasksForDay = (day: number) => {
     const date = new Date(year, month, day);
@@ -219,39 +178,25 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           isRealInstance = due.getTime() === check.getTime();
         }
 
-        // Skip virtual occurrences for DONE recurring tasks - the new TODO task will project forward
-        // if (task.status === Status.DONE) {
-        //   if (!isRealInstance) {
-        //     // return; // Don't show virtual occurrences of DONE tasks
-        //   }
-        //   // Show only the real DONE instance on its actual due date
-        // }
-
         const baseTaskId = task.id;
         const occurrenceISO = date.toISOString();
 
-        // If a history record (non-recurring instance) exists for this same date, skip projecting a virtual copy
-        // A history record is a non-recurring task with the same title on the same date, but different ID
         if (!isRealInstance) {
           const occStart = new Date(occurrenceISO); occStart.setHours(0, 0, 0, 0);
           const hasHistoryRecord = tasks.some(tt => {
             if (!tt.dueDate) return false;
             const dd = new Date(tt.dueDate); dd.setHours(0, 0, 0, 0);
-            // Match non-recurring tasks with same title on same date (but different ID)
-            // Status doesn't matter - could be DONE, IN_PROGRESS, or TODO
             return dd.getTime() === occStart.getTime() && tt.title === task.title && tt.recurrence === Recurrence.NONE && tt.id !== task.id;
           });
           if (hasHistoryRecord) {
-            return; // skip adding virtual duplicate - the actual history record will be shown instead
+            return;
           }
         }
 
-        // For recurring tasks that are DONE, always show future occurrences as TODO (new instances)
         let displayStatus = Status.TODO;
         if (isRealInstance) {
-          displayStatus = task.status; // Real instance keeps its actual status
+          displayStatus = task.status;
         } else if (task.recurrence !== Recurrence.NONE) {
-          // Virtual occurrences of recurring tasks are always TODO, even if the base task is DONE
           displayStatus = Status.TODO;
         }
 
@@ -266,7 +211,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           task: displayTask,
           isVirtual: !isRealInstance,
           baseTaskId,
-          baseTask: task, // Store the original task for editing
+          baseTask: task,
           occurrenceISO
         });
       }
@@ -274,10 +219,62 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
     return dayTasks;
   };
 
+  // [Enhancement 11] Streak helper — check if a day has all recurring tasks completed
+  const getDayStreak = (day: number): number => {
+    const date = new Date(year, month, day);
+    date.setHours(0, 0, 0, 0);
+    if (date > today) return 0;
+    const dayTasks = getTasksForDay(day);
+    const recurringTasks = dayTasks.filter(d => d.task.recurrence !== Recurrence.NONE || d.isVirtual);
+    if (recurringTasks.length === 0) return 0;
+    const allDone = recurringTasks.every(d => d.task.status === Status.DONE);
+    return allDone ? recurringTasks.length : 0;
+  };
+
+  // [Enhancement 9] Heatmap — compute max tasks per day for color scaling
+  const maxTasksPerDay = React.useMemo(() => {
+    let max = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const count = getTasksForDay(d).length;
+      if (count > max) max = count;
+    }
+    return max;
+  }, [tasks, year, month]);
+
+  const getHeatmapBg = (count: number): string => {
+    if (count === 0 || maxTasksPerDay === 0) return '';
+    const intensity = count / maxTasksPerDay;
+    if (intensity >= 0.75) return 'bg-blue-50 dark:bg-blue-900/15';
+    if (intensity >= 0.5) return 'bg-blue-50/70 dark:bg-blue-900/10';
+    if (intensity >= 0.25) return 'bg-blue-50/40 dark:bg-blue-900/5';
+    return '';
+  };
+
+  // [Enhancement 10] Deadline countdown helper
+  const getDeadlineCountdown = (task: Task): string | null => {
+    if (!task.dueDate || task.status === Status.DONE) return null;
+    const due = new Date(task.dueDate);
+    due.setHours(0, 0, 0, 0);
+    const diffMs = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return '1d left';
+    if (diffDays === 2) return '2d left';
+    return null;
+  };
+
   const priorityColor = {
     [Priority.HIGH]: 'border-red-200 bg-red-50 text-red-900 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800/50',
     [Priority.MEDIUM]: 'border-yellow-200 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800/50',
     [Priority.LOW]: 'border-blue-200 bg-blue-50 text-blue-900 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800/50',
+  };
+
+  // [Enhancement 8] Week number calculation
+  const getWeekNumber = (day: number): number => {
+    const date = new Date(year, month, day);
+    const startOfYear = new Date(year, 0, 1);
+    const diffInMs = date.getTime() - startOfYear.getTime();
+    return Math.ceil((diffInMs / (1000 * 60 * 60 * 24) + startOfYear.getDay() + 1) / 7);
   };
 
   return (
@@ -430,7 +427,6 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Virtual overdue entries have id format: baseId-overdue-timestamp
                     if (task.id.includes('-overdue-')) {
                       const baseId = task.id.substring(0, task.id.indexOf('-overdue-'));
                       onToggleDone(baseId, task.dueDate);
@@ -495,54 +491,27 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           <div className="text-xs text-gray-500 italic px-1 mb-2">
             Showing active and projected tasks for this month.
           </div>
-          {/* If we want to show the LIST of month tasks, we need to gather them similarly to 'getTasksForDay' but for the whole month.
-               But constructing that list properly with virtuals is complex here inline. 
-               For now, the user asked for "count", and usually the list below shows the subset.
-               Re-deriving the full expanded list of all virtual tasks for the month is expensive and might clutter the UI.
-               
-               Alternative: Just show the REAL tasks that fall in this month, plus maybe base recurring tasks?
-               Or just leave this list empty/simplified? 
-               The prompt asked: "in month view show DUE THIS MONTH and corresponding count".
-               It implies the button label update. The content of the list is secondary but should ideally match.
-               
-               Let's try to map the logic we used for counting `finalDueThisMonthCount` to actually producing the items.
-           */}
           {(() => {
-            // Generate the list on the fly (performance warning?)
-            // Ideally this belongs in a useMemo.
-            const monthTasks = [];
-            const daysInM = getDaysInMonth(year, month);
+            const monthTasks: Task[] = [];
+            const dim = getDaysInMonth(year, month);
 
-            // We need a way to deduplicate if multiple occurrences of same task appear? 
-            // Usually a monthly list is chronological.
-            // Let's iterate days and gather? Or iterate tasks and project?
-            // Iterating days is safer for ordering.
-
-            for (let i = 1; i <= daysInM; i++) {
+            for (let i = 1; i <= dim; i++) {
               const d = new Date(year, month, i);
               d.setHours(0, 0, 0, 0);
               const dateISO = d.toISOString();
 
-              // Get tasks for this day (subset of getTasksForDay logic)
               tasks.forEach(task => {
                 if (task.status === Status.ARCHIVED) return;
-                // Check exclusion/done-history
                 if (doesTaskOccurOnDate(task, d)) {
-                  // Done history check
                   const hasDone = tasks.some(t => t.status === Status.DONE && t.title === task.title && t.dueDate && new Date(t.dueDate).setHours(0, 0, 0, 0) === d.getTime());
-                  if (hasDone) return; // Don't show this virtual recurrence if completed history exists
-
-                  // Skip if base task is DONE (unless real instance?)
+                  if (hasDone) return;
                   if (task.status === Status.DONE && task.recurrence !== Recurrence.NONE && task.dueDate && new Date(task.dueDate).setHours(0, 0, 0, 0) !== d.getTime()) return;
 
-                  // Construct display item
                   const isReal = task.dueDate && new Date(task.dueDate).setHours(0, 0, 0, 0) === d.getTime();
-
                   monthTasks.push({
                     ...task,
-                    id: isReal ? task.id : `${task.id} -month - ${i} `, // Virtual ID
+                    id: isReal ? task.id : `${task.id}-month-${i}`,
                     dueDate: dateISO,
-                    // If virtual, it's TODO
                     status: isReal ? task.status : Status.TODO
                   });
                 }
@@ -553,41 +522,22 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               return <div className="text-xs text-gray-400 italic px-1">No tasks due this month</div>;
             }
 
-            // Sort to match WeekView: Status(Active->Done) -> Priority(High->Low) -> DueTime(Earliest->Latest) -> CreatedAt(Newest->Oldest)
             return monthTasks.sort((a, b) => {
-              // 1. Status: Active first
               const aDone = a.status === Status.DONE ? 1 : 0;
               const bDone = b.status === Status.DONE ? 1 : 0;
               if (aDone !== bDone) return aDone - bDone;
-
-              // 2. Priority: High first
               const priorityWeight: Record<string, number> = { [Priority.HIGH]: 3, [Priority.MEDIUM]: 2, [Priority.LOW]: 1 };
               const pDiff = (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
               if (pDiff !== 0) return pDiff;
-
-              // 3. Due Time: Earliest first
               const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
               const bd = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
               if (ad !== bd) return ad - bd;
-
-              // 4. Created At: Newest first
               return (b.createdAt || 0) - (a.createdAt || 0);
             }).map(task => (
               <div key={task.id} className={`group flex items-center gap-2 px-2 py-2 rounded border transition-all ${priorityColor[task.priority]} `}>
-                {/* Simplified Task Row - Maybe Read Only or jump to date? For now simple edit/toggle */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    // If virtual, we need to handle creation... 
-                    // The `onToggleDone` in MonthView might not handle virtual IDs gracefully unless App.tsx handles it.
-                    // App.tsx `handleToggleDone` DOES handle virtual IDs! (logic: `if (taskId.includes('-virtual-'))`)
-                    // Our ID format here is `${ task.id } -month - ${ i } `. 
-                    // App.tsx expects `${ baseTaskId } -virtual - ${ timestamp } `.
-                    // Let's match that format!
-                    // See line 239 in getTasksForDay: `${ task.id } -virtual - ${ date.getTime() } `
-                    // Let's fix the ID generation above.
-
-                    // Actually, let's just use onToggleDone directly.
                     onToggleDone(task.id, task.dueDate);
                   }}
                   className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''} `}
@@ -597,15 +547,26 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 <button onClick={() => onEditTask(task)} className="text-left text-xs truncate flex-1 font-medium">
                   {task.title}
                 </button>
+                {/* [Enhancement 10] Deadline countdown in month list */}
+                {(() => {
+                  const countdown = getDeadlineCountdown(task);
+                  if (!countdown) return null;
+                  return (
+                    <span className="flex items-center gap-0.5 text-[10px] text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100 font-medium whitespace-nowrap">
+                      <Clock size={10} /> {countdown}
+                    </span>
+                  );
+                })()}
                 <span className="text-[10px] text-gray-500 whitespace-nowrap">
-                  {new Date(task.dueDate).getDate()} {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short' })}
+                  {new Date(task.dueDate!).getDate()} {new Date(task.dueDate!).toLocaleDateString(undefined, { month: 'short' })}
                 </span>
               </div>
             ));
           })()}
         </div>
       )}
-      {/* Weekday Headers - Hide in List Mode */}
+
+      {/* Weekday Headers */}
       {filterMode === 'all' && viewLayout === 'grid' && (
         <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -621,23 +582,19 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
         <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-gray-900 p-2 md:p-4 space-y-4">
           {days.map(day => {
             const dayTasks = getTasksForDay(day);
-            // Filter logic for List View? (Use same sorts)
-            // If day has no tasks, do we show it? User "continuous rather than each entry for a day" 
-            // usually implies showing dates with tasks, avoiding blanks.
-            // Let's filter out days with no tasks to keep it "continuous" and dense.
             if (dayTasks.length === 0) return null;
 
             const date = new Date(year, month, day);
             const isToday = day === new Date().getDate() &&
               month === new Date().getMonth() &&
               year === new Date().getFullYear();
+            const streakCount = getDayStreak(day);
 
             const sortedTasks = dayTasks.sort((a, b) => {
-              // Sort Logic (Copy from Grid)
               const getStatusWeight = (s: Status) => {
                 if (s === Status.DONE) return 2;
                 if (s === Status.EXPIRED) return 1;
-                return 0; // TODO, IN_PROGRESS
+                return 0;
               };
               const aWeight = getStatusWeight(a.task.status);
               const bWeight = getStatusWeight(b.task.status);
@@ -659,7 +616,6 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 key={day}
                 ref={isToday ? (el) => {
                   if (el && viewLayout === 'list') {
-                    // Scroll to today when list view is active
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }
                 } : null}
@@ -673,6 +629,12 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                     <span className="text-lg">
                       {date.getDate()}
                     </span>
+                    {/* [Enhancement 11] Streak flame in list view */}
+                    {streakCount > 0 && (
+                      <span className="flex items-center gap-0.5 text-[10px] text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-full border border-orange-100 font-bold">
+                        <Flame size={10} className="fill-orange-400" /> {streakCount}
+                      </span>
+                    )}
                   </h3>
                   <button
                     onClick={() => onAddTask(date)}
@@ -689,9 +651,10 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                     const isInProgress = task.status === Status.IN_PROGRESS;
                     const occurrenceDate = new Date(occurrenceISO);
                     occurrenceDate.setHours(0, 0, 0, 0);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const shouldShowVirtualIndicator = isVirtual && occurrenceDate > today;
+                    const todayCheck = new Date();
+                    todayCheck.setHours(0, 0, 0, 0);
+                    const shouldShowVirtualIndicator = isVirtual && occurrenceDate > todayCheck;
+                    const countdown = getDeadlineCountdown(task);
 
                     let completedCount = 0;
                     let missedCount = 0;
@@ -769,7 +732,13 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                               )}
                             </div>
 
-                            {/* Recurrence Stats */}
+                            {/* [Enhancement 10] Deadline countdown */}
+                            {countdown && (
+                              <span className="flex items-center gap-0.5 text-[10px] text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100 font-medium whitespace-nowrap">
+                                <Clock size={10} /> {countdown}
+                              </span>
+                            )}
+
                             {task.recurrence !== Recurrence.NONE && (
                               <>
                                 {completedCount > 0 && (
@@ -800,7 +769,6 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               </div>
             );
           })}
-          {/* If no tasks at all for the month */}
           {days.every(d => getTasksForDay(d).length === 0) && (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
@@ -817,57 +785,81 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
         <div className="grid grid-cols-7 auto-rows-[minmax(140px,1fr)] flex-1 bg-gray-200 dark:bg-gray-700 gap-[1px] overflow-y-auto custom-scrollbar">
           {totalSlots.map((slot, index) => {
             if (slot === null) {
-              return <div key={`blank - ${index} `} className="bg-gray-50/50 dark:bg-gray-900/50" />;
+              return <div key={`blank-${index}`} className="bg-gray-50/50 dark:bg-gray-900/50" />;
             }
 
-            const day = slot as number; // It's a number here
+            const day = slot as number;
             const date = new Date(year, month, day);
             const isToday = day === new Date().getDate() &&
               month === new Date().getMonth() &&
               year === new Date().getFullYear();
 
+            // [Enhancement 8] Week number — show on Sunday (first cell of each row)
+            const isSunday = date.getDay() === 0;
+            const weekNum = isSunday ? getWeekNumber(day) : null;
+
             const dayTasks = getTasksForDay(day).sort((a, b) => {
-              // 1. Status: Active (TODO/IN_PROGRESS) -> Missed -> Done
               const getStatusWeight = (s: Status) => {
-                if (s === Status.DONE) return 3; // Done last
-                if (s === Status.EXPIRED) return 2; // Expired middle
-                return 1; // Active first
+                if (s === Status.DONE) return 3;
+                if (s === Status.EXPIRED) return 2;
+                return 1;
               };
               const aWeight = getStatusWeight(a.task.status);
               const bWeight = getStatusWeight(b.task.status);
               if (aWeight !== bWeight) return aWeight - bWeight;
-
-              // 2. Priority: High first
               const priorityWeight: Record<string, number> = { [Priority.HIGH]: 3, [Priority.MEDIUM]: 2, [Priority.LOW]: 1 };
               const pDiff = (priorityWeight[b.task.priority] || 0) - (priorityWeight[a.task.priority] || 0);
               if (pDiff !== 0) return pDiff;
-
-              // 3. Due Time: Earliest first
               const ad = a.task.dueDate ? new Date(a.task.dueDate).getTime() : Infinity;
               const bd = b.task.dueDate ? new Date(b.task.dueDate).getTime() : Infinity;
               if (ad !== bd) return ad - bd;
-
-              // 4. Created At: Newest first
               return (b.task.createdAt || 0) - (a.task.createdAt || 0);
             });
+
+            // [Enhancement 9] Heatmap background
+            const heatmapBg = getHeatmapBg(dayTasks.length);
+
+            // [Enhancement 7] Task count dots — show dots when > 4 tasks
+            const showDots = dayTasks.length > 4;
+            const visibleTasks = showDots ? dayTasks.slice(0, 3) : dayTasks;
+            const hiddenCount = dayTasks.length - visibleTasks.length;
+
+            // [Enhancement 11] Streak
+            const streakCount = getDayStreak(day);
+
+            // [Enhancement 12] Drag highlight
+            const isDragTarget = dragOverDay === day;
 
             return (
               <div
                 key={index}
-                className={`group min-h-[140px] flex flex-col border-b border-r border-gray-200 dark:border-gray-700 transition-colors ${'bg-white dark:bg-gray-800'
-                  } ${isToday ? 'ring-2 ring-inset ring-blue-500/50 z-10' : ''} `}
-                onDragOver={handleDragOver}
+                className={`group min-h-[140px] flex flex-col border-b border-r border-gray-200 dark:border-gray-700 transition-all
+                  ${heatmapBg || 'bg-white dark:bg-gray-800'}
+                  ${isToday ? 'ring-2 ring-inset ring-blue-500/50 z-10' : ''}
+                  ${isDragTarget ? 'ring-2 ring-inset ring-green-400 bg-green-50/50 dark:bg-green-900/20 scale-[1.02]' : ''}
+                `}
+                onDragOver={(e) => handleDragOver(e, day)}
+                onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, day)}
               >
-                <div className={`p-2 flex justify-between items-start sticky top-0 z-10 ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
-                  } `}>
-                  <div className="flex items-center gap-2">
+                <div className={`p-2 flex justify-between items-start sticky top-0 z-10 ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+                  <div className="flex items-center gap-1.5">
+                    {/* [Enhancement 8] Week number label on Sunday cells */}
+                    {weekNum !== null && (
+                      <span className="text-[9px] font-medium text-gray-400 dark:text-gray-500 mr-0.5">W{weekNum}</span>
+                    )}
                     <span className={`text-sm font-medium rounded-full w-7 h-7 flex items-center justify-center ${isToday
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-900 dark:text-gray-100'
                       } `}>
                       {day}
                     </span>
+                    {/* [Enhancement 11] Streak flame icon */}
+                    {streakCount > 0 && (
+                      <span className="flex items-center text-orange-500" title={`${streakCount} recurring tasks completed!`}>
+                        <Flame size={12} className="fill-orange-400" />
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     {dayTasks.length > 0 && (
@@ -877,7 +869,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                     )}
                     <button
                       onClick={() => onAddTask(date)}
-                      className="p-1 text-gray-400 hover:text-blue-600 rounded full transition-all"
+                      className="p-1 text-gray-400 hover:text-blue-600 rounded-full transition-all opacity-0 group-hover:opacity-100"
                       title="Add task on this day"
                     >
                       <Plus size={14} />
@@ -885,18 +877,17 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar max-h-[160px] flex-1">
-                  {dayTasks.map(({ task, isVirtual, baseTaskId, baseTask, occurrenceISO }) => {
+                <div className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar max-h-[160px] flex-1 px-1">
+                  {visibleTasks.map(({ task, isVirtual, baseTaskId, baseTask, occurrenceISO }) => {
                     const isDone = task.status === Status.DONE;
                     const isExpired = task.status === Status.EXPIRED;
                     const isInProgress = task.status === Status.IN_PROGRESS;
-
-                    // Don't show virtual indicator for recurring tasks if due date is today or earlier
                     const occurrenceDate = new Date(occurrenceISO);
                     occurrenceDate.setHours(0, 0, 0, 0);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const shouldShowVirtualIndicator = isVirtual && occurrenceDate > today;
+                    const todayCheck = new Date();
+                    todayCheck.setHours(0, 0, 0, 0);
+                    const shouldShowVirtualIndicator = isVirtual && occurrenceDate > todayCheck;
+                    const countdown = getDeadlineCountdown(task);
 
                     return (
                       <div
@@ -906,7 +897,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                         ${isDone ? 'bg-gray-100 border-gray-100' : isExpired ? 'bg-orange-50 border-orange-200' : priorityColor[task.priority]} 
                         ${shouldShowVirtualIndicator ? 'opacity-60 border-dashed bg-white' : 'hover:shadow-sm'}
                         ${isInProgress ? 'border-blue-400 bg-blue-50/50 ring-1 ring-blue-300' : ''}
-`}
+                        `}
                       >
                         <button
                           onClick={(e) => {
@@ -931,31 +922,25 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                             onClick={() => onEditTask(task)}
                             className={`text-left text-xs truncate flex-1 font-medium cursor-pointer flex items-center gap-1
                                ${isDone || isExpired ? 'line-through text-gray-500' : ''}
-`}
+                            `}
                           >
                             {task.priority === Priority.HIGH && (
-                              <ArrowUp
-                                size={12}
-                                className="text-red-500 flex-shrink-0"
-                                title={`Priority: ${task.priority} `}
-                              />
+                              <ArrowUp size={12} className="text-red-500 flex-shrink-0" title={`Priority: ${task.priority}`} />
                             )}
                             {task.priority === Priority.MEDIUM && (
-                              <Minus
-                                size={12}
-                                className="text-yellow-500 flex-shrink-0"
-                                title={`Priority: ${task.priority} `}
-                              />
+                              <Minus size={12} className="text-yellow-500 flex-shrink-0" title={`Priority: ${task.priority}`} />
                             )}
                             {task.priority === Priority.LOW && (
-                              <ArrowDown
-                                size={12}
-                                className="text-blue-500 flex-shrink-0"
-                                title={`Priority: ${task.priority} `}
-                              />
+                              <ArrowDown size={12} className="text-blue-500 flex-shrink-0" title={`Priority: ${task.priority}`} />
                             )}
                             <span className="truncate">{task.title}</span>
                           </button>
+                          {/* [Enhancement 10] Deadline countdown badge */}
+                          {countdown && (
+                            <span className="text-[9px] text-orange-600 bg-orange-50 px-1 py-0.5 rounded border border-orange-100 font-medium whitespace-nowrap flex-shrink-0">
+                              {countdown}
+                            </span>
+                          )}
                           {task.isRecurringException && (
                             <span className="text-orange-400 flex-shrink-0" title="Detached from recurrence">
                               <RefreshCw size={12} className="stroke-[2.5]" />
@@ -980,6 +965,22 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                       </div>
                     );
                   })}
+
+                  {/* [Enhancement 7] Task count dots for overflow */}
+                  {showDots && (
+                    <div className="flex items-center gap-1 px-1 py-1">
+                      <div className="flex gap-1">
+                        {dayTasks.slice(3).map((d, i) => {
+                          const pColor = d.task.status === Status.DONE ? 'bg-green-400'
+                            : d.task.priority === Priority.HIGH ? 'bg-red-400'
+                              : d.task.priority === Priority.MEDIUM ? 'bg-yellow-400'
+                                : 'bg-blue-400';
+                          return <div key={i} className={`w-2 h-2 rounded-full ${pColor}`} />;
+                        })}
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-medium">+{hiddenCount} more</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );

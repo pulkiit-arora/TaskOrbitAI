@@ -2,7 +2,7 @@ import React from 'react';
 import { Task, Priority, Status, Recurrence, Tag } from '../types';
 import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
 import { TaskCard } from './TaskCard';
-import { Plus, Filter, Tag as TagIcon } from 'lucide-react';
+import { Plus, Filter, Tag as TagIcon, ChevronRight, Pin } from 'lucide-react';
 import { StatusFilter } from './StatusFilter';
 import { TagFilterBar } from './TagFilterBar';
 
@@ -75,9 +75,6 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
       }
 
       // Case 2: Recurring tasks — scan past dates for missed occurrences
-      // Note: don't filter by isOpen() here — a DONE base task still generates
-      // virtual TODO occurrences (consistent with getTasksForDay behavior)
-
       const scanStart = new Date(Math.max(lookbackStart.getTime(),
         task.recurrenceStart ? new Date(task.recurrenceStart).setHours(0, 0, 0, 0) :
           task.dueDate ? new Date(task.dueDate).setHours(0, 0, 0, 0) :
@@ -86,7 +83,6 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
 
       for (let d = new Date(scanStart); d < today; d.setDate(d.getDate() + 1)) {
         if (doesTaskOccurOnDate(task, d)) {
-          // Check if a completed or expired history record exists for this date
           const dateTime = new Date(d).setHours(0, 0, 0, 0);
           const hasHistoryRecord = tasks.some(t =>
             (t.status === Status.DONE || t.status === Status.EXPIRED) &&
@@ -95,7 +91,6 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
             new Date(t.dueDate).setHours(0, 0, 0, 0) === dateTime
           );
           if (!hasHistoryRecord) {
-            // This is an overdue occurrence — create a virtual entry
             result.push({
               ...task,
               id: `${task.id}-overdue-${d.getTime()}`,
@@ -114,7 +109,6 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
     if (!t.dueDate || !isOpen(t)) return false;
     const d = new Date(t.dueDate);
     d.setHours(0, 0, 0, 0);
-    // Check for exclusions (deleted/moved occurrences)
     if (t.excludedDates && t.excludedDates.some(exDate => {
       const ex = new Date(exDate);
       ex.setHours(0, 0, 0, 0);
@@ -127,28 +121,11 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
 
 
 
-  // Combine real tasks and projected recurring tasks (avoid double counting base tasks if they fall in range)
-  // Logic: 
-  // 1. `dueThisWeekTasks` contains real tasks (todo/in-progress) that have a hard dueDate in this week.
-  // 2. `recurringDueThisWeekCount` counts projected occurrences.
-  // Problem: If a Base Task has a dueDate this week, it is in (1). `doesTaskOccurOnDate` will also return true for it in (2).
-  // Fix: In (2), if it's the Base Task's actual due date, don't count it if it's already in (1).
-
   const finalDueThisWeekCount = tasks.reduce((acc, task) => {
-    // We only care about open tasks for the count, primarily. 
-    // EXCEPT: The user feedback says "count mismatch ... when I have a DONE task".
-    // 1. If it's a DONE task (Status.DONE), it's completed. Should it subtract from "Due This Week"?
-    //    Usually "Due This Week" implies "Tasks I still need to do".
-    //    So `isOpen(task)` check at the top is correct for general Todo lists.
-    // 2. However, for Recurring tasks:
-    //    If we project an occurrence on Wednesday, but there is ALSO a completed history task for Wednesday.
-    //    We should NOT count that occurrence.
+    if (task.status === Status.ARCHIVED) return acc;
 
-    if (task.status === Status.ARCHIVED) return acc; // Always ignore archived
-
-    // Case 1: Real Task (Non-recurring or ONE-OFF exception)
     if (task.recurrence === Recurrence.NONE) {
-      if (task.status === Status.DONE) return acc; // Ignore completed real tasks
+      if (task.status === Status.DONE) return acc;
       if (task.dueDate) {
         const d = new Date(task.dueDate);
         d.setHours(0, 0, 0, 0);
@@ -157,8 +134,6 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
       return acc;
     }
 
-    // Case 2: Recurring Task - Count valid occurrences in the week
-    // Only process if the BASE task itself is open (active series)
     if (task.status === Status.DONE) return acc;
 
     let occurrences = 0;
@@ -168,14 +143,9 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
       d.setHours(0, 0, 0, 0);
 
       if (doesTaskOccurOnDate(task, d)) {
-        // It occurs. 
-        // 1. Is it already counted as a real task (e.g. Base Task current due date)?
-        //    (The Base task is Open, so if its dueDate falls here, we count it here).
-        // 2. Is there a DONE history instance for this specific date?
-        //    If `onToggleDone` created a history record for this date, we shouldn't show it as "Due".
         const hasDoneInstance = tasks.some(t =>
           t.status === Status.DONE &&
-          t.title === task.title && // Heuristic: Same title. ID is different.
+          t.title === task.title &&
           t.dueDate &&
           new Date(t.dueDate).setHours(0, 0, 0, 0) === d.getTime()
         );
@@ -198,19 +168,29 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
   const toggleWeek = () => setFilterMode(m => (m === 'week' ? 'all' : 'week'));
   const toggleNoDue = () => setFilterMode(m => (m === 'nodue' ? 'all' : 'nodue'));
 
-
+  // [Enhancement 6] Collapsible completed per day
+  const [collapsedCompleted, setCollapsedCompleted] = React.useState<Record<string, boolean>>({});
+  const toggleCollapsed = (dayKey: string) => {
+    setCollapsedCompleted(prev => ({ ...prev, [dayKey]: !prev[dayKey] }));
+  };
 
 
   const getTasksForDay = (date: Date) => {
     const dayTasks: { task: Task; isVirtual: boolean; baseTask: Task }[] = [];
 
     tasks.forEach(task => {
-      // Skip archived in calendar views typically, unless explicitly desired. 
-      // Logic passed from App says 'tasks' is already filtered for ARCHIVED if hidden.
       if (task.status === Status.ARCHIVED) return;
 
+      // [Enhancement 4] Filter snoozed tasks
+      if (task.snoozedUntil) {
+        const snoozedDate = new Date(task.snoozedUntil);
+        snoozedDate.setHours(0, 0, 0, 0);
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+        if (snoozedDate > checkDate) return;
+      }
+
       if (doesTaskOccurOnDate(task, date)) {
-        // Check if this is the REAL instance
         let isRealInstance = false;
         if (task.dueDate) {
           const due = new Date(task.dueDate);
@@ -220,43 +200,36 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
           isRealInstance = due.getTime() === check.getTime();
         }
 
-        // If a history record (non-recurring instance) exists for this same date, skip projecting a virtual copy
-        // A history record is a non-recurring task with the same title on the same date, but different ID
         if (!isRealInstance) {
           const occStart = new Date(date); occStart.setHours(0, 0, 0, 0);
           const hasHistoryRecord = tasks.some(tt => {
             if (!tt.dueDate) return false;
             const dd = new Date(tt.dueDate); dd.setHours(0, 0, 0, 0);
-            // Match non-recurring tasks with same title on same date (but different ID)
-            // Status doesn't matter - could be DONE, IN_PROGRESS, or TODO
             return dd.getTime() === occStart.getTime() && tt.title === task.title && tt.recurrence === Recurrence.NONE && tt.id !== task.id;
           });
           if (hasHistoryRecord) {
-            return; // skip adding virtual duplicate - the actual history record will be shown instead
+            return;
           }
         }
 
-        // For recurring tasks that are DONE, always show future occurrences as TODO (new instances)
         let displayStatus = Status.TODO;
         if (isRealInstance) {
-          displayStatus = task.status; // Real instance keeps its actual status
+          displayStatus = task.status;
         } else if (task.recurrence !== Recurrence.NONE) {
-          // Virtual occurrences of recurring tasks are always TODO, even if the base task is DONE
           displayStatus = Status.TODO;
         }
 
-        // Create a display copy
         const displayTask = isRealInstance ? task : {
           ...task,
-          id: `${task.id}-virtual-${date.getTime()}`, // Virtual ID
-          dueDate: date.toISOString(), // Project the date for display
+          id: `${task.id}-virtual-${date.getTime()}`,
+          dueDate: date.toISOString(),
           status: displayStatus
         };
 
         dayTasks.push({
           task: displayTask,
           isVirtual: !isRealInstance,
-          baseTask: task // Store the original task for editing
+          baseTask: task
         });
       }
     });
@@ -277,8 +250,37 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
     }
   };
 
+  // [Enhancement 1] Weekly Progress Bar — compute totals
+  const weeklyStats = React.useMemo(() => {
+    let totalTasks = 0;
+    let completedTasks = 0;
+    weekDays.forEach(day => {
+      const dayTasks = getTasksForDay(day);
+      totalTasks += dayTasks.length;
+      completedTasks += dayTasks.filter(d => d.task.status === Status.DONE).length;
+    });
+    return { totalTasks, completedTasks, pct: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0 };
+  }, [tasks, weekDays]);
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
+
+      {/* [Enhancement 1] Weekly Progress Bar */}
+      <div className="mx-1 mb-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Weekly Progress</span>
+          <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+            {weeklyStats.completedTasks}/{weeklyStats.totalTasks} <span className={`ml-1 ${weeklyStats.pct >= 80 ? 'text-green-600' : weeklyStats.pct >= 50 ? 'text-blue-600' : 'text-gray-500'}`}>({weeklyStats.pct}%)</span>
+          </span>
+        </div>
+        <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${weeklyStats.pct >= 80 ? 'bg-green-500' : weeklyStats.pct >= 50 ? 'bg-blue-500' : 'bg-gray-400'}`}
+            style={{ width: `${weeklyStats.pct}%` }}
+          />
+        </div>
+      </div>
+
       <div className="mb-3 flex items-center gap-2 px-1 flex-wrap">
 
         <button
@@ -415,7 +417,6 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 hideMoveButtons={true}
                 compactPriority={true}
                 onToggleDone={(id) => {
-                  // Virtual overdue entries have id format: baseId-overdue-timestamp
                   if (id.includes('-overdue-')) {
                     const baseId = id.substring(0, id.indexOf('-overdue-'));
                     onToggleDone(baseId, task.dueDate);
@@ -495,8 +496,14 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
       {filterMode !== 'overdue' && filterMode !== 'week' && filterMode !== 'nodue' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 overflow-y-auto">
           {weekDays.map(day => {
-            const dayTasks = getTasksForDay(day);
-            const sortedDayTasks = dayTasks.slice().sort((a, b) => {
+            const allDayTasks = getTasksForDay(day);
+
+            // [Enhancement 3] Pinned tasks sort to top
+            const sortedDayTasks = allDayTasks.slice().sort((a, b) => {
+              // Pinned first
+              if (a.task.pinned && !b.task.pinned) return -1;
+              if (!a.task.pinned && b.task.pinned) return 1;
+
               const getStatusWeight = (s: Status) => {
                 if (s === Status.DONE) return 2;
                 if (s === Status.EXPIRED) return 1;
@@ -514,9 +521,26 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
               if (ad !== bd) return ad - bd;
               return b.task.createdAt - a.task.createdAt;
             });
+
+            // [Enhancement 6] Split active vs completed
+            const activeTasks = sortedDayTasks.filter(d => d.task.status !== Status.DONE);
+            const completedDayTasks = sortedDayTasks.filter(d => d.task.status === Status.DONE);
+            const dayKey = day.toISOString();
+            const isCompletedCollapsed = collapsedCompleted[dayKey] !== false; // default collapsed
+
             const isToday = day.getDate() === new Date().getDate() &&
               day.getMonth() === new Date().getMonth() &&
               day.getFullYear() === new Date().getFullYear();
+
+            // [Enhancement 5] Mini summary bar data
+            const activeCount = activeTasks.length;
+            const doneCount = completedDayTasks.length;
+            const totalDay = activeCount + doneCount;
+
+            // [Enhancement 2] Estimated time total
+            const estimatedMin = sortedDayTasks
+              .filter(d => d.task.status !== Status.DONE)
+              .reduce((sum, d) => sum + (d.task.estimatedMinutes || 0), 0);
 
             return (
               <div
@@ -552,20 +576,45 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                       )}
                     </div>
                   </div>
+
+                  {/* [Enhancement 5] Mini Summary Bar */}
+                  {totalDay > 0 && (
+                    <div className="flex gap-0.5 h-1.5 rounded-full overflow-hidden mt-1">
+                      {doneCount > 0 && (
+                        <div className="bg-green-400 rounded-full" style={{ width: `${(doneCount / totalDay) * 100}%` }} />
+                      )}
+                      {activeCount > 0 && (
+                        <div className="bg-blue-400 rounded-full" style={{ width: `${(activeCount / totalDay) * 100}%` }} />
+                      )}
+                    </div>
+                  )}
+
+                  {/* [Enhancement 2] Estimated time */}
+                  {estimatedMin > 0 && (
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                      ~{estimatedMin >= 60 ? `${Math.floor(estimatedMin / 60)}h ${estimatedMin % 60 > 0 ? `${estimatedMin % 60}m` : ''}` : `${estimatedMin}m`} estimated
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 p-2 overflow-y-auto custom-scrollbar space-y-2">
-                  {sortedDayTasks.map(({ task, isVirtual, baseTask }) => {
-                    // Don't show virtual indicator for recurring tasks if due date is today or earlier
+                  {/* Active Tasks */}
+                  {activeTasks.map(({ task, isVirtual, baseTask }) => {
                     const taskDueDate = new Date(task.dueDate || Date.now());
                     taskDueDate.setHours(0, 0, 0, 0);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const shouldShowVirtualIndicator = isVirtual && taskDueDate > today;
+                    const todayCheck = new Date();
+                    todayCheck.setHours(0, 0, 0, 0);
+                    const shouldShowVirtualIndicator = isVirtual && taskDueDate > todayCheck;
 
                     return (
                       <div key={task.id} className="space-y-1 overflow-visible">
-                        <div>
+                        <div className="relative">
+                          {/* [Enhancement 3] Pinned indicator */}
+                          {task.pinned && (
+                            <div className="absolute -left-1 -top-1 z-10">
+                              <Pin size={10} className="text-blue-500 fill-blue-500" />
+                            </div>
+                          )}
                           <TaskCard
                             task={task}
                             onEdit={() => onEditTask(task)}
@@ -583,6 +632,39 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                       </div>
                     );
                   })}
+
+                  {/* [Enhancement 6] Collapsible Completed */}
+                  {completedDayTasks.length > 0 && (
+                    <div className="mt-2">
+                      <button
+                        onClick={() => toggleCollapsed(dayKey)}
+                        className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors w-full"
+                      >
+                        <ChevronRight size={12} className={`transition-transform ${!isCompletedCollapsed ? 'rotate-90' : ''}`} />
+                        <span>{doneCount} completed</span>
+                      </button>
+                      {!isCompletedCollapsed && (
+                        <div className="space-y-1 mt-1 opacity-60">
+                          {completedDayTasks.map(({ task, isVirtual, baseTask }) => (
+                            <TaskCard
+                              key={task.id}
+                              task={task}
+                              onEdit={() => onEditTask(task)}
+                              onMove={onMoveTask}
+                              onArchive={onArchiveTask}
+                              onDelete={onDeleteTask}
+                              isVirtual={isVirtual}
+                              hideMoveButtons={true}
+                              compactPriority={true}
+                              onToggleDone={() => isVirtual ? onToggleDone(baseTask.id, task.dueDate) : onToggleDone(task.id)}
+                              layoutMode="sidebar"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {sortedDayTasks.length === 0 && (
                     <div className="h-full flex items-center justify-center">
                       <span className="text-xs text-gray-300 italic">No tasks</span>
