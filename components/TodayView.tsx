@@ -45,7 +45,9 @@ export const TodayView: React.FC<TodayViewProps> = ({
         t.dueDate &&
         isOpen(t) &&
         new Date(t.dueDate) < today &&
-        t.status !== Status.EXPIRED
+        t.status !== Status.EXPIRED &&
+        // Exclude recurring tasks whose recurrence has ended
+        !(t.recurrenceEnd && new Date(t.recurrenceEnd) < today)
     ).sort((a, b) => {
         // Sort oldest overdue first
         return new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime();
