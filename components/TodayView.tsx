@@ -41,14 +41,22 @@ export const TodayView: React.FC<TodayViewProps> = ({
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Filter Logic
-    const overdueTasks = tasks.filter(t =>
-        t.dueDate &&
-        isOpen(t) &&
-        new Date(t.dueDate) < today &&
-        t.status !== Status.EXPIRED &&
+    const overdueTasks = tasks.filter(t => {
+        if (!t.dueDate || !isOpen(t)) return false;
+        const dueDate = new Date(t.dueDate);
+        if (dueDate >= today) return false;
+        if (t.status === Status.EXPIRED) return false;
         // Exclude recurring tasks whose recurrence has ended
-        !(t.recurrenceEnd && new Date(t.recurrenceEnd) < today)
-    ).sort((a, b) => {
+        if (t.recurrenceEnd && new Date(t.recurrenceEnd) < today) return false;
+        // Respect seasonal recurrence — if the due date's month is not in the allowed months, skip
+        if (t.recurrenceMonths && t.recurrenceMonths.length > 0) {
+            // dueDate is in UTC but user sees it in local time; use local month for consistency
+            const dueDateLocal = new Date(dueDate);
+            dueDateLocal.setHours(0, 0, 0, 0);
+            if (!t.recurrenceMonths.includes(dueDateLocal.getMonth())) return false;
+        }
+        return true;
+    }).sort((a, b) => {
         // Sort oldest overdue first
         return new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime();
     });
