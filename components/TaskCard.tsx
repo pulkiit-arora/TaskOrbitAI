@@ -44,7 +44,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     [Priority.LOW]: 'bg-blue-100 text-blue-800 border-blue-200',
   };
 
-  const isOverdue = !isVirtual && task.dueDate && new Date(task.dueDate) < new Date() && task.status !== Status.DONE && task.status !== Status.ARCHIVED && task.status !== Status.EXPIRED;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const taskDate = task.dueDate ? new Date(task.dueDate) : null;
+  if (taskDate) taskDate.setHours(0, 0, 0, 0);
+  
+  const isOverdue = taskDate && taskDate < today && task.status !== Status.DONE && task.status !== Status.ARCHIVED && task.status !== Status.EXPIRED;
   const isDone = task.status === Status.DONE;
   const isExpired = task.status === Status.EXPIRED;
 

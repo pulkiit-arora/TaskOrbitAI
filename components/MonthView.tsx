@@ -231,24 +231,6 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
     return allDone ? recurringTasks.length : 0;
   };
 
-  // [Enhancement 9] Heatmap — compute max tasks per day for color scaling
-  const maxTasksPerDay = React.useMemo(() => {
-    let max = 0;
-    for (let d = 1; d <= daysInMonth; d++) {
-      const count = getTasksForDay(d).length;
-      if (count > max) max = count;
-    }
-    return max;
-  }, [tasks, year, month]);
-
-  const getHeatmapBg = (count: number): string => {
-    if (count === 0 || maxTasksPerDay === 0) return '';
-    const intensity = count / maxTasksPerDay;
-    if (intensity >= 0.75) return 'bg-blue-50 dark:bg-blue-900/15';
-    if (intensity >= 0.5) return 'bg-blue-50/70 dark:bg-blue-900/10';
-    if (intensity >= 0.25) return 'bg-blue-50/40 dark:bg-blue-900/5';
-    return '';
-  };
 
   // [Enhancement 10] Deadline countdown helper
   const getDeadlineCountdown = (task: Task): string | null => {
@@ -816,9 +798,6 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               return (b.task.createdAt || 0) - (a.task.createdAt || 0);
             });
 
-            // [Enhancement 9] Heatmap background
-            const heatmapBg = getHeatmapBg(dayTasks.length);
-
             // [Enhancement 7] Task count dots — show dots when > 4 tasks
             const showDots = dayTasks.length > 4;
             const visibleTasks = showDots ? dayTasks.slice(0, 3) : dayTasks;
@@ -833,8 +812,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
             return (
               <div
                 key={index}
-                className={`group min-h-[140px] flex flex-col border-b border-r border-gray-200 dark:border-gray-700 transition-all
-                  ${heatmapBg || 'bg-white dark:bg-gray-800'}
+                className={`group min-h-[140px] flex flex-col border-b border-r border-gray-200 dark:border-gray-700 transition-all bg-white dark:bg-gray-800
                   ${isToday ? 'ring-2 ring-inset ring-blue-500/50 z-10' : ''}
                   ${isDragTarget ? 'ring-2 ring-inset ring-green-400 bg-green-50/50 dark:bg-green-900/20 scale-[1.02]' : ''}
                 `}
