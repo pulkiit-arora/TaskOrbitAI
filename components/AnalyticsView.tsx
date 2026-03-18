@@ -58,6 +58,7 @@ const getTagColorHex = (tagColorClass: string) => {
 };
 
 import { DrillDownModal } from './DrillDownModal';
+import { RecurringTaskHistoryModal } from './RecurringTaskHistoryModal';
 
 interface AnalyticsViewProps {
     tasks: Task[];
@@ -68,6 +69,7 @@ interface AnalyticsViewProps {
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask, onToggleDone }) => {
     const [timeRange, setTimeRange] = React.useState(TimeRange.ALL);
     const [activeModal, setActiveModal] = React.useState<{ title: string, taskIds: string[] } | null>(null);
+    const [selectedRecurringTask, setSelectedRecurringTask] = React.useState<any | null>(null);
 
     const metrics = useMemo(() => {
         // 1. Identify valid time range boundaries
@@ -437,7 +439,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
                 ratio,
                 total,
                 completed,
-                latestTime
+                missed,
+                latestTime,
+                historyList: history
             };
         }).sort((a, b) => b.latestTime - a.latestTime); // Order by latest
 
@@ -635,7 +639,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
                                 <p className="text-sm text-gray-500 italic text-center py-4">No recurring tasks found.</p>
                             ) : (
                                 metrics.recurringStats.map((stat) => (
-                                    <div key={stat.task.id} className="flex items-center justify-between group">
+                                    <div 
+                                        key={stat.task.id} 
+                                        className="flex items-center justify-between group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 p-2 rounded-lg transition-colors -mx-2"
+                                        onClick={() => setSelectedRecurringTask(stat)}
+                                    >
                                         <div className="flex-1 min-w-0 mr-3">
                                             <div className="flex items-center justify-between mb-1">
                                                 <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate" title={stat.task.title}>
@@ -720,6 +728,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
                         onEditTask(task);
                     }}
                     onToggleDone={onToggleDone}
+                />
+
+                <RecurringTaskHistoryModal
+                    isOpen={selectedRecurringTask !== null}
+                    onClose={() => setSelectedRecurringTask(null)}
+                    stat={selectedRecurringTask}
                 />
             </div>
         </div>

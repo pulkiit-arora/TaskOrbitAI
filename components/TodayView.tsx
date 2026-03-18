@@ -41,25 +41,53 @@ export const TodayView: React.FC<TodayViewProps> = ({
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Filter Logic
-    const overdueTasks = tasks.filter(t => {
-        if (!t.dueDate || !isOpen(t)) return false;
-        const dueDate = new Date(t.dueDate);
-        if (dueDate >= today) return false;
-        if (t.status === Status.EXPIRED) return false;
-        // Exclude recurring tasks whose recurrence has ended
-        if (t.recurrenceEnd && new Date(t.recurrenceEnd) < today) return false;
-        // Respect seasonal recurrence — if the due date's month is not in the allowed months, skip
-        if (t.recurrenceMonths && t.recurrenceMonths.length > 0) {
-            // dueDate is in UTC but user sees it in local time; use local month for consistency
-            const dueDateLocal = new Date(dueDate);
-            dueDateLocal.setHours(0, 0, 0, 0);
-            if (!t.recurrenceMonths.includes(dueDateLocal.getMonth())) return false;
-        }
-        return true;
-    }).sort((a, b) => {
-        // Sort oldest overdue first
-        return new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime();
-    });
+    const overdueTasks: Task[] = (() => {
+        const result: Task[] = [];
+        const MAX_LOOKBACK_DAYS = 365; // Cap lookback to avoid perf issues
+        const lookbackStart = new Date(today);
+        lookbackStart.setDate(lookbackStart.getDate() - MAX_LOOKBACK_DAYS);
+
+        tasks.forEach(task => {
+            if (task.status === Status.ARCHIVED || task.status === Status.EXPIRED) return;
+
+            // Case 1: Non-recurring tasks
+            if (task.recurrence === Recurrence.NONE) {
+                if (task.dueDate && isOpen(task) && new Date(task.dueDate) < today) {
+                    result.push(task);
+                }
+                return;
+            }
+
+            // Case 2: Recurring tasks
+            const scanStart = new Date(Math.max(lookbackStart.getTime(),
+                task.recurrenceStart ? new Date(task.recurrenceStart).setHours(0, 0, 0, 0) :
+                    task.dueDate ? new Date(task.dueDate).setHours(0, 0, 0, 0) :
+                        task.createdAt));
+            scanStart.setHours(0, 0, 0, 0);
+
+            for (let d = new Date(scanStart); d < today; d.setDate(d.getDate() + 1)) {
+                if (doesTaskOccurOnDate(task, d)) {
+                    const dateTime = new Date(d).setHours(0, 0, 0, 0);
+                    const hasHistoryRecord = tasks.some(t =>
+                        (t.status === Status.DONE || t.status === Status.EXPIRED) &&
+                        t.title === task.title &&
+                        t.dueDate &&
+                        new Date(t.dueDate).setHours(0, 0, 0, 0) === dateTime
+                    );
+                    if (!hasHistoryRecord) {
+                        result.push({
+                            ...task,
+                            id: `${task.id}-overdue-${d.getTime()}`,
+                            dueDate: new Date(d).toISOString(),
+                            status: Status.TODO
+                        });
+                    }
+                }
+            }
+        });
+
+        return result.sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+    })();
 
     // Get Today's Tasks (including recurring projections)
     const getTasksForToday = () => {
