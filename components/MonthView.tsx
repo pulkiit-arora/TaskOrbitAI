@@ -85,7 +85,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           if (!hasHistoryRecord) {
             result.push({
               ...task,
-              id: `${task.id}-overdue-${d.getTime()}`,
+              id: `${task.id}-virtual-${d.getTime()}`,
               dueDate: new Date(d).toISOString(),
               status: Status.TODO
             });
@@ -409,8 +409,8 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (task.id.includes('-overdue-')) {
-                      const baseId = task.id.substring(0, task.id.indexOf('-overdue-'));
+                    if (task.id.includes('-virtual-')) {
+                      const baseId = task.id.substring(0, task.id.indexOf('-virtual-'));
                       onToggleDone(baseId, task.dueDate);
                     } else {
                       onToggleDone(task.id);
@@ -492,7 +492,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                   const isReal = task.dueDate && new Date(task.dueDate).setHours(0, 0, 0, 0) === d.getTime();
                   monthTasks.push({
                     ...task,
-                    id: isReal ? task.id : `${task.id}-month-${i}`,
+                    id: isReal ? task.id : `${task.id}-virtual-${d.getTime()}`,
                     dueDate: dateISO,
                     status: isReal ? task.status : Status.TODO
                   });
@@ -520,7 +520,12 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onToggleDone(task.id, task.dueDate);
+                    if (task.id.includes('-virtual-')) {
+                      const baseId = task.id.substring(0, task.id.indexOf('-virtual-'));
+                      onToggleDone(baseId, task.dueDate);
+                    } else {
+                      onToggleDone(task.id, task.dueDate);
+                    }
                   }}
                   className={`flex-shrink-0 text-gray-400 hover:text-green-600 ${task.status === Status.DONE ? 'text-green-600' : ''} `}
                 >

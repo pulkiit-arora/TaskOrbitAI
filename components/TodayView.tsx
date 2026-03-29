@@ -77,7 +77,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                     if (!hasHistoryRecord) {
                         result.push({
                             ...task,
-                            id: `${task.id}-overdue-${d.getTime()}`,
+                            id: `${task.id}-virtual-${d.getTime()}`,
                             dueDate: new Date(d).toISOString(),
                             status: Status.TODO
                         });
@@ -238,7 +238,10 @@ export const TodayView: React.FC<TodayViewProps> = ({
                             Overdue ({overdueTasks.length})
                         </h3>
                         <div className="space-y-2">
-                            {overdueTasks.map(task => (
+                            {overdueTasks.map(task => {
+                                const isVirtual = task.id.includes('-virtual-');
+                                const baseId = isVirtual ? task.id.split('-virtual-')[0] : task.id;
+                                return (
                                 <div key={task.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-red-100 dark:border-red-900/30 overflow-hidden hover:shadow-md transition-shadow">
                                     <div className="border-l-4 border-l-red-500">
                                         <TaskCard
@@ -249,11 +252,13 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                             onDelete={onDeleteTask}
                                             hideMoveButtons={true}
                                             compact={false} // Use full rows
-                                            onToggleDone={() => onToggleDone(task.id, task.dueDate)}
+                                            isVirtual={isVirtual}
+                                            onToggleDone={() => onToggleDone(baseId, task.dueDate)}
                                         />
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </section>
                 )}

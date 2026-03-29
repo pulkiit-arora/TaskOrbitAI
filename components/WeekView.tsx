@@ -93,7 +93,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
           if (!hasHistoryRecord) {
             result.push({
               ...task,
-              id: `${task.id}-overdue-${d.getTime()}`,
+              id: `${task.id}-virtual-${d.getTime()}`,
               dueDate: new Date(d).toISOString(),
               status: Status.TODO
             });
@@ -417,8 +417,8 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                 hideMoveButtons={true}
                 compactPriority={true}
                 onToggleDone={(id) => {
-                  if (id.includes('-overdue-')) {
-                    const baseId = id.substring(0, id.indexOf('-overdue-'));
+                  if (id.includes('-virtual-')) {
+                    const baseId = id.substring(0, id.indexOf('-virtual-'));
                     onToggleDone(baseId, task.dueDate);
                   } else {
                     onToggleDone(id);
