@@ -681,8 +681,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+            <div className="flex gap-2 flex-wrap justify-center sm:justify-start order-last sm:order-first">
               {task?.id && onDelete && (
                 <Button variant="danger" onClick={() => onDelete(task.id!)}>Delete</Button>
               )}
@@ -718,12 +718,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 )
               )}
             </div>
-            <div className="flex gap-2 ml-auto flex-wrap justify-end">
+            <div className="flex gap-2 flex-wrap justify-center sm:justify-end flex-1">
               {task?.id && (
-                <Button variant="secondary" onClick={handleSaveAsCopy}>Save as Copy</Button>
+                <Button variant="secondary" onClick={handleSaveAsCopy}>Duplicate</Button>
               )}
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
-              <Button onClick={handleSave}>Save Task</Button>
+              <Button onClick={handleSave}>Save</Button>
             </div>
           </div>
         </div>
