@@ -66,8 +66,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       setRecurrenceMonthNth(task.recurrenceMonthNth);
       setRecurrenceMonthWeekday(task.recurrenceMonthWeekday);
       setRecurrenceMonths(task.recurrenceMonths || []);
-      setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
-      setRecurrenceStart(task.recurrenceStart ? new Date(task.recurrenceStart).toISOString().split('T')[0] : '');
+      const parsedDueDate = task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '';
+      setDueDate(parsedDueDate);
+      setRecurrenceStart(task.recurrenceStart ? new Date(task.recurrenceStart).toISOString().split('T')[0] : parsedDueDate);
       setRecurrenceEnd(task.recurrenceEnd ? new Date(task.recurrenceEnd).toISOString().split('T')[0] : '');
       setComments(task.comments || []);
       setTags(task.tags || []);
@@ -114,7 +115,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setEstimatedMinutes(25);
   };
 
-  const handleSave = () => {
+  const executeSave = (isCopy: boolean = false) => {
     if (!title.trim()) return;
 
     // Fix: Append T12:00:00 to ensure the date is set to noon to avoid timezone shift issues
@@ -131,8 +132,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     const isoRecurrenceEnd = formatISO(recurrenceEnd);
 
     onSave({
-      id: task?.id,
-      title,
+      id: isCopy ? undefined : task?.id,
+      title: isCopy && title === task?.title ? `${title} (Copy)` : title,
       description,
       priority,
       recurrence,
@@ -145,16 +146,19 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       dueDate: isoDate,
       recurrenceStart: isoRecurrenceStart,
       recurrenceEnd: isoRecurrenceEnd,
-      comments,
-      status: status,
-      createdAt: task?.createdAt || Date.now(),
+      comments: isCopy ? comments.map(c => ({ ...c, id: crypto.randomUUID() })) : comments,
+      status: isCopy && status === Status.EXPIRED ? Status.TODO : status,
+      createdAt: isCopy ? Date.now() : task?.createdAt || Date.now(),
       tags: tags,
-      subtasks: subtasks,
-      timeEntries: timeEntries,
+      subtasks: isCopy ? subtasks.map(st => ({ ...st, id: crypto.randomUUID() })) : subtasks,
+      timeEntries: isCopy ? [] : timeEntries,
       estimatedMinutes: estimatedMinutes,
-    }, saveScope);
+    }, isCopy ? 'single' : saveScope);
     onClose();
   };
+
+  const handleSave = () => executeSave(false);
+  const handleSaveAsCopy = () => executeSave(true);
 
   const handleGenerate = async () => {
     if (!title.trim()) return;
@@ -714,7 +718,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 )
               )}
             </div>
-            <div className="flex gap-3 ml-auto flex-wrap">
+            <div className="flex gap-2 ml-auto flex-wrap justify-end">
+              {task?.id && (
+                <Button variant="secondary" onClick={handleSaveAsCopy}>Save as Copy</Button>
+              )}
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
               <Button onClick={handleSave}>Save Task</Button>
             </div>
