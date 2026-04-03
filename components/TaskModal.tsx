@@ -201,7 +201,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
           <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">{task?.id ? 'Edit Task' : 'New Task'}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -681,10 +681,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-            <div className="flex gap-2 flex-wrap justify-center sm:justify-start order-last sm:order-first">
+          <div className="flex flex-col sm:flex-row justify-between gap-4 pt-2">
+            
+            <div className="flex gap-2 justify-center sm:justify-start w-full sm:w-auto order-2 sm:order-1 border-t sm:border-0 border-gray-100 dark:border-gray-700 pt-3 sm:pt-0">
               {task?.id && onDelete && (
-                <Button variant="danger" onClick={() => onDelete(task.id!)}>Delete</Button>
+                <Button variant="danger" className="flex-1 sm:flex-none" onClick={() => onDelete(task.id!)}>Delete</Button>
               )}
               {task?.id && (
                 task.status === Status.EXPIRED ? (
@@ -695,10 +696,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                       onSave({ id: task.id, status: Status.TODO }, 'single');
                       onClose();
                     }}
-                    className="bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
+                    className="flex-1 sm:flex-none bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
                   >
                     <RotateCcw size={16} className="mr-1 inline" />
-                    Restore Task
+                    Restore
                   </Button>
                 ) : (
                   onMarkMissed && (
@@ -709,7 +710,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                         onMarkMissed(task.id!);
                         onClose();
                       }}
-                      className="!bg-orange-500 !text-white !hover:bg-orange-600 !border-transparent shadow-sm"
+                      className="flex-1 sm:flex-none !bg-orange-500 !text-white !hover:bg-orange-600 !border-transparent shadow-sm"
                     >
                       <AlertCircle size={16} className="mr-1 inline" />
                       Mark Missed
@@ -718,13 +719,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 )
               )}
             </div>
-            <div className="flex gap-2 flex-wrap justify-center sm:justify-end flex-1">
+
+            <div className="flex gap-2 justify-end w-full sm:w-auto order-1 sm:order-2">
               {task?.id && (
-                <Button variant="secondary" onClick={handleSaveAsCopy}>Duplicate</Button>
+                <Button variant="secondary" className="flex-1 sm:flex-none px-2 sm:px-4" onClick={handleSaveAsCopy}>Duplicate</Button>
               )}
-              <Button variant="ghost" onClick={onClose}>Cancel</Button>
-              <Button onClick={handleSave}>Save</Button>
+              <Button variant="ghost" className="flex-1 sm:flex-none px-2 sm:px-4" onClick={onClose}>Cancel</Button>
+              <Button className="flex-1 sm:flex-none px-2 sm:px-4" onClick={handleSave}>Save</Button>
             </div>
+
           </div>
         </div>
       </div>
