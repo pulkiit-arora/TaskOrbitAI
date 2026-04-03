@@ -161,6 +161,15 @@ export const TodayView: React.FC<TodayViewProps> = ({
     openTodayTasks.sort(sortFn);
     completedTodayTasks.sort(sortFn);
 
+    const unscheduledTasks = tasks.filter(task => 
+        !task.dueDate && 
+        task.recurrence === Recurrence.NONE && 
+        task.status !== Status.DONE && 
+        task.status !== Status.ARCHIVED && 
+        task.status !== Status.EXPIRED
+    );
+    unscheduledTasks.sort((a, b) => sortFn({task: a}, {task: b}));
+
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
@@ -360,6 +369,30 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                 })}
                             </div>
                         )}
+                    </section>
+                )}
+
+                {/* Unscheduled / Backlog Section */}
+                {unscheduledTasks.length > 0 && (
+                    <section>
+                        <h3 className="text-purple-600 dark:text-purple-400 font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+                            <Circle size={10} fill="currentColor" />
+                            Backlog / Unscheduled ({unscheduledTasks.length})
+                        </h3>
+                        <div className="space-y-2 opacity-90">
+                            {unscheduledTasks.map(task => (
+                                <div key={task.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
+                                    <TaskCard
+                                        task={task}
+                                        onEdit={onEditTask}
+                                        onMove={onMoveTask}
+                                        onArchive={onArchiveTask}
+                                        onDelete={onDeleteTask}
+                                        onToggleDone={() => onToggleDone(task.id)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
                     </section>
                 )}
             </div>
