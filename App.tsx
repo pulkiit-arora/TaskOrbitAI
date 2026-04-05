@@ -17,6 +17,7 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { ShortcutsModal } from './components/ShortcutsModal';
 import { QuickAddBar } from './components/QuickAddBar';
 import { UndoToast } from './components/UndoToast';
+import { AuthModal } from './components/AuthModal';
 import { PomodoroTimer } from './components/PomodoroTimer';
 import { PlannerView } from './components/PlannerView';
 import { EisenhowerView } from './components/EisenhowerView';
@@ -28,6 +29,7 @@ import { useLocalStorageString } from './hooks/useLocalStorage';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useUndoManager } from './hooks/useUndoManager';
 import { useTabSync } from './hooks/useTabSync';
+import { useCloudSync } from './hooks/useCloudSync';
 import { calculateNextDueDate } from './utils/taskUtils';
 import { parseSearchQuery, SearchFilters } from './utils/searchParser';
 
@@ -36,6 +38,9 @@ const App: React.FC = () => {
   const { isModalOpen, editingTask, openModal, closeModal, openModalWithDate } = useTaskModal();
   const undoManager = useUndoManager();
   useTabSync(tasks, setTasks);
+  
+  const { session, isSyncEnabled, toggleSync, signOut } = useCloudSync();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Pomodoro state
   const [pomodoroTaskId, setPomodoroTaskId] = useState<string | null>(null);
@@ -134,6 +139,13 @@ const App: React.FC = () => {
       if (!seen) setIsTourOpen(true);
     } catch { }
   }, []);
+
+  const handleToggleSync = (enabled: boolean) => {
+    toggleSync(enabled);
+    if (enabled && !session) {
+      setIsAuthModalOpen(true);
+    }
+  };
 
   // Task handlers
   const handleSaveTask = (taskData: Partial<Task>, scope: 'single' | 'series' = 'single') => {
@@ -891,9 +903,22 @@ const App: React.FC = () => {
             onImportClick={handleImportClick}
             onDeleteAll={() => setIsDeleteAllOpen(true)}
             onOpenTour={() => setIsTourOpen(true)}
+            isSyncEnabled={isSyncEnabled}
+            onToggleSync={handleToggleSync}
+            session={session}
+            onSignOut={signOut}
           />
         </div>
       </div>
+
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          if (!session) toggleSync(false); // Revert sync if they close without logging in
+        }} 
+        onAuthSuccess={() => setIsAuthModalOpen(false)}
+      />
 
       <AppHeader
         viewMode={viewMode}

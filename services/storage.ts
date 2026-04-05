@@ -1,4 +1,5 @@
 import { Task } from '../types';
+import { supabase } from '../lib/supabaseClient';
 
 const DB_NAME = 'LifeFlowDB';
 const STORE_NAME = 'tasks';
@@ -64,5 +65,63 @@ export const saveTasksToDB = async (tasks: Task[]): Promise<void> => {
   } catch (error) {
     console.error("Error saving to DB:", error);
     throw error;
+  } finally {
+    // Fire-and-forget sync to Supabase
+    syncTasksToCloud(tasks);
   }
+};
+
+const syncTasksToCloud = async (tasks: Task[]) => {
+  try {
+    const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
+    if (!isSyncEnabled) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { data: existingRows } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .limit(1);
+
+    if (existingRows && existingRows.length > 0) {
+      await supabase
+        .from('tasks')
+        .update({ task_data: tasks, updated_at: new Date().toISOString() })
+        .eq('id', existingRows[0].id);
+    } else {
+      await supabase
+        .from('tasks')
+        .insert({ user_id: session.user.id, task_data: tasks });
+    }
+  } catch (e) {
+    console.error("Cloud sync push failed", e);
+  }
+};
+
+export const pullTasksFromCloud = async (): Promise<Task[] | null> => {
+  try {
+    const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
+    if (!isSyncEnabled) return null;
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    
+    const { data, error } = await supabase
+       .from('tasks')
+       .select('task_data')
+       .eq('user_id', session.user.id)
+       .order('updated_at', { ascending: false })
+       .limit(1);
+       
+    if (error) throw error;
+       
+    if (data && data.length > 0) {
+       return data[0].task_data as Task[];
+    }
+  } catch (e) {
+    console.error("Cloud pull failed", e);
+  }
+  return null;
 };

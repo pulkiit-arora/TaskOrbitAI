@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Task, Status, Recurrence, Priority } from '../types';
-import { loadTasksFromDB, saveTasksToDB } from '../services/storage';
+import { loadTasksFromDB, saveTasksToDB, pullTasksFromCloud } from '../services/storage';
+import { supabase } from '../lib/supabaseClient';
 import { calculateNextDueDate } from '../utils/taskUtils';
 import { processTaskStatusChange } from '../utils/taskLogic';
 
@@ -176,10 +177,19 @@ export const useTasks = () => {
   // Load from DB on Mount
   useEffect(() => {
     const initData = async () => {
-
       setIsLoading(true);
       try {
-        const loadedTasks = await loadTasksFromDB();
+        let loadedTasks = await loadTasksFromDB();
+        
+        // Cloud Sync hook
+        const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
+        if (isSyncEnabled) {
+          const cloudTasks = await pullTasksFromCloud();
+          if (cloudTasks && cloudTasks.length > 0) {
+            loadedTasks = cloudTasks;
+            saveTasksToDB(cloudTasks); // Persist down to local DB
+          }
+        }
 
         const hasInitialized = localStorage.getItem('lifeflow-initialized');
 
@@ -198,11 +208,25 @@ export const useTasks = () => {
         console.error("Failed to load DB", e);
         setTasks([]);
       } finally {
-
         setIsLoading(false);
       }
     };
     initData();
+
+    // Listen for Auth events to trigger a re-sync if the user just logged in
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+       if (event === 'SIGNED_IN') {
+         // Pull data immediately
+         pullTasksFromCloud().then(cloudTasks => {
+           if (cloudTasks && cloudTasks.length > 0) {
+             setTasks(cloudTasks);
+             saveTasksToDB(cloudTasks);
+           }
+         });
+       }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Auto-Save on Change (Debounced)
