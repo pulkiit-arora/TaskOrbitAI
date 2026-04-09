@@ -281,7 +281,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
         </div>
       </div>
 
-      <div className="mb-3 flex items-center gap-2 px-1 flex-wrap">
+      <div className="shrink-0 mb-3 flex items-center gap-2 px-1 flex-wrap">
 
         <button
           type="button"
