@@ -261,8 +261,8 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="mb-3 flex items-center justify-between px-3 pt-3 gap-2 overflow-x-auto hide-scrollbar sm:flex-wrap">
-        <div className="flex items-center gap-2 sm:flex-wrap">
+      <div className="mb-3 flex items-center justify-between px-3 pt-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
 
           <button
             type="button"
