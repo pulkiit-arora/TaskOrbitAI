@@ -44,7 +44,7 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
     if (!tags || tags.length === 0) return null;
 
     return (
-        <div className={`flex items-center gap-2 ${className}`}>
+        <div className={`flex items-center flex-wrap gap-2 ${className}`}>
             {/* Uncategorized Filter Toggle */}
             <button
                 onClick={() => onToggleTag('uncategorized')}
@@ -104,9 +104,8 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
                     </button>
 
                     {isManaging && (
-                        <div ref={managerRef} className="absolute top-full right-0 mt-2 z-50 w-64">
-                            {/* Use the shared TagManager, but style it as a dropdown */}
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700">
+                        <div ref={managerRef} className="z-50 max-sm:fixed max-sm:inset-0 max-sm:bg-black/40 max-sm:backdrop-blur-sm max-sm:flex max-sm:items-center max-sm:justify-center sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:w-64">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 max-sm:w-[90%] max-sm:max-w-sm">
                                 <TagManager
                                     availableTags={tags}
                                     onUpdateTag={onUpdateTag}

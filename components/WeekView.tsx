@@ -371,7 +371,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
         {setTagFilter && tags && tags.length > 0 && (
           <>
             <div className="shrink-0 h-4 w-px bg-gray-300 mx-1"></div>
-            <div className="shrink-0 flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap max-w-full">
               <TagIcon size={14} className="text-gray-500 shrink-0" />
               <TagFilterBar
                 tags={tags}
