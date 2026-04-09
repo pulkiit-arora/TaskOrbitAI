@@ -50,6 +50,15 @@
         border-radius: 20px;
       }
       
+      /* Hide scrollbar for horizontal mobile strips */
+      .hide-scrollbar {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      
       /* CMDK Styles */
       [data-cmdk-overlay] {
         position: fixed;

@@ -44,7 +44,7 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
     if (!tags || tags.length === 0) return null;
 
     return (
-        <div className={`flex items-center flex-wrap gap-2 ${className}`}>
+        <div className={`flex items-center gap-2 ${className}`}>
             {/* Uncategorized Filter Toggle */}
             <button
                 onClick={() => onToggleTag('uncategorized')}
@@ -59,7 +59,7 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
             />
 
             {/* Separator - increased margin using separate self-center */}
-            <div className="h-3 w-px bg-gray-300 mx-1.5 self-center"></div>
+            <div className="shrink-0 h-3 w-px bg-gray-300 mx-1.5 self-center"></div>
 
             {tags.map(tag => {
                 const isActive = selectedTags.includes(tag.id);
@@ -72,7 +72,7 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
                         key={tag.id}
                         onClick={() => onToggleTag(tag.id)}
                         className={`
-              w-3 h-3 rounded-full border transition-all
+              shrink-0 w-3 h-3 rounded-full border transition-all
               ${isActive
                                 ? `ring-2 ring-offset-1 ring-blue-500 ${baseColor} ${textColor}`
                                 : `${baseColor} ${textColor} opacity-80 hover:opacity-100`
@@ -86,7 +86,7 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
             {selectedTags.length > 0 && onClear && (
                 <button
                     onClick={onClear}
-                    className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200/50 transition-colors"
+                    className="shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200/50 transition-colors"
                     title="Clear filters"
                 >
                     <X size={12} />
@@ -94,10 +94,10 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
             )}
 
             {onUpdateTag && onDeleteTag && (
-                <div className="relative ml-2">
+                <div className="relative ml-2 shrink-0">
                     <button
                         onClick={() => setIsManaging(!isManaging)}
-                        className={`p-1 rounded-full transition-colors ${isManaging ? 'bg-gray-200 text-gray-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        className={`shrink-0 p-1 rounded-full transition-colors ${isManaging ? 'bg-gray-200 text-gray-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                         title="Manage Tags"
                     >
                         <Pencil size={12} />

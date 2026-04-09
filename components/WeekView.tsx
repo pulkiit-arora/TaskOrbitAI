@@ -281,44 +281,46 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
         </div>
       </div>
 
-      <div className="mb-3 flex items-center gap-2 px-1 flex-wrap">
+      <div className="mb-3 flex items-center gap-2 px-1 overflow-x-auto pb-2 sm:flex-wrap hide-scrollbar">
 
         <button
           type="button"
           onClick={toggleOverdue}
-          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'}`}
+          className={`shrink-0 inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'}`}
         >
           Overdue: {overdueCount}
         </button>
         <button
           type="button"
           onClick={toggleWeek}
-          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'week' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+          className={`shrink-0 inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'week' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
         >
           Due this week: {dueThisWeekCount}
         </button>
         <button
           type="button"
           onClick={toggleNoDue}
-          className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+          className={`shrink-0 inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
         >
           No due date: {missingDueCount}
         </button>
 
         {setStatusFilter && statusFilter && (
           <>
-            <div className="h-4 w-px bg-gray-300 mx-1"></div>
-            <StatusFilter
-              selectedStatuses={statusFilter}
-              onChange={setStatusFilter}
-            />
+            <div className="shrink-0 h-4 w-px bg-gray-300 mx-1"></div>
+            <div className="shrink-0">
+              <StatusFilter
+                selectedStatuses={statusFilter}
+                onChange={setStatusFilter}
+              />
+            </div>
           </>
         )}
 
         {setPriorityFilter && priorityFilter && (
           <>
-            <div className="h-4 w-px bg-gray-300 mx-1"></div>
-            <div className="flex items-center gap-1">
+            <div className="shrink-0 h-4 w-px bg-gray-300 mx-1"></div>
+            <div className="shrink-0 flex items-center gap-1">
               <span className="text-xs text-gray-500 mr-1">Priority:</span>
               <button
                 onClick={() => {
@@ -368,9 +370,9 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
 
         {setTagFilter && tags && tags.length > 0 && (
           <>
-            <div className="h-4 w-px bg-gray-300 mx-1"></div>
-            <div className="flex items-center gap-2">
-              <TagIcon size={14} className="text-gray-500" />
+            <div className="shrink-0 h-4 w-px bg-gray-300 mx-1"></div>
+            <div className="shrink-0 flex items-center gap-2">
+              <TagIcon size={14} className="text-gray-500 shrink-0" />
               <TagFilterBar
                 tags={tags}
                 selectedTags={tagFilter}
