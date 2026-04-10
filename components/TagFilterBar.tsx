@@ -49,7 +49,7 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
             <button
                 onClick={() => onToggleTag('uncategorized')}
                 className={`
-                    w-3 h-3 rounded-full border transition-all flex items-center justify-center
+                    w-5 h-5 rounded-full border transition-all flex items-center justify-center shrink-0
                     ${selectedTags.includes('uncategorized')
                         ? 'bg-gray-600 border-gray-700 ring-2 ring-offset-1 ring-gray-500'
                         : 'bg-gray-400 border-gray-400 opacity-60 hover:opacity-100'
@@ -72,12 +72,12 @@ export const TagFilterBar: React.FC<TagFilterBarProps> = ({
                         key={tag.id}
                         onClick={() => onToggleTag(tag.id)}
                         className={`
-              shrink-0 w-3 h-3 rounded-full border transition-all
-              ${isActive
-                                ? `ring-2 ring-offset-1 ring-blue-500 ${baseColor} ${textColor}`
+                            shrink-0 w-5 h-5 rounded-full border transition-all
+                            ${isActive
+                                ? `ring-2 ring-offset-1 ring-blue-500 ${baseColor} ${textColor} opacity-100`
                                 : `${baseColor} ${textColor} opacity-80 hover:opacity-100`
                             }
-            `}
+                        `}
                         title={tag.label}
                     />
                 );
