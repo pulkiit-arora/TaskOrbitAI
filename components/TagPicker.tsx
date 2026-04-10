@@ -103,7 +103,7 @@ export const TagPicker: React.FC<TagPickerProps> = ({ selectedTags, availableTag
                         value={newTagLabel}
                         onChange={e => setNewTagLabel(e.target.value)}
                         placeholder="New tag name..."
-                        className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        className="w-full px-3 py-2 sm:px-2 sm:py-1 text-base sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg sm:rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         autoFocus
                     />
                     <div className="flex flex-wrap gap-1">
@@ -111,7 +111,7 @@ export const TagPicker: React.FC<TagPickerProps> = ({ selectedTags, availableTag
                             <button
                                 key={color}
                                 type="button"
-                                className={`w-4 h-4 rounded-full border ${color} ${newTagColor === color ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                                className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 rounded-full border ${color} ${newTagColor === color ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
                                 onClick={() => setNewTagColor(color)}
                             />
                         ))}
@@ -146,7 +146,7 @@ export const TagPicker: React.FC<TagPickerProps> = ({ selectedTags, availableTag
                 />
             )}
 
-            {!isCreating && !isManaging && availableTags.length > 0 && (
+            {!isManaging && availableTags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                     <span className="text-xs text-gray-400 w-full mb-1">Available:</span>
                     {availableTags.filter(t => !selectedTags.find(st => st.id === t.id)).map(tag => (
@@ -154,7 +154,7 @@ export const TagPicker: React.FC<TagPickerProps> = ({ selectedTags, availableTag
                             key={tag.id}
                             type="button"
                             onClick={() => toggleTag(tag)}
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border opacity-50 hover:opacity-100 ${tag.color}`}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border opacity-80 hover:opacity-100 ${tag.color}`}
                         >
                             {tag.label}
                         </button>
