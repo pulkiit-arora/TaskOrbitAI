@@ -400,7 +400,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                 <div className="relative">
@@ -720,7 +720,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
               )}
             </div>
 
-            <div className="flex gap-2 justify-end w-full sm:w-auto order-1 sm:order-2">
+            <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end w-full sm:w-auto order-1 sm:order-2">
               {task?.id && (
                 <Button variant="secondary" className="flex-1 sm:flex-none px-2 sm:px-4" onClick={handleSaveAsCopy}>Duplicate</Button>
               )}

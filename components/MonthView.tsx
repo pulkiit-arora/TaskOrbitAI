@@ -261,35 +261,35 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="shrink-0 mb-3 flex items-center justify-between px-3 pt-3 flex-wrap gap-2">
-        <div className="shrink-0 flex items-center gap-2 flex-wrap">
+      <div className="mb-3 flex items-center justify-between px-3 pt-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
 
           <button
             type="button"
             onClick={toggleOverdue}
-            className={`shrink-0 inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'} `}
+            className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'overdue' ? 'border-red-400 bg-red-100 text-red-800' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'} `}
           >
             Overdue: {overdueTasks.length}
           </button>
           <button
             type="button"
             onClick={toggleMonth}
-            className={`shrink-0 inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'month' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'} `}
+            className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'month' ? 'border-blue-400 bg-blue-100 text-blue-800' : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'} `}
           >
             Due this month: {dueThisMonthCount}
           </button>
           <button
             type="button"
             onClick={toggleNoDue}
-            className={`shrink-0 inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'} `}
+            className={`inline-flex items-center rounded-full border text-xs px-2 py-1 transition-colors ${filterMode === 'nodue' ? 'border-gray-400 bg-gray-100 text-gray-800' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'} `}
           >
             No due date: {missingDueTasks.length}
           </button>
 
           {setStatusFilter && statusFilter && (
             <>
-              <div className="shrink-0 h-4 w-px bg-gray-300 mx-1"></div>
-              <div className="shrink-0">
+              <div className="hidden sm:block shrink-0 h-4 w-px bg-gray-300 mx-1"></div>
+              <div>
                 <StatusFilter
                   selectedStatuses={statusFilter}
                   onChange={setStatusFilter}
@@ -300,8 +300,8 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
           {setPriorityFilter && priorityFilter && (
             <>
-              <div className="shrink-0 h-4 w-px bg-gray-300 mx-1"></div>
-              <div className="shrink-0 flex items-center gap-1">
+              <div className="hidden sm:block shrink-0 h-4 w-px bg-gray-300 mx-1"></div>
+              <div className="flex items-center gap-1">
                 <span className="text-xs text-gray-500 mr-1">Priority:</span>
                 <button
                   onClick={() => {
@@ -351,7 +351,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
           {setTagFilter && tags && tags.length > 0 && (
             <>
-              <div className="shrink-0 h-4 w-px bg-gray-300 mx-1"></div>
+              <div className="hidden sm:block shrink-0 h-4 w-px bg-gray-300 mx-1"></div>
               <div className="flex items-center gap-2 flex-wrap max-w-full">
                 <TagIcon size={14} className="text-gray-500 shrink-0" />
                 <TagFilterBar
@@ -555,16 +555,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
         </div>
       )}
 
-      {/* Weekday Headers */}
-      {filterMode === 'all' && viewLayout === 'grid' && (
-        <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="py-2 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">
-              {day}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Weekday Headers (Moved to Grid View wrapper) */}
 
       {/* List View */}
       {viewLayout === 'list' && filterMode === 'all' && (
@@ -771,7 +762,16 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
       {/* Calendar Grid */}
       {filterMode === 'all' && viewLayout === 'grid' && (
-        <div className="grid grid-cols-7 auto-rows-[minmax(140px,1fr)] flex-1 bg-gray-200 dark:bg-gray-700 gap-[1px] overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar flex flex-col">
+          <div className="min-w-[700px] flex flex-col h-full">
+            <div className="shrink-0 grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="py-2 text-center text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                  {day}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 auto-rows-[minmax(140px,1fr)] flex-1 bg-gray-200 dark:bg-gray-700 gap-[1px] overflow-y-auto custom-scrollbar">
           {totalSlots.map((slot, index) => {
             if (slot === null) {
               return <div key={`blank-${index}`} className="bg-gray-50/50 dark:bg-gray-900/50" />;
@@ -971,8 +971,9 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
             );
           })}
         </div>
-      )
-      }
+        </div>
+        </div>
+      )}
     </div >
   );
 };

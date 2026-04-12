@@ -102,7 +102,7 @@ export const TagManager: React.FC<TagManagerProps> = ({ availableTags, onUpdateT
                                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${tag.color}`}>
                                         {tag.label}
                                     </span>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                         <button onClick={() => startEditing(tag)} className="text-xs text-blue-600 hover:underline px-1">Edit</button>
                                         <button onClick={() => handleDelete(tag.id)} className="text-xs text-red-600 hover:underline px-1">Delete</button>
                                     </div>

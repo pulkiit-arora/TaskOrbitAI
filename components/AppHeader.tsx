@@ -51,10 +51,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
         {/* Left Section: View Switcher & Date Nav */}
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto flex-shrink-0 z-10">
-          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-full sm:w-auto justify-center">
+          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg max-w-full overflow-x-auto custom-scrollbar justify-start sm:justify-center">
             <button
               onClick={() => setViewMode('today')}
-              className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'today'
+              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'today'
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
                 }`}
@@ -64,7 +64,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('week')}
-              className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'week'
+              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'week'
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
                 }`}
@@ -74,7 +74,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('month')}
-              className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'month'
+              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'month'
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
                 }`}
@@ -84,7 +84,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('board')}
-              className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'board'
+              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'board'
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
                 }`}
@@ -94,7 +94,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('analytics')}
-              className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'analytics'
+              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'analytics'
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
                 }`}
@@ -104,7 +104,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('planner')}
-              className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'planner'
+              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'planner'
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
                 }`}
@@ -114,7 +114,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('eisenhower')}
-              className={`flex-1 sm:flex-none p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'eisenhower'
+              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'eisenhower'
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
                 }`}
