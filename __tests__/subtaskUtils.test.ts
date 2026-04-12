@@ -16,7 +16,7 @@ const makeTask = (override: Partial<Task> = {}): Task => ({
     id: 'task-1',
     title: 'Test Task',
     description: '',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.MEDIUM,
     recurrence: Recurrence.NONE,
     createdAt: Date.now(),
@@ -82,7 +82,7 @@ describe('isTaskBlocked', () => {
     });
 
     it('returns true when a blocker is still open', () => {
-        const blocker = makeTask({ id: 'blocker-1', status: Status.TODO });
+        const blocker = makeTask({ id: 'blocker-1', status: Status.NEXT_ACTION });
         const task = makeTask({ blockedBy: ['blocker-1'] });
         expect(isTaskBlocked(task, [blocker, task])).toBe(true);
     });
@@ -112,7 +112,7 @@ describe('getBlockingTasks', () => {
     });
 
     it('returns only incomplete blockers', () => {
-        const b1 = makeTask({ id: 'b1', status: Status.TODO });
+        const b1 = makeTask({ id: 'b1', status: Status.NEXT_ACTION });
         const b2 = makeTask({ id: 'b2', status: Status.DONE });
         const task = makeTask({ blockedBy: ['b1', 'b2'] });
         const result = getBlockingTasks(task, [b1, b2, task]);

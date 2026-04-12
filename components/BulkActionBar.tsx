@@ -98,13 +98,13 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
                         <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block">
                             <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-1 min-w-[120px]">
                                 <button
-                                    onClick={() => onChangeStatus(Status.TODO)}
+                                    onClick={() => onChangeStatus(Status.NEXT_ACTION)}
                                     className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-700"
                                 >
                                     To Do
                                 </button>
                                 <button
-                                    onClick={() => onChangeStatus(Status.IN_PROGRESS)}
+                                    onClick={() => onChangeStatus(Status.NEXT_ACTION)}
                                     className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-700"
                                 >
                                     In Progress

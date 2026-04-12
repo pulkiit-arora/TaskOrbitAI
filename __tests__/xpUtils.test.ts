@@ -7,7 +7,7 @@ const makeTask = (override: Partial<Task> = {}): Task => ({
     id: 'task-1',
     title: 'Test Task',
     description: '',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.MEDIUM,
     recurrence: Recurrence.NONE,
     createdAt: Date.now(),
@@ -25,7 +25,7 @@ describe('calculateXP', () => {
     });
 
     it('returns zero XP when no tasks are completed', () => {
-        const tasks = [makeTask({ status: Status.TODO })];
+        const tasks = [makeTask({ status: Status.NEXT_ACTION })];
         const xp = calculateXP(tasks);
         expect(xp.totalXP).toBe(0);
     });
@@ -82,7 +82,7 @@ describe('calculateXP', () => {
                 makeTask({ id: '1', status: Status.DONE, priority: Priority.HIGH }),   // 50
                 makeTask({ id: '2', status: Status.DONE, priority: Priority.MEDIUM }), // 25
                 makeTask({ id: '3', status: Status.DONE, priority: Priority.LOW }),    // 10
-                makeTask({ id: '4', status: Status.TODO, priority: Priority.HIGH }),   // 0 (not done)
+                makeTask({ id: '4', status: Status.NEXT_ACTION, priority: Priority.HIGH }),   // 0 (not done)
             ];
             expect(calculateXP(tasks).totalXP).toBe(85);
         });

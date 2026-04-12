@@ -75,7 +75,16 @@ const App: React.FC = () => {
   const [tags, setTags] = useState<Tag[]>(() => {
     try {
       const saved = localStorage.getItem('lifeflow-tags');
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : [];
+      if (parsed.length > 0) return parsed;
+      return [
+        { id: 'ctx-home', label: '@home', color: 'bg-blue-100 text-blue-800' },
+        { id: 'ctx-office', label: '@office', color: 'bg-gray-100 text-gray-800' },
+        { id: 'ctx-computer', label: '@computer', color: 'bg-indigo-100 text-indigo-800' },
+        { id: 'ctx-errand', label: '@errand', color: 'bg-yellow-100 text-yellow-800' },
+        { id: 'ctx-low-energy', label: '@low-energy', color: 'bg-green-100 text-green-800' },
+        { id: 'project-example', label: '#project', color: 'bg-purple-100 text-purple-800' }
+      ];
     } catch { return []; }
   });
 
@@ -292,7 +301,7 @@ const App: React.FC = () => {
               // Update Base Task (Advance to next due)
               const updatedBase: Task = {
                 ...base,
-                status: Status.TODO, // Keep Base alive
+                status: Status.NEXT_ACTION, // Keep Base alive
                 dueDate: nextDue.toISOString(),
                 // Do NOT exclude the date, because we "moved" away from it.
                 // However, if we edited other props (title), those edits are lost on the Base Task (as desired for 'single' scope).
@@ -349,6 +358,7 @@ const App: React.FC = () => {
       }
     } else {
       const newTask: Task = {
+        status: Status.INBOX,
         ...taskData,
         id: crypto.randomUUID(),
         createdAt: Date.now(),
@@ -362,7 +372,7 @@ const App: React.FC = () => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const flow = [Status.TODO, Status.IN_PROGRESS, Status.DONE];
+    const flow = [Status.NEXT_ACTION, Status.NEXT_ACTION, Status.DONE];
     const currentIndex = flow.indexOf(task.status);
 
     if (direction === 'next' && currentIndex < flow.length - 1) {
@@ -415,7 +425,7 @@ const App: React.FC = () => {
 
         const updatedBase: Task = {
           ...base,
-          status: Status.TODO,
+          status: Status.NEXT_ACTION,
           dueDate: nextDue.toISOString(),
           excludedDates: [...(base.excludedDates || []), occurrenceISO]
         };
@@ -458,7 +468,7 @@ const App: React.FC = () => {
 
         const updatedBase: Task = {
           ...base,
-          status: Status.TODO,
+          status: Status.NEXT_ACTION,
           dueDate: nextDue.toISOString(),
           excludedDates: [...(base.excludedDates || []), occurrenceISO]
         };
@@ -468,7 +478,7 @@ const App: React.FC = () => {
       return;
     }
 
-    const newStatus = task.status === Status.DONE ? Status.TODO : Status.DONE;
+    const newStatus = task.status === Status.DONE ? Status.NEXT_ACTION : Status.DONE;
     if (newStatus === Status.DONE && !task.dueDate) {
       const today = new Date();
       today.setHours(12, 0, 0, 0);
@@ -522,7 +532,7 @@ const App: React.FC = () => {
 
         const updatedBase: Task = {
           ...base,
-          status: Status.TODO,
+          status: Status.NEXT_ACTION,
           dueDate: nextDue.toISOString(),
           excludedDates: [...(base.excludedDates || []), finalOccurrenceISO]
         };
@@ -751,6 +761,7 @@ const App: React.FC = () => {
 
   const handleSaveMultipleTasks = (newTasks: Partial<Task>[]) => {
     const tasksToAdd = newTasks.map(t => ({
+      status: Status.INBOX,
       ...t,
       id: crypto.randomUUID(),
       tags: t.tags || [],
@@ -1019,7 +1030,7 @@ const App: React.FC = () => {
           />
         )}
 
-        {viewMode === 'analytics' && <AnalyticsView tasks={tasks} onEditTask={openModal} onToggleDone={(id) => updateTaskStatus(id, tasks.find(t => t.id === id)?.status === Status.DONE ? Status.TODO : Status.DONE)} />}
+        {viewMode === 'analytics' && <AnalyticsView tasks={tasks} onEditTask={openModal} onToggleDone={(id) => updateTaskStatus(id, tasks.find(t => t.id === id)?.status === Status.DONE ? Status.NEXT_ACTION : Status.DONE)} />}
 
         {viewMode === 'planner' && (
           <PlannerView
@@ -1140,7 +1151,7 @@ const App: React.FC = () => {
             ...taskData,
             id: crypto.randomUUID(),
             description: taskData.description || '',
-            status: Status.TODO,
+            status: Status.NEXT_ACTION,
             recurrence: taskData.recurrence || Recurrence.NONE,
             recurrenceInterval: taskData.recurrenceInterval,
             recurrenceStart: taskData.dueDate,

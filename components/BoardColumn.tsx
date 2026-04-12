@@ -22,10 +22,12 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
   onDropTask
 }) => {
   const statusConfig = {
-    [Status.TODO]: { label: 'To Do', color: 'bg-slate-100', borderColor: 'border-slate-200', textColor: 'text-slate-700 dark:text-slate-200' },
-    [Status.IN_PROGRESS]: { label: 'In Progress', color: 'bg-blue-50', borderColor: 'border-blue-200', textColor: 'text-blue-700 dark:text-blue-300' },
+    [Status.INBOX]: { label: 'Inbox', color: 'bg-slate-100', borderColor: 'border-slate-200', textColor: 'text-slate-700 dark:text-slate-200' },
+    [Status.NEXT_ACTION]: { label: 'Next Actions', color: 'bg-blue-50', borderColor: 'border-blue-200', textColor: 'text-blue-700 dark:text-blue-300' },
+    [Status.WAITING]: { label: 'Waiting For', color: 'bg-orange-50', borderColor: 'border-orange-200', textColor: 'text-orange-700 dark:text-orange-300' },
+    [Status.SOMEDAY]: { label: 'Someday/Maybe', color: 'bg-purple-50', borderColor: 'border-purple-200', textColor: 'text-purple-700 dark:text-purple-300' },
     [Status.DONE]: { label: 'Done', color: 'bg-green-50', borderColor: 'border-green-200', textColor: 'text-green-700 dark:text-green-300' },
-    [Status.EXPIRED]: { label: 'Missed', color: 'bg-orange-50', borderColor: 'border-orange-200', textColor: 'text-orange-700 dark:text-orange-300' },
+    [Status.EXPIRED]: { label: 'Missed', color: 'bg-red-50', borderColor: 'border-red-200', textColor: 'text-red-700 dark:text-red-300' },
     [Status.ARCHIVED]: { label: 'Archived', color: 'bg-gray-100', borderColor: 'border-gray-200', textColor: 'text-gray-500 dark:text-gray-400' }
   };
 

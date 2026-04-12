@@ -8,7 +8,7 @@ const makeTask = (override: Partial<Task> = {}): Task => ({
     id: 'test-1',
     title: 'Test Task',
     description: '',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.MEDIUM,
     recurrence: Recurrence.NONE,
     createdAt: new Date('2024-01-01').getTime(),

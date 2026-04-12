@@ -28,7 +28,7 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
         if (task.status === Status.EXPIRED) {
             return <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">Missed / Overdue</span>;
         }
-        if (task.status === Status.IN_PROGRESS) {
+        if (task.status === Status.NEXT_ACTION) {
             return <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">In Progress</span>;
         }
         // TODO / Default

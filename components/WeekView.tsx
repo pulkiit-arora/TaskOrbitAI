@@ -95,7 +95,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
               ...task,
               id: `${task.id}-virtual-${d.getTime()}`,
               dueDate: new Date(d).toISOString(),
-              status: Status.TODO
+              status: Status.NEXT_ACTION
             });
           }
         }
@@ -212,11 +212,11 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
           }
         }
 
-        let displayStatus = Status.TODO;
+        let displayStatus = Status.NEXT_ACTION;
         if (isRealInstance) {
           displayStatus = task.status;
         } else if (task.recurrence !== Recurrence.NONE) {
-          displayStatus = Status.TODO;
+          displayStatus = Status.NEXT_ACTION;
         }
 
         const displayTask = isRealInstance ? task : {

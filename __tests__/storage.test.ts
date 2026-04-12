@@ -13,7 +13,7 @@ describe('storage service', () => {
         id: '1',
         title: 'Test Task',
         description: 'Desc',
-        status: Status.TODO,
+        status: Status.NEXT_ACTION,
         priority: Priority.MEDIUM,
         recurrence: Recurrence.NONE,
         createdAt: 1000

@@ -16,7 +16,7 @@ export const processTaskStatusChange = (tasks: Task[], taskId: string, newStatus
 
     // Case 1: Un-completing a recurring task (DONE -> TODO)
     // We desire to remove the *next* auto-generated task if it exists, to avoid duplicates.
-    if (task.status === Status.DONE && newStatus === Status.TODO && task.recurrence !== Recurrence.NONE) {
+    if (task.status === Status.DONE && newStatus === Status.NEXT_ACTION && task.recurrence !== Recurrence.NONE) {
         const baseDueISO = task.dueDate || new Date().toISOString();
         const anchorISO = task.recurrenceStart || task.dueDate || new Date(task.createdAt).toISOString();
 
@@ -37,7 +37,7 @@ export const processTaskStatusChange = (tasks: Task[], taskId: string, newStatus
             if (removed) return true; // Only remove one
             const isAutoNext = (
                 t.id !== task.id &&
-                t.status === Status.TODO &&
+                t.status === Status.NEXT_ACTION &&
                 t.recurrence === task.recurrence &&
                 (t.recurrenceInterval || 1) === (task.recurrenceInterval || 1) &&
                 JSON.stringify(t.recurrenceWeekdays || []) === JSON.stringify(task.recurrenceWeekdays || []) &&
@@ -59,7 +59,7 @@ export const processTaskStatusChange = (tasks: Task[], taskId: string, newStatus
         if (!removed && !task.dueDate) {
             const candidates = tasks.filter(t => (
                 t.id !== task.id &&
-                t.status === Status.TODO &&
+                t.status === Status.NEXT_ACTION &&
                 t.recurrence === task.recurrence &&
                 t.title === task.title
             ));
@@ -95,7 +95,7 @@ export const processTaskStatusChange = (tasks: Task[], taskId: string, newStatus
         const nextTask: Task = {
             ...task,
             id: crypto.randomUUID(),
-            status: Status.TODO,
+            status: Status.NEXT_ACTION,
             dueDate: nextDueDate.toISOString(),
             recurrenceInterval: task.recurrenceInterval,
             recurrenceWeekdays: task.recurrenceWeekdays,

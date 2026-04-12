@@ -136,7 +136,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
             // Missed = Expired + Overdue
             const allTasks = tasks.filter(t => t.status !== Status.ARCHIVED);
             completedCount = allTasks.filter(t => t.status === Status.DONE).length;
-            activeCount = allTasks.filter(t => t.status === Status.TODO || t.status === Status.IN_PROGRESS).length;
+            activeCount = allTasks.filter(t => t.status === Status.NEXT_ACTION || t.status === Status.NEXT_ACTION).length;
 
             // Overdue globally
             const overdue = allTasks.filter(t => {
@@ -240,7 +240,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
 
             // 1. In-View Metrics
             completedCount = computedInstances.filter(t => t.status === Status.DONE).length;
-            activeCount = computedInstances.filter(t => t.status === Status.TODO || t.status === Status.IN_PROGRESS).length;
+            activeCount = computedInstances.filter(t => t.status === Status.NEXT_ACTION || t.status === Status.NEXT_ACTION).length;
             const missedInView = computedInstances.filter(t => t.status === Status.EXPIRED).length;
 
             // 2. Drag-Along / Backlog Overdue
@@ -248,7 +248,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
             // These are strictly "Overdue" and NOT in the view (filtered out by date range).
             // This prevents double counting.
             const backlogOverdueTasks = tasks.filter(t => {
-                if (t.status !== Status.TODO && t.status !== Status.IN_PROGRESS) return false;
+                if (t.status !== Status.NEXT_ACTION && t.status !== Status.NEXT_ACTION) return false;
                 if (t.status === Status.ARCHIVED) return false;
                 if (!t.dueDate) return false;
                 const d = new Date(t.dueDate); d.setHours(0, 0, 0, 0);
@@ -288,8 +288,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
         };
 
         const byStatus = {
-            [Status.TODO]: activeCount, // Approximately
-            [Status.IN_PROGRESS]: computedInstances.filter(t => t.status === Status.IN_PROGRESS).length,
+            [Status.NEXT_ACTION]: activeCount, // Approximately
+            [Status.NEXT_ACTION]: computedInstances.filter(t => t.status === Status.NEXT_ACTION).length,
             [Status.DONE]: completedCount,
             [Status.EXPIRED]: missedOverdueCount, // Grouping overdue into expired/missed bucket
         };
@@ -299,7 +299,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
             // Active List: Must exclude Backlog Overdue tasks if they were merged into computedInstances.
             // Backlog Overdue tasks are TODO/IN_PROGRESS but due before rangeStart.
             active: computedInstances.filter(t => {
-                if (t.status !== Status.TODO && t.status !== Status.IN_PROGRESS) return false;
+                if (t.status !== Status.NEXT_ACTION && t.status !== Status.NEXT_ACTION) return false;
                 // Exclude if it's strictly a backlog item (due < range Start)
                 // BUT wait, `computedInstances` now HAS them merged in.
                 // WE need to distinguish "Active Scheduled In View" vs "Backlog Overdue".
@@ -317,7 +317,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
             // 2. Backlog Overdue (which are in computedInstances now as TODO/IN_PROGRESS)
             missedOverdue: computedInstances.filter(t => {
                 if (t.status === Status.EXPIRED) return true;
-                if (t.status === Status.TODO || t.status === Status.IN_PROGRESS) {
+                if (t.status === Status.NEXT_ACTION || t.status === Status.NEXT_ACTION) {
                     if (rangeStart && t.dueDate) {
                         const d = new Date(t.dueDate); d.setHours(0, 0, 0, 0);
                         if (d < rangeStart) return true; // It's backlog overdue
@@ -584,10 +584,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
                             {/* CSS Conic Gradient Ring */}
                             <div className="relative w-40 h-40 rounded-full" style={{
                                 background: `conic-gradient(
-                #3b82f6 0% ${getStatusPercentage(metrics.byStatus[Status.TODO], metrics.total)}%,
-                #f59e0b ${getStatusPercentage(metrics.byStatus[Status.TODO], metrics.total)}% ${getStatusPercentage(metrics.byStatus[Status.TODO] + metrics.byStatus[Status.IN_PROGRESS], metrics.total)}%,
-                #22c55e ${getStatusPercentage(metrics.byStatus[Status.TODO] + metrics.byStatus[Status.IN_PROGRESS], metrics.total)}% ${getStatusPercentage(metrics.byStatus[Status.TODO] + metrics.byStatus[Status.IN_PROGRESS] + metrics.byStatus[Status.DONE], metrics.total)}%,
-                #ef4444 ${getStatusPercentage(metrics.byStatus[Status.TODO] + metrics.byStatus[Status.IN_PROGRESS] + metrics.byStatus[Status.DONE], metrics.total)}% 100%
+                #3b82f6 0% ${getStatusPercentage(metrics.byStatus[Status.NEXT_ACTION], metrics.total)}%,
+                #f59e0b ${getStatusPercentage(metrics.byStatus[Status.NEXT_ACTION], metrics.total)}% ${getStatusPercentage(metrics.byStatus[Status.NEXT_ACTION] + metrics.byStatus[Status.NEXT_ACTION], metrics.total)}%,
+                #22c55e ${getStatusPercentage(metrics.byStatus[Status.NEXT_ACTION] + metrics.byStatus[Status.NEXT_ACTION], metrics.total)}% ${getStatusPercentage(metrics.byStatus[Status.NEXT_ACTION] + metrics.byStatus[Status.NEXT_ACTION] + metrics.byStatus[Status.DONE], metrics.total)}%,
+                #ef4444 ${getStatusPercentage(metrics.byStatus[Status.NEXT_ACTION] + metrics.byStatus[Status.NEXT_ACTION] + metrics.byStatus[Status.DONE], metrics.total)}% 100%
                 )`
                             }}>
                                 <div className="absolute inset-4 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center flex-col">

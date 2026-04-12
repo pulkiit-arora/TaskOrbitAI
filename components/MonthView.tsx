@@ -87,7 +87,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               ...task,
               id: `${task.id}-virtual-${d.getTime()}`,
               dueDate: new Date(d).toISOString(),
-              status: Status.TODO
+              status: Status.NEXT_ACTION
             });
           }
         }
@@ -193,11 +193,11 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           }
         }
 
-        let displayStatus = Status.TODO;
+        let displayStatus = Status.NEXT_ACTION;
         if (isRealInstance) {
           displayStatus = task.status;
         } else if (task.recurrence !== Recurrence.NONE) {
-          displayStatus = Status.TODO;
+          displayStatus = Status.NEXT_ACTION;
         }
 
         const displayTask = isRealInstance ? task : {
@@ -496,7 +496,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                     ...task,
                     id: isReal ? task.id : `${task.id}-virtual-${d.getTime()}`,
                     dueDate: dateISO,
-                    status: isReal ? task.status : Status.TODO
+                    status: isReal ? task.status : Status.NEXT_ACTION
                   });
                 }
               });
@@ -628,7 +628,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                   {sortedTasks.map(({ task, isVirtual, baseTaskId, baseTask, occurrenceISO }) => {
                     const isDone = task.status === Status.DONE;
                     const isExpired = task.status === Status.EXPIRED;
-                    const isInProgress = task.status === Status.IN_PROGRESS;
+                    const isInProgress = task.status === Status.NEXT_ACTION;
                     const occurrenceDate = new Date(occurrenceISO);
                     occurrenceDate.setHours(0, 0, 0, 0);
                     const todayCheck = new Date();
@@ -866,7 +866,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                   {visibleTasks.map(({ task, isVirtual, baseTaskId, baseTask, occurrenceISO }) => {
                     const isDone = task.status === Status.DONE;
                     const isExpired = task.status === Status.EXPIRED;
-                    const isInProgress = task.status === Status.IN_PROGRESS;
+                    const isInProgress = task.status === Status.NEXT_ACTION;
                     const occurrenceDate = new Date(occurrenceISO);
                     occurrenceDate.setHours(0, 0, 0, 0);
                     const todayCheck = new Date();

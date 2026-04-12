@@ -9,7 +9,7 @@ describe('processTaskStatusChange', () => {
         id: '1',
         title: 'Task',
         description: '',
-        status: Status.TODO,
+        status: Status.NEXT_ACTION,
         priority: Priority.MEDIUM,
         recurrence: Recurrence.NONE,
         createdAt: Date.now(),
@@ -17,7 +17,7 @@ describe('processTaskStatusChange', () => {
     });
 
     it('should update simple status', () => {
-        const tasks = [createTask({ id: '1', status: Status.TODO })];
+        const tasks = [createTask({ id: '1', status: Status.NEXT_ACTION })];
         const updated = processTaskStatusChange(tasks, '1', Status.DONE);
         expect(updated).toHaveLength(1);
         expect(updated[0].status).toBe(Status.DONE);
@@ -27,7 +27,7 @@ describe('processTaskStatusChange', () => {
         const tasks = [createTask({
             id: '1',
             recurrence: Recurrence.DAILY,
-            status: Status.TODO,
+            status: Status.NEXT_ACTION,
             dueDate: '2024-01-01T12:00:00.000Z'
         })];
 
@@ -40,7 +40,7 @@ describe('processTaskStatusChange', () => {
 
         const next = updated.find(t => t.id !== '1');
         expect(next).toBeDefined();
-        expect(next?.status).toBe(Status.TODO);
+        expect(next?.status).toBe(Status.NEXT_ACTION);
         expect(next?.recurrence).toBe(Recurrence.DAILY);
         expect(next?.dueDate).toContain('2024-01-02');
     });
@@ -50,7 +50,7 @@ describe('processTaskStatusChange', () => {
             id: '1',
             recurrence: Recurrence.MONTHLY,
             recurrenceMonthDay: 5,
-            status: Status.TODO,
+            status: Status.NEXT_ACTION,
             dueDate: '2024-01-05T12:00:00.000Z'
         })];
 
@@ -68,14 +68,14 @@ describe('processTaskStatusChange', () => {
         expect(tasks).toHaveLength(2);
         const nextTaskId = tasks.find(t => t.id !== '1')?.id;
 
-        tasks = processTaskStatusChange(tasks, '1', Status.TODO);
+        tasks = processTaskStatusChange(tasks, '1', Status.NEXT_ACTION);
         expect(tasks).toHaveLength(1);
         expect(tasks[0].id).toBe('1');
         expect(tasks.find(t => t.id === nextTaskId)).toBeUndefined();
     });
 
     it('should handle Board View drag-and-drop (Status change only for non-recurring)', () => {
-        const tasks = [createTask({ id: '1', status: Status.IN_PROGRESS })];
+        const tasks = [createTask({ id: '1', status: Status.NEXT_ACTION })];
         const updated = processTaskStatusChange(tasks, '1', Status.DONE);
         expect(updated[0].status).toBe(Status.DONE);
     });
@@ -83,7 +83,7 @@ describe('processTaskStatusChange', () => {
     // ─── ADDITIONAL TESTS ──────────────────────────────────────
 
     it('should set completedAt when marking as DONE', () => {
-        const tasks = [createTask({ id: '1', status: Status.TODO })];
+        const tasks = [createTask({ id: '1', status: Status.NEXT_ACTION })];
         const before = Date.now();
         const updated = processTaskStatusChange(tasks, '1', Status.DONE);
         const after = Date.now();
@@ -94,7 +94,7 @@ describe('processTaskStatusChange', () => {
 
     it('should clear completedAt when un-completing (DONE -> TODO)', () => {
         const tasks = [createTask({ id: '1', status: Status.DONE, completedAt: 12345 })];
-        const updated = processTaskStatusChange(tasks, '1', Status.TODO);
+        const updated = processTaskStatusChange(tasks, '1', Status.NEXT_ACTION);
         expect(updated[0].completedAt).toBeUndefined();
     });
 
@@ -108,7 +108,7 @@ describe('processTaskStatusChange', () => {
         const tasks = [createTask({
             id: '1',
             recurrence: Recurrence.WEEKLY,
-            status: Status.IN_PROGRESS,
+            status: Status.NEXT_ACTION,
             dueDate: '2024-01-01T12:00:00.000Z'
         })];
 
@@ -116,7 +116,7 @@ describe('processTaskStatusChange', () => {
         expect(updated).toHaveLength(2);
         expect(updated.find(t => t.id === '1')?.status).toBe(Status.DONE);
         const next = updated.find(t => t.id !== '1');
-        expect(next?.status).toBe(Status.TODO);
+        expect(next?.status).toBe(Status.NEXT_ACTION);
         expect(next?.recurrence).toBe(Recurrence.WEEKLY);
     });
 
@@ -124,7 +124,7 @@ describe('processTaskStatusChange', () => {
         const tasks = [createTask({
             id: '1',
             recurrence: Recurrence.DAILY,
-            status: Status.TODO,
+            status: Status.NEXT_ACTION,
             dueDate: '2024-01-01T12:00:00.000Z'
         })];
 
@@ -134,14 +134,14 @@ describe('processTaskStatusChange', () => {
     });
 
     it('should handle TODO -> IN_PROGRESS (simple status change, no new task)', () => {
-        const tasks = [createTask({ id: '1', status: Status.TODO })];
-        const updated = processTaskStatusChange(tasks, '1', Status.IN_PROGRESS);
-        expect(updated[0].status).toBe(Status.IN_PROGRESS);
+        const tasks = [createTask({ id: '1', status: Status.NEXT_ACTION })];
+        const updated = processTaskStatusChange(tasks, '1', Status.NEXT_ACTION);
+        expect(updated[0].status).toBe(Status.NEXT_ACTION);
         expect(updated).toHaveLength(1);
     });
 
     it('should handle TODO -> ARCHIVED (simple status change)', () => {
-        const tasks = [createTask({ id: '1', status: Status.TODO })];
+        const tasks = [createTask({ id: '1', status: Status.NEXT_ACTION })];
         const updated = processTaskStatusChange(tasks, '1', Status.ARCHIVED);
         expect(updated[0].status).toBe(Status.ARCHIVED);
         expect(updated).toHaveLength(1);

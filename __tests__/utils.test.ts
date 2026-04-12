@@ -7,7 +7,7 @@ const makeTask = (override: Partial<Task> = {}): Task => ({
     id: 'test-1',
     title: 'Test Task',
     description: '',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.MEDIUM,
     recurrence: Recurrence.NONE,
     createdAt: Date.now(),
@@ -161,11 +161,11 @@ describe('taskUtils', () => {
 
     describe('isOpen', () => {
         it('returns true for TODO', () => {
-            expect(isOpen(makeTask({ status: Status.TODO }))).toBe(true);
+            expect(isOpen(makeTask({ status: Status.NEXT_ACTION }))).toBe(true);
         });
 
         it('returns true for IN_PROGRESS', () => {
-            expect(isOpen(makeTask({ status: Status.IN_PROGRESS }))).toBe(true);
+            expect(isOpen(makeTask({ status: Status.NEXT_ACTION }))).toBe(true);
         });
 
         it('returns false for DONE', () => {
@@ -251,7 +251,7 @@ describe('taskUtils', () => {
 
         it('calculates correct stats for a series', () => {
             const tasks = [
-                makeTask({ id: 'base', status: Status.TODO }),
+                makeTask({ id: 'base', status: Status.NEXT_ACTION }),
                 makeTask({ id: 'h1', seriesId: 'base', status: Status.DONE }),
                 makeTask({ id: 'h2', seriesId: 'base', status: Status.DONE }),
                 makeTask({ id: 'h3', seriesId: 'base', status: Status.EXPIRED }),

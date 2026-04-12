@@ -47,8 +47,8 @@ export function parseSearchQuery(query: string): SearchFilters {
         if (statusMatch) {
             const s = statusMatch[1].toLowerCase();
             if (!filters.status) filters.status = [];
-            if (s === 'todo' || s === 't') filters.status.push(Status.TODO);
-            else if (s === 'inprogress' || s === 'in_progress' || s === 'ip') filters.status.push(Status.IN_PROGRESS);
+            if (s === 'todo' || s === 't') filters.status.push(Status.NEXT_ACTION);
+            else if (s === 'inprogress' || s === 'in_progress' || s === 'ip') filters.status.push(Status.NEXT_ACTION);
             else if (s === 'done' || s === 'd') filters.status.push(Status.DONE);
             else if (s === 'expired' || s === 'exp' || s === 'e') filters.status.push(Status.EXPIRED);
             else if (s === 'archived' || s === 'arch' || s === 'a') filters.status.push(Status.ARCHIVED);

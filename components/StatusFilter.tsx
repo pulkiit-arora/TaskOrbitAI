@@ -53,18 +53,32 @@ export const StatusFilter: React.FC<StatusFilterProps> = ({ selectedStatuses, on
         No, let's keep this clean.
       */}
             <FilterPill
-                status={Status.TODO}
+                status={Status.INBOX}
                 icon={Circle}
-                label="Planned"
-                activeClass="border-gray-400 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:border-gray-500 dark:text-gray-100"
-                inactiveClass="border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100 dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
-            />
-            <FilterPill
-                status={Status.IN_PROGRESS}
-                icon={Zap}
-                label="Active"
+                label="Inbox"
                 activeClass="border-blue-400 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300"
                 inactiveClass="border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/10 dark:border-blue-800/50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+            />
+            <FilterPill
+                status={Status.NEXT_ACTION}
+                icon={Zap}
+                label="Next Actions"
+                activeClass="border-yellow-400 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-700 dark:text-yellow-300"
+                inactiveClass="border-yellow-200 bg-yellow-50 text-yellow-600 hover:bg-yellow-100 dark:bg-yellow-900/10 dark:border-yellow-800/50 dark:text-yellow-400 dark:hover:bg-yellow-900/20"
+            />
+            <FilterPill
+                status={Status.WAITING}
+                icon={Circle}
+                label="Waiting"
+                activeClass="border-orange-400 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:border-orange-700 dark:text-orange-300"
+                inactiveClass="border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/10 dark:border-orange-800/50 dark:text-orange-400 dark:hover:bg-orange-900/20"
+            />
+            <FilterPill
+                status={Status.SOMEDAY}
+                icon={Circle}
+                label="Someday"
+                activeClass="border-purple-400 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:border-purple-700 dark:text-purple-300"
+                inactiveClass="border-purple-200 bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/10 dark:border-purple-800/50 dark:text-purple-400 dark:hover:bg-purple-900/20"
             />
             <FilterPill
                 status={Status.DONE}
@@ -77,8 +91,8 @@ export const StatusFilter: React.FC<StatusFilterProps> = ({ selectedStatuses, on
                 status={Status.EXPIRED}
                 icon={AlertCircle}
                 label="Missed"
-                activeClass="border-orange-400 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:border-orange-700 dark:text-orange-300"
-                inactiveClass="border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/10 dark:border-orange-800/50 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                activeClass="border-red-400 bg-red-100 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300"
+                inactiveClass="border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/10 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-900/20"
             />
         </div>
     );

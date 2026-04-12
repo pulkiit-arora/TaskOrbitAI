@@ -41,17 +41,17 @@ describe('parseSearchQuery', () => {
     describe('status filters', () => {
         it('parses status:todo', () => {
             const result = parseSearchQuery('status:todo');
-            expect(result.status).toEqual([Status.TODO]);
+            expect(result.status).toEqual([Status.NEXT_ACTION]);
         });
 
         it('parses s:inprogress', () => {
             const result = parseSearchQuery('s:inprogress');
-            expect(result.status).toEqual([Status.IN_PROGRESS]);
+            expect(result.status).toEqual([Status.NEXT_ACTION]);
         });
 
         it('parses s:in_progress', () => {
             const result = parseSearchQuery('s:in_progress');
-            expect(result.status).toEqual([Status.IN_PROGRESS]);
+            expect(result.status).toEqual([Status.NEXT_ACTION]);
         });
 
         it('parses s:done', () => {
@@ -70,8 +70,8 @@ describe('parseSearchQuery', () => {
         });
 
         it('parses shorthand aliases (t, ip, d, e, a)', () => {
-            expect(parseSearchQuery('s:t').status).toEqual([Status.TODO]);
-            expect(parseSearchQuery('s:ip').status).toEqual([Status.IN_PROGRESS]);
+            expect(parseSearchQuery('s:t').status).toEqual([Status.NEXT_ACTION]);
+            expect(parseSearchQuery('s:ip').status).toEqual([Status.NEXT_ACTION]);
             expect(parseSearchQuery('s:d').status).toEqual([Status.DONE]);
             expect(parseSearchQuery('s:exp').status).toEqual([Status.EXPIRED]);
             expect(parseSearchQuery('s:arch').status).toEqual([Status.ARCHIVED]);
@@ -142,7 +142,7 @@ describe('parseSearchQuery', () => {
         it('parses multiple filter types together', () => {
             const result = parseSearchQuery('p:high s:todo tag:work due:today search text');
             expect(result.priority).toEqual([Priority.HIGH]);
-            expect(result.status).toEqual([Status.TODO]);
+            expect(result.status).toEqual([Status.NEXT_ACTION]);
             expect(result.tags).toEqual(['work']);
             expect(result.dueDateRange).toBe('today');
             expect(result.textQuery).toBe('search text');

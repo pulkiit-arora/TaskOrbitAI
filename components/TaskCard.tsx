@@ -315,7 +315,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
             <div className="flex items-center gap-1 relative z-10">
               {/* Controls - show edit button for all tasks, other controls only for non-virtual */}
-              {!isVirtual && !hideMoveButtons && task.status !== 'TODO' && task.status !== 'ARCHIVED' && (
+              {!isVirtual && !hideMoveButtons && task.status !== 'NEXT_ACTION' && task.status !== 'ARCHIVED' && (
                 <button
                   type="button"
                   onMouseDown={handleButtonMouseDown}

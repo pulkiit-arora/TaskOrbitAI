@@ -214,8 +214,8 @@ export const BoardView: React.FC<BoardViewProps> = ({
       </div>
       <div className="h-full flex flex-col md:flex-row gap-6 min-w-[320px] md:min-w-0">
         <BoardColumn
-          status={Status.TODO}
-          tasks={sortTasks(applyBoardFilter(tasks.filter(t => t.status === Status.TODO)), boardSort)}
+          status={Status.INBOX}
+          tasks={sortTasks(applyBoardFilter(tasks.filter(t => t.status === Status.INBOX)), boardSort)}
           onEditTask={onEditTask}
           onMoveTask={onMoveTask}
           onArchiveTask={onArchiveTask}
@@ -223,8 +223,26 @@ export const BoardView: React.FC<BoardViewProps> = ({
           onDropTask={onDropTask}
         />
         <BoardColumn
-          status={Status.IN_PROGRESS}
-          tasks={sortTasks(applyBoardFilter(tasks.filter(t => t.status === Status.IN_PROGRESS)), boardSort)}
+          status={Status.NEXT_ACTION}
+          tasks={sortTasks(applyBoardFilter(tasks.filter(t => t.status === Status.NEXT_ACTION)), boardSort)}
+          onEditTask={onEditTask}
+          onMoveTask={onMoveTask}
+          onArchiveTask={onArchiveTask}
+          onDeleteTask={onDeleteTask}
+          onDropTask={onDropTask}
+        />
+        <BoardColumn
+          status={Status.WAITING}
+          tasks={sortTasks(applyBoardFilter(tasks.filter(t => t.status === Status.WAITING)), boardSort)}
+          onEditTask={onEditTask}
+          onMoveTask={onMoveTask}
+          onArchiveTask={onArchiveTask}
+          onDeleteTask={onDeleteTask}
+          onDropTask={onDropTask}
+        />
+        <BoardColumn
+          status={Status.SOMEDAY}
+          tasks={sortTasks(applyBoardFilter(tasks.filter(t => t.status === Status.SOMEDAY)), boardSort)}
           onEditTask={onEditTask}
           onMoveTask={onMoveTask}
           onArchiveTask={onArchiveTask}

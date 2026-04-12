@@ -11,7 +11,7 @@ const INITIAL_TASKS: Task[] = [
     id: '1',
     title: 'Daily Stand-up Meeting',
     description: 'Share progress updates, blockers, and priorities with the team.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.HIGH,
     recurrence: Recurrence.DAILY,
     recurrenceInterval: 1,
@@ -24,7 +24,7 @@ const INITIAL_TASKS: Task[] = [
     id: '2',
     title: 'Review & Respond to Emails',
     description: 'Triage inbox, respond to priority messages, and archive non-essential items.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.MEDIUM,
     recurrence: Recurrence.DAILY,
     recurrenceInterval: 1,
@@ -38,7 +38,7 @@ const INITIAL_TASKS: Task[] = [
     id: '3',
     title: 'Sprint Planning & Backlog Grooming',
     description: 'Review upcoming sprint items, estimate story points, and prioritize the backlog.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.HIGH,
     recurrence: Recurrence.WEEKLY,
     recurrenceInterval: 1,
@@ -52,7 +52,7 @@ const INITIAL_TASKS: Task[] = [
     id: '4',
     title: 'Weekly Progress Report',
     description: 'Compile key metrics, completed deliverables, and upcoming milestones for stakeholders.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.HIGH,
     recurrence: Recurrence.WEEKLY,
     recurrenceInterval: 1,
@@ -66,7 +66,7 @@ const INITIAL_TASKS: Task[] = [
     id: '5',
     title: '1-on-1 with Manager',
     description: 'Discuss career growth, current projects, and any blockers or feedback.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.MEDIUM,
     recurrence: Recurrence.WEEKLY,
     recurrenceInterval: 1,
@@ -81,7 +81,7 @@ const INITIAL_TASKS: Task[] = [
     id: '6',
     title: 'Monthly Budget Review',
     description: 'Review expenses, reconcile accounts, and adjust budget allocations for the next month.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.HIGH,
     recurrence: Recurrence.MONTHLY,
     recurrenceInterval: 1,
@@ -95,7 +95,7 @@ const INITIAL_TASKS: Task[] = [
     id: '7',
     title: 'Team Retrospective',
     description: 'Reflect on what went well, identify areas for improvement, and define action items.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.MEDIUM,
     recurrence: Recurrence.MONTHLY,
     recurrenceInterval: 1,
@@ -110,7 +110,7 @@ const INITIAL_TASKS: Task[] = [
     id: '8',
     title: 'Quarterly OKR Review',
     description: 'Evaluate progress on Objectives & Key Results, recalibrate targets, and set new quarterly goals.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.HIGH,
     recurrence: Recurrence.QUARTERLY,
     recurrenceInterval: 1,
@@ -124,7 +124,7 @@ const INITIAL_TASKS: Task[] = [
     id: '9',
     title: 'Prepare Q2 Client Presentation',
     description: 'Create slide deck covering project milestones, deliverables, and roadmap for the next quarter.',
-    status: Status.IN_PROGRESS,
+    status: Status.NEXT_ACTION,
     priority: Priority.HIGH,
     recurrence: Recurrence.NONE,
     dueDate: new Date(Date.now() + 86400000 * 5).toISOString(),
@@ -141,7 +141,7 @@ const INITIAL_TASKS: Task[] = [
     id: '10',
     title: 'Onboard New Team Member',
     description: 'Set up access credentials, schedule intro meetings, and share documentation & onboarding checklist.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.MEDIUM,
     recurrence: Recurrence.NONE,
     dueDate: new Date(Date.now() + 86400000 * 3).toISOString(),
@@ -152,7 +152,7 @@ const INITIAL_TASKS: Task[] = [
     id: '11',
     title: 'Update Project Documentation',
     description: 'Review and update API docs, architecture diagrams, and deployment runbooks for accuracy.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.LOW,
     recurrence: Recurrence.NONE,
     dueDate: new Date(Date.now() + 86400000 * 7).toISOString(),
@@ -163,7 +163,7 @@ const INITIAL_TASKS: Task[] = [
     id: '12',
     title: 'Schedule Annual Health Checkup',
     description: 'Book appointment with primary care physician for annual physical examination.',
-    status: Status.TODO,
+    status: Status.NEXT_ACTION,
     priority: Priority.LOW,
     recurrence: Recurrence.NONE,
     createdAt: Date.now()
@@ -181,13 +181,31 @@ export const useTasks = () => {
       try {
         let loadedTasks = await loadTasksFromDB();
         
+        // Patch stranded strings from earlier aggressive migration step
+        let needsRestorePatch = false;
+        loadedTasks = loadedTasks.map(t => {
+          // If the DB has literally "NEXT_ACTION" due to our earlier rewrite, revert them to 'TODO' (Inbox) so they reappear.
+          if ((t.status as any) === 'NEXT_ACTION') {
+            needsRestorePatch = true;
+            return { ...t, status: Status.INBOX }; 
+          }
+          return t;
+        });
+        if (needsRestorePatch) {
+          saveTasksToDB(loadedTasks);
+        }
+        
         // Cloud Sync hook
         const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
         if (isSyncEnabled) {
           const cloudTasks = await pullTasksFromCloud();
           if (cloudTasks && cloudTasks.length > 0) {
-            loadedTasks = cloudTasks;
-            saveTasksToDB(cloudTasks); // Persist down to local DB
+            let patchedCloud = cloudTasks.map(t => {
+              if ((t.status as any) === 'NEXT_ACTION') return { ...t, status: Status.INBOX };
+              return t;
+            });
+            loadedTasks = patchedCloud;
+            saveTasksToDB(patchedCloud); // Persist down to local DB
           }
         }
 

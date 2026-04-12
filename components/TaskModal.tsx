@@ -28,7 +28,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
-  const [status, setStatus] = useState<Status>(Status.TODO);
+  const [status, setStatus] = useState<Status>(Status.INBOX);
   const [recurrence, setRecurrence] = useState<Recurrence>(Recurrence.NONE);
   const [dueDate, setDueDate] = useState('');
   const [recurrenceStart, setRecurrenceStart] = useState('');
@@ -58,7 +58,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       setTitle(task.title || '');
       setDescription(task.description || '');
       setPriority(task.priority || Priority.MEDIUM);
-      setStatus(task.status || Status.TODO);
+      setStatus(task.status || Status.INBOX);
       setRecurrence(task.recurrence || Recurrence.NONE);
       setRecurrenceInterval(task.recurrenceInterval || 1);
       setRecurrenceWeekdays(task.recurrenceWeekdays || []);
@@ -95,7 +95,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setTitle('');
     setDescription('');
     setPriority(Priority.MEDIUM);
-    setStatus(Status.TODO);
+    setStatus(Status.INBOX);
     setRecurrence(Recurrence.NONE);
     setDueDate('');
     setRecurrenceStart('');
@@ -147,7 +147,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       recurrenceStart: isoRecurrenceStart,
       recurrenceEnd: isoRecurrenceEnd,
       comments: isCopy ? comments.map(c => ({ ...c, id: crypto.randomUUID() })) : comments,
-      status: isCopy && status === Status.EXPIRED ? Status.TODO : status,
+      status: isCopy && status === Status.EXPIRED ? Status.NEXT_ACTION : status,
       createdAt: isCopy ? Date.now() : task?.createdAt || Date.now(),
       tags: tags,
       subtasks: isCopy ? subtasks.map(st => ({ ...st, id: crypto.randomUUID() })) : subtasks,
@@ -175,7 +175,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
         description: suggestion.description,
         priority: suggestion.priority,
         recurrence: Recurrence.NONE,
-        status: Status.TODO,
+        status: Status.INBOX,
         createdAt: Date.now(),
       });
       setSuggestions(prev => prev.filter(s => s.title !== suggestion.title));
@@ -189,7 +189,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
         description: s.description,
         priority: s.priority,
         recurrence: Recurrence.NONE,
-        status: Status.TODO,
+        status: Status.INBOX,
         createdAt: Date.now(),
       }));
       onSaveMultiple(tasksToAdd);
@@ -427,8 +427,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                     onChange={(e) => setStatus(e.target.value as Status)}
                     className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900 appearance-none cursor-pointer"
                   >
-                    <option value={Status.TODO}>To Do</option>
-                    <option value={Status.IN_PROGRESS}>In Progress</option>
+                    <option value={Status.INBOX}>Inbox</option>
+                    <option value={Status.NEXT_ACTION}>Next Action</option>
+                    <option value={Status.WAITING}>Waiting For</option>
+                    <option value={Status.SOMEDAY}>Someday/Maybe</option>
                     <option value={Status.DONE}>Done</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
@@ -693,7 +695,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                     type="button"
                     variant="secondary"
                     onClick={() => {
-                      onSave({ id: task.id, status: Status.TODO }, 'single');
+                      onSave({ id: task.id, status: Status.NEXT_ACTION }, 'single');
                       onClose();
                     }}
                     className="flex-1 sm:flex-none bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"

@@ -79,7 +79,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                             ...task,
                             id: `${task.id}-virtual-${d.getTime()}`,
                             dueDate: new Date(d).toISOString(),
-                            status: Status.TODO
+                            status: Status.NEXT_ACTION
                         });
                     }
                 }
@@ -122,7 +122,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
 
                 let displayStatus = task.status;
                 if (!isRealInstance && task.recurrence !== Recurrence.NONE) {
-                    displayStatus = Status.TODO; // Virtual projection is always TODO
+                    displayStatus = Status.NEXT_ACTION; // Virtual projection is always TODO
                 }
 
                 // Create display task
