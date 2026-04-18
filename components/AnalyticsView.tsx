@@ -279,7 +279,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
 
 
         const gradedTotal = completedCount + missedOverdueCount;
-        const rate = total > 0 ? Math.round((gradedTotal / total) * 100) : 0;
+        const rate = total > 0 ? Math.round((completedCount / total) * 100) : 0;
 
         const byPriority = {
             [Priority.HIGH]: computedInstances.filter(t => t.priority === Priority.HIGH && t.status !== Status.ARCHIVED).length,
