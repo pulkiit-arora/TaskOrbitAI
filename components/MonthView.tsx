@@ -957,6 +957,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
                       <div className="flex gap-1">
                         {dayTasks.slice(3).map((d, i) => {
                           const pColor = d.task.status === Status.DONE ? 'bg-green-400'
+                            : d.task.status === Status.EXPIRED ? 'bg-yellow-400'
                             : d.task.priority === Priority.HIGH ? 'bg-red-400'
                               : d.task.priority === Priority.MEDIUM ? 'bg-yellow-400'
                                 : 'bg-blue-400';
