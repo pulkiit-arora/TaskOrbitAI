@@ -198,14 +198,30 @@ export const useTasks = () => {
         // Cloud Sync hook
         const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
         if (isSyncEnabled) {
-          const cloudTasks = await pullTasksFromCloud();
-          if (cloudTasks && cloudTasks.length > 0) {
-            let patchedCloud = cloudTasks.map(t => {
-              if ((t.status as any) === 'NEXT_ACTION') return { ...t, status: Status.INBOX };
-              return t;
-            });
-            loadedTasks = patchedCloud;
-            saveTasksToDB(patchedCloud); // Persist down to local DB
+          const cloudRes = await pullTasksFromCloud();
+          if (cloudRes) {
+            let shouldSyncPrefs = false;
+            if (cloudRes.preferences) {
+                if (cloudRes.preferences.tags) {
+                    localStorage.setItem('lifeflow-tags', cloudRes.preferences.tags);
+                    shouldSyncPrefs = true;
+                }
+                if (cloudRes.preferences.statuses) {
+                    localStorage.setItem('lifeflow-status-filters', cloudRes.preferences.statuses);
+                    shouldSyncPrefs = true;
+                }
+                if (shouldSyncPrefs) {
+                    window.dispatchEvent(new Event('preferences-sync'));
+                }
+            }
+            if (cloudRes.tasks && cloudRes.tasks.length > 0) {
+              let patchedCloud = cloudRes.tasks.map(t => {
+                if ((t.status as any) === 'NEXT_ACTION') return { ...t, status: Status.INBOX };
+                return t;
+              });
+              loadedTasks = patchedCloud;
+              saveTasksToDB(patchedCloud); // Persist down to local DB
+            }
           }
         }
 
@@ -235,10 +251,26 @@ export const useTasks = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
        if (event === 'SIGNED_IN') {
          // Pull data immediately
-         pullTasksFromCloud().then(cloudTasks => {
-           if (cloudTasks && cloudTasks.length > 0) {
-             setTasks(cloudTasks);
-             saveTasksToDB(cloudTasks);
+         pullTasksFromCloud().then(cloudRes => {
+           if (cloudRes) {
+             let shouldSyncPrefs = false;
+             if (cloudRes.preferences) {
+                 if (cloudRes.preferences.tags) {
+                     localStorage.setItem('lifeflow-tags', cloudRes.preferences.tags);
+                     shouldSyncPrefs = true;
+                 }
+                 if (cloudRes.preferences.statuses) {
+                     localStorage.setItem('lifeflow-status-filters', cloudRes.preferences.statuses);
+                     shouldSyncPrefs = true;
+                 }
+                 if (shouldSyncPrefs) {
+                     window.dispatchEvent(new Event('preferences-sync'));
+                 }
+             }
+             if (cloudRes.tasks && cloudRes.tasks.length > 0) {
+               setTasks(cloudRes.tasks);
+               saveTasksToDB(cloudRes.tasks);
+             }
            }
          });
        }

@@ -32,6 +32,7 @@ import { useTabSync } from './hooks/useTabSync';
 import { useCloudSync } from './hooks/useCloudSync';
 import { calculateNextDueDate } from './utils/taskUtils';
 import { parseSearchQuery, SearchFilters } from './utils/searchParser';
+import { forceCloudSync } from './services/storage';
 
 const App: React.FC = () => {
   const { tasks, isLoading, setTasks, updateTaskStatus } = useTasks();
@@ -93,11 +94,27 @@ const App: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('lifeflow-tags', JSON.stringify(tags));
-  }, [tags]);
+    if (isSyncEnabled) forceCloudSync();
+  }, [tags, isSyncEnabled]);
 
   useEffect(() => {
     localStorage.setItem('lifeflow-status-filters', JSON.stringify(selectedStatuses));
-  }, [selectedStatuses]);
+    if (isSyncEnabled) forceCloudSync();
+  }, [selectedStatuses, isSyncEnabled]);
+
+  // Listen to preferences-sync to update React state
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const savedTags = localStorage.getItem('lifeflow-tags');
+        if (savedTags) setTags(JSON.parse(savedTags));
+        const savedStats = localStorage.getItem('lifeflow-status-filters');
+        if (savedStats) setSelectedStatuses(JSON.parse(savedStats));
+      } catch {}
+    };
+    window.addEventListener('preferences-sync', handleSync);
+    return () => window.removeEventListener('preferences-sync', handleSync);
+  }, []);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean, taskId: string | null }>({
     isOpen: false,
     taskId: null

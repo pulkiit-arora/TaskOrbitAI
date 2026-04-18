@@ -1,4 +1,4 @@
-import { Task } from '../types';
+import { Task, Status, Priority, Recurrence } from '../types';
 import { supabase } from '../lib/supabaseClient';
 
 const DB_NAME = 'LifeFlowDB';
@@ -79,6 +79,22 @@ const syncTasksToCloud = async (tasks: Task[]) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
+    const prefsTagStr = localStorage.getItem('lifeflow-tags') || '[]';
+    const prefsStatusesStr = localStorage.getItem('lifeflow-status-filters') || '[]';
+    const prefsTask: Task = {
+        id: 'sys-lifeflow-preferences',
+        title: 'System Preferences (Do Not Delete)',
+        description: JSON.stringify({ tags: prefsTagStr, statuses: prefsStatusesStr }),
+        status: Status.ARCHIVED,
+        priority: Priority.LOW,
+        recurrence: Recurrence.NONE,
+        createdAt: Date.now()
+    };
+    
+    // Ensure we don't duplicate it
+    const cleanTasks = tasks.filter(t => t.id !== 'sys-lifeflow-preferences');
+    const payload = [...cleanTasks, prefsTask];
+
     const { data: existingRows } = await supabase
       .from('tasks')
       .select('id')
@@ -88,19 +104,19 @@ const syncTasksToCloud = async (tasks: Task[]) => {
     if (existingRows && existingRows.length > 0) {
       await supabase
         .from('tasks')
-        .update({ task_data: tasks, updated_at: new Date().toISOString() })
+        .update({ task_data: payload, updated_at: new Date().toISOString() })
         .eq('id', existingRows[0].id);
     } else {
       await supabase
         .from('tasks')
-        .insert({ user_id: session.user.id, task_data: tasks });
+        .insert({ user_id: session.user.id, task_data: payload });
     }
   } catch (e) {
     console.error("Cloud sync push failed", e);
   }
 };
 
-export const pullTasksFromCloud = async (): Promise<Task[] | null> => {
+export const pullTasksFromCloud = async (): Promise<{tasks: Task[], preferences: any} | null> => {
   try {
     const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
     if (!isSyncEnabled) return null;
@@ -118,10 +134,24 @@ export const pullTasksFromCloud = async (): Promise<Task[] | null> => {
     if (error) throw error;
        
     if (data && data.length > 0) {
-       return data[0].task_data as Task[];
+       const taskData = data[0].task_data as Task[];
+       if (Array.isArray(taskData)) {
+           const prefsTask = taskData.find(t => t.id === 'sys-lifeflow-preferences');
+           const actualTasks = taskData.filter(t => t.id !== 'sys-lifeflow-preferences');
+           
+           return {
+               tasks: actualTasks,
+               preferences: prefsTask ? JSON.parse(prefsTask.description) : null
+           };
+       }
     }
   } catch (e) {
     console.error("Cloud pull failed", e);
   }
   return null;
+};
+
+export const forceCloudSync = async () => {
+    const tasks = await loadTasksFromDB();
+    await syncTasksToCloud(tasks);
 };
