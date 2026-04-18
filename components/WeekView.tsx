@@ -253,13 +253,22 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
   // [Enhancement 1] Weekly Progress Bar — compute totals
   const weeklyStats = React.useMemo(() => {
     let totalTasks = 0;
-    let completedTasks = 0;
+    let doneTasks = 0;
+    let missedTasks = 0;
     weekDays.forEach(day => {
       const dayTasks = getTasksForDay(day);
       totalTasks += dayTasks.length;
-      completedTasks += dayTasks.filter(d => d.task.status === Status.DONE).length;
+      doneTasks += dayTasks.filter(d => d.task.status === Status.DONE).length;
+      missedTasks += dayTasks.filter(d => d.task.status === Status.EXPIRED).length;
     });
-    return { totalTasks, completedTasks, pct: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0 };
+    const terminalTasks = doneTasks + missedTasks;
+    return { 
+      totalTasks, 
+      terminalTasks,
+      donePct: totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 0,
+      missedPct: totalTasks > 0 ? (missedTasks / totalTasks) * 100 : 0,
+       pct: totalTasks > 0 ? Math.round((terminalTasks / totalTasks) * 100) : 0 
+    };
   }, [tasks, weekDays]);
 
   return (
@@ -270,14 +279,22 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Weekly Progress</span>
           <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
-            {weeklyStats.completedTasks}/{weeklyStats.totalTasks} <span className={`ml-1 ${weeklyStats.pct >= 80 ? 'text-green-600' : weeklyStats.pct >= 50 ? 'text-blue-600' : 'text-gray-500'}`}>({weeklyStats.pct}%)</span>
+            {weeklyStats.terminalTasks}/{weeklyStats.totalTasks} <span className={`ml-1 ${weeklyStats.pct >= 80 ? 'text-green-600' : weeklyStats.pct >= 50 ? 'text-blue-600' : 'text-gray-500'}`}>({weeklyStats.pct}%)</span>
           </span>
         </div>
-        <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${weeklyStats.pct >= 80 ? 'bg-green-500' : weeklyStats.pct >= 50 ? 'bg-blue-500' : 'bg-gray-400'}`}
-            style={{ width: `${weeklyStats.pct}%` }}
-          />
+        <div className="w-full flex h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          {weeklyStats.donePct > 0 && (
+            <div
+              className="h-full bg-green-500 transition-all duration-500"
+              style={{ width: `${weeklyStats.donePct}%` }}
+            />
+          )}
+          {weeklyStats.missedPct > 0 && (
+            <div
+              className="h-full bg-yellow-400 transition-all duration-500"
+              style={{ width: `${weeklyStats.missedPct}%` }}
+            />
+          )}
         </div>
       </div>
 
@@ -524,9 +541,9 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
               return b.task.createdAt - a.task.createdAt;
             });
 
-            // [Enhancement 6] Split active vs completed
-            const activeTasks = sortedDayTasks.filter(d => d.task.status !== Status.DONE);
-            const completedDayTasks = sortedDayTasks.filter(d => d.task.status === Status.DONE);
+            // [Enhancement 6] Split active vs completed/terminal
+            const activeTasks = sortedDayTasks.filter(d => d.task.status !== Status.DONE && d.task.status !== Status.EXPIRED);
+            const terminalDayTasks = sortedDayTasks.filter(d => d.task.status === Status.DONE || d.task.status === Status.EXPIRED);
             const dayKey = day.toISOString();
             const isCompletedCollapsed = collapsedCompleted[dayKey] !== false; // default collapsed
 
@@ -536,12 +553,14 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
 
             // [Enhancement 5] Mini summary bar data
             const activeCount = activeTasks.length;
-            const doneCount = completedDayTasks.length;
-            const totalDay = activeCount + doneCount;
+            const doneCount = terminalDayTasks.filter(d => d.task.status === Status.DONE).length;
+            const missedCount = terminalDayTasks.filter(d => d.task.status === Status.EXPIRED).length;
+            const terminalCount = terminalDayTasks.length;
+            const totalDay = activeCount + terminalCount;
 
             // [Enhancement 2] Estimated time total
             const estimatedMin = sortedDayTasks
-              .filter(d => d.task.status !== Status.DONE)
+              .filter(d => d.task.status !== Status.DONE && d.task.status !== Status.EXPIRED)
               .reduce((sum, d) => sum + (d.task.estimatedMinutes || 0), 0);
 
             return (
@@ -584,6 +603,9 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                     <div className="flex gap-0.5 h-1.5 rounded-full overflow-hidden mt-1">
                       {doneCount > 0 && (
                         <div className="bg-green-400 rounded-full" style={{ width: `${(doneCount / totalDay) * 100}%` }} />
+                      )}
+                      {missedCount > 0 && (
+                        <div className="bg-yellow-400 rounded-full" style={{ width: `${(missedCount / totalDay) * 100}%` }} />
                       )}
                       {activeCount > 0 && (
                         <div className="bg-blue-400 rounded-full" style={{ width: `${(activeCount / totalDay) * 100}%` }} />
@@ -635,19 +657,19 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
                     );
                   })}
 
-                  {/* [Enhancement 6] Collapsible Completed */}
-                  {completedDayTasks.length > 0 && (
+                  {/* [Enhancement 6] Collapsible Completed/Terminal */}
+                  {terminalCount > 0 && (
                     <div className="mt-2">
                       <button
                         onClick={() => toggleCollapsed(dayKey)}
                         className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors w-full"
                       >
                         <ChevronRight size={12} className={`transition-transform ${!isCompletedCollapsed ? 'rotate-90' : ''}`} />
-                        <span>{doneCount} completed</span>
+                        <span>{terminalCount} completed/missed</span>
                       </button>
                       {!isCompletedCollapsed && (
                         <div className="space-y-1 mt-1 opacity-60">
-                          {completedDayTasks.map(({ task, isVirtual, baseTask }) => (
+                          {terminalDayTasks.map(({ task, isVirtual, baseTask }) => (
                             <TaskCard
                               key={task.id}
                               task={task}
