@@ -156,16 +156,22 @@ export function parseQuickAdd(input: string, existingTags: Tag[] = []): ParsedTa
         for (let i = 0; i < MONTH_NAMES.length; i++) {
             const monthName = MONTH_NAMES[i];
             const monthAbbrev = MONTH_ABBREVS[i];
-            // Match "January", "Jan", "January 15", "Jan 15"
-            const regex = new RegExp(`\\b(${monthName}|${monthAbbrev})(?:\\s+(\\d{1,2}))?\\b`, 'gi');
+            // Match "16 March", "March 16", "March 16, 2032", "16 March 2032", etc.
+            const regex = new RegExp(`(?:\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+)?\\b(${monthName}|${monthAbbrev})\\b(?:\\s+(\\d{1,2})(?:st|nd|rd|th)?)?(?:,?\\s+(\\d{4}))?\\b`, 'gi');
             const match = regex.exec(remaining);
             if (match) {
                 const targetMonth = i;
-                const dayOfMonth = match[2] ? parseInt(match[2], 10) : 1;
-                const targetDate = new Date(today.getFullYear(), targetMonth, dayOfMonth, 12, 0, 0, 0);
+                const prevDay = match[1];
+                const postDay = match[3];
+                const yearStr = match[4];
+                
+                const dayOfMonth = prevDay ? parseInt(prevDay, 10) : (postDay ? parseInt(postDay, 10) : 1);
+                let targetYear = yearStr ? parseInt(yearStr, 10) : today.getFullYear();
+                
+                const targetDate = new Date(targetYear, targetMonth, dayOfMonth, 12, 0, 0, 0);
 
-                // If the date is in the past, use next year
-                if (targetDate < today) {
+                // If no year specified and date is in the past, use next year
+                if (!yearStr && targetDate < today) {
                     targetDate.setFullYear(targetDate.getFullYear() + 1);
                 }
 
