@@ -92,15 +92,21 @@ const App: React.FC = () => {
   const [tagFilter, setTagFilter] = useState<string[]>([]); // Array of tag IDs
   const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
 
+  const isFirstRender = useRef(true);
+
   useEffect(() => {
     localStorage.setItem('lifeflow-tags', JSON.stringify(tags));
-    if (isSyncEnabled) forceCloudSync();
+    if (!isFirstRender.current && isSyncEnabled) forceCloudSync();
   }, [tags, isSyncEnabled]);
 
   useEffect(() => {
     localStorage.setItem('lifeflow-status-filters', JSON.stringify(selectedStatuses));
-    if (isSyncEnabled) forceCloudSync();
+    if (!isFirstRender.current && isSyncEnabled) forceCloudSync();
   }, [selectedStatuses, isSyncEnabled]);
+
+  useEffect(() => {
+    isFirstRender.current = false;
+  }, []);
 
   // Listen to preferences-sync to update React state
   useEffect(() => {

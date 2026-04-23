@@ -76,6 +76,11 @@ const syncTasksToCloud = async (tasks: Task[]) => {
     const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
     if (!isSyncEnabled) return;
 
+    // Prevent blind overrides on new devices: MUST have pulled from cloud at least once
+    // physically in this browser before we ever allow pushing up local data.
+    const hasPulled = localStorage.getItem('lifeflow-last-pull-success') === 'true';
+    if (!hasPulled) return;
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
@@ -97,15 +102,23 @@ const syncTasksToCloud = async (tasks: Task[]) => {
 
     const { data: existingRows } = await supabase
       .from('tasks')
-      .select('id')
+      .select('id, updated_at')
       .eq('user_id', session.user.id)
-      .limit(1);
+      .order('updated_at', { ascending: false });
 
     if (existingRows && existingRows.length > 0) {
+      const [primaryRow, ...duplicateRows] = existingRows;
+      
+      // Clean up any duplicate rows created from race conditions during initial syncs
+      if (duplicateRows.length > 0) {
+        const duplicateIds = duplicateRows.map(r => r.id);
+        await supabase.from('tasks').delete().in('id', duplicateIds);
+      }
+
       await supabase
         .from('tasks')
         .update({ task_data: payload, updated_at: new Date().toISOString() })
-        .eq('id', existingRows[0].id);
+        .eq('id', primaryRow.id);
     } else {
       await supabase
         .from('tasks')
@@ -132,6 +145,9 @@ export const pullTasksFromCloud = async (): Promise<{tasks: Task[], preferences:
        .limit(1);
        
     if (error) throw error;
+       
+    // Mark that we have successfully communicated with the cloud to prevent blind overwrites
+    localStorage.setItem('lifeflow-last-pull-success', 'true');
        
     if (data && data.length > 0) {
        const taskData = data[0].task_data as Task[];
