@@ -107,22 +107,44 @@ const syncTasksToCloud = async (tasks: Task[]) => {
       .order('updated_at', { ascending: false });
 
     if (existingRows && existingRows.length > 0) {
-      const [primaryRow, ...duplicateRows] = existingRows;
+      const [primaryRow, ...olderRows] = existingRows;
+      const now = new Date();
+      const lastUpdate = primaryRow.updated_at ? new Date(primaryRow.updated_at) : new Date(0);
       
-      // Clean up any duplicate rows created from race conditions during initial syncs
-      if (duplicateRows.length > 0) {
-        const duplicateIds = duplicateRows.map(r => r.id);
-        await supabase.from('tasks').delete().in('id', duplicateIds);
-      }
+      const isNewDay = now.getUTCFullYear() !== lastUpdate.getUTCFullYear() || 
+                       now.getUTCMonth() !== lastUpdate.getUTCMonth() || 
+                       now.getUTCDate() !== lastUpdate.getUTCDate();
 
-      await supabase
-        .from('tasks')
-        .update({ task_data: payload, updated_at: new Date().toISOString() })
-        .eq('id', primaryRow.id);
+      // Create a daily rolling backup in the same table
+      if (isNewDay) {
+        await supabase
+          .from('tasks')
+          .insert({ user_id: session.user.id, task_data: payload, updated_at: now.toISOString() });
+          
+        // Keep a max of 7 backups (the newly inserted one replaces the oldest if we exceed 7)
+        if (existingRows.length > 6) {
+           const rowsToDelete = existingRows.slice(6);
+           const idsToDelete = rowsToDelete.map(r => r.id);
+           await supabase.from('tasks').delete().in('id', idsToDelete);
+        }
+      } else {
+        // Same day: just update the primary row
+        await supabase
+          .from('tasks')
+          .update({ task_data: payload, updated_at: now.toISOString() })
+          .eq('id', primaryRow.id);
+
+        // Clean up any race-condition rows or exceedances to keep history tidy
+        if (olderRows.length > 6) {
+           const rowsToDelete = olderRows.slice(6);
+           const idsToDelete = rowsToDelete.map(r => r.id);
+           await supabase.from('tasks').delete().in('id', idsToDelete);
+        }
+      }
     } else {
       await supabase
         .from('tasks')
-        .insert({ user_id: session.user.id, task_data: payload });
+        .insert({ user_id: session.user.id, task_data: payload, updated_at: new Date().toISOString() });
     }
   } catch (e) {
     console.error("Cloud sync push failed", e);
