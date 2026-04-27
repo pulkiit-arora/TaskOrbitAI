@@ -134,10 +134,27 @@ const syncTasksToCloud = async (tasks: Task[]) => {
           .update({ task_data: payload, updated_at: now.toISOString() })
           .eq('id', primaryRow.id);
 
-        // Clean up any race-condition rows or exceedances to keep history tidy
-        if (olderRows.length > 6) {
-           const rowsToDelete = olderRows.slice(6);
-           const idsToDelete = rowsToDelete.map(r => r.id);
+        // Identify any race-condition rows from the SAME day to clean up
+        const isSameDay = (dateStr: string) => {
+          if (!dateStr) return false;
+          const d = new Date(dateStr);
+          return d.getUTCFullYear() === now.getUTCFullYear() &&
+                 d.getUTCMonth() === now.getUTCMonth() &&
+                 d.getUTCDate() === now.getUTCDate();
+        };
+
+        const duplicateIds = olderRows.filter(r => isSameDay(r.updated_at)).map(r => r.id);
+        const validOlderRows = olderRows.filter(r => !isSameDay(r.updated_at));
+
+        let idsToDelete = [...duplicateIds];
+
+        // Also enforce the 7-row max limit on the remaining valid history
+        if (validOlderRows.length > 6) {
+           const exceedanceIds = validOlderRows.slice(6).map(r => r.id);
+           idsToDelete = [...idsToDelete, ...exceedanceIds];
+        }
+
+        if (idsToDelete.length > 0) {
            await supabase.from('tasks').delete().in('id', idsToDelete);
         }
       }
