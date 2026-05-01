@@ -84,7 +84,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     <div
       draggable={!isVirtual && task.status !== Status.ARCHIVED}
       onDragStart={handleDragStart}
-      className={`flex w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200 overflow-hidden min-h-[88px]
+      className={`flex w-full glass rounded-xl shadow-sm border border-white/40 dark:border-gray-700/50 hover:shadow-soft hover:-translate-y-0.5 transition-all duration-300 overflow-hidden min-h-[88px]
         ${!isVirtual ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
       `}
     >
@@ -197,7 +197,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     <div
       draggable={!isVirtual && task.status !== Status.ARCHIVED}
       onDragStart={handleDragStart}
-      className={`group relative bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200
+      className={`group relative glass p-3.5 rounded-2xl shadow-sm border border-white/50 dark:border-gray-700/50 hover:shadow-soft hover:-translate-y-1 transition-all duration-300
         ${!isVirtual ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
         ${task.status === Status.ARCHIVED ? 'opacity-75' : ''}
       `}
@@ -222,18 +222,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           >
             <span className={`flex items-center gap-2 flex-1 ${showStrikethrough && (task.status === 'DONE' || task.status === 'EXPIRED') ? 'line-through text-gray-500' : ''}`}>
               {task.priority === Priority.HIGH && (
-                <span className={`flex items-center gap-1 text-red-600 bg-red-50 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide border border-red-100 dark:bg-red-900/20 dark:border-red-900/30 dark:text-red-400 ${compactPriority ? 'px-1' : ''}`} title="High Priority">
-                  <ArrowUp size={12} strokeWidth={2.5} /> {!compactPriority && "High"}
+                <span className={`flex items-center gap-1 text-red-600 bg-red-100/80 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-red-200/50 dark:bg-red-500/20 dark:border-red-500/30 dark:text-red-400 shadow-sm ${compactPriority ? 'px-1.5' : ''}`} title="High Priority">
+                  <ArrowUp size={12} strokeWidth={3} /> {!compactPriority && "High"}
                 </span>
               )}
               {task.priority === Priority.MEDIUM && (
-                <span className={`flex items-center gap-1 text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide border border-yellow-100 dark:bg-yellow-900/20 dark:border-yellow-900/30 dark:text-yellow-400 ${compactPriority ? 'px-1' : ''}`} title="Medium Priority">
-                  <Minus size={12} strokeWidth={2.5} /> {!compactPriority && "Medium"}
+                <span className={`flex items-center gap-1 text-yellow-700 bg-yellow-100/80 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-yellow-200/50 dark:bg-yellow-500/20 dark:border-yellow-500/30 dark:text-yellow-400 shadow-sm ${compactPriority ? 'px-1.5' : ''}`} title="Medium Priority">
+                  <Minus size={12} strokeWidth={3} /> {!compactPriority && "Medium"}
                 </span>
               )}
               {task.priority === Priority.LOW && (
-                <span className={`flex items-center gap-1 text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide border border-blue-100 dark:bg-blue-900/20 dark:border-blue-900/30 dark:text-blue-400 ${compactPriority ? 'px-1' : ''}`} title="Low Priority">
-                  <ArrowDown size={12} strokeWidth={2.5} /> {!compactPriority && "Low"}
+                <span className={`flex items-center gap-1 text-blue-600 bg-blue-100/80 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-blue-200/50 dark:bg-blue-500/20 dark:border-blue-500/30 dark:text-blue-400 shadow-sm ${compactPriority ? 'px-1.5' : ''}`} title="Low Priority">
+                  <ArrowDown size={12} strokeWidth={3} /> {!compactPriority && "Low"}
                 </span>
               )}
               <span className="flex-1 font-semibold text-sm truncate">{task.title}</span>

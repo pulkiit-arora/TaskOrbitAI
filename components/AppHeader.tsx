@@ -46,17 +46,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
 
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex-shrink-0 transition-colors duration-200 sticky top-0 z-20">
+    <header className="glass px-4 py-3 flex-shrink-0 transition-all duration-300 sticky top-0 z-30 shadow-sm border-b border-white/20 dark:border-gray-700/30">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 relative min-h-[50px]">
 
         {/* Left Section: View Switcher & Date Nav */}
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto flex-shrink-0 z-10">
-          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg max-w-full overflow-x-auto custom-scrollbar justify-start sm:justify-center">
+          <div className="flex items-center gap-1 bg-gray-100/80 dark:bg-gray-800/80 p-1.5 rounded-xl max-w-full overflow-x-auto custom-scrollbar justify-start sm:justify-center shadow-inner">
             <button
               onClick={() => setViewMode('today')}
-              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'today'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              className={`flex-shrink-0 px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-200 ${viewMode === 'today'
+                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10 scale-[1.02]'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
             >
               <CheckSquare size={18} />
@@ -64,9 +64,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('week')}
-              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'week'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              className={`flex-shrink-0 px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-200 ${viewMode === 'week'
+                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10 scale-[1.02]'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
             >
               <Grid size={18} />
@@ -74,9 +74,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('month')}
-              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'month'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              className={`flex-shrink-0 px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-200 ${viewMode === 'month'
+                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10 scale-[1.02]'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
             >
               <Calendar size={18} />
@@ -84,9 +84,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('board')}
-              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'board'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              className={`flex-shrink-0 px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-200 ${viewMode === 'board'
+                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10 scale-[1.02]'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
             >
               <Layout size={18} />
@@ -94,9 +94,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('analytics')}
-              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'analytics'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              className={`flex-shrink-0 px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-200 ${viewMode === 'analytics'
+                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10 scale-[1.02]'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
             >
               <BarChart2 size={18} />
@@ -104,9 +104,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('planner')}
-              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'planner'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              className={`flex-shrink-0 px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-200 ${viewMode === 'planner'
+                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10 scale-[1.02]'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
             >
               <ClipboardList size={18} />
@@ -114,9 +114,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </button>
             <button
               onClick={() => setViewMode('eisenhower')}
-              className={`flex-shrink-0 p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors ${viewMode === 'eisenhower'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+              className={`flex-shrink-0 px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-200 ${viewMode === 'eisenhower'
+                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10 scale-[1.02]'
+                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
             >
               <Crosshair size={18} />
@@ -125,8 +125,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </div>
 
           {(viewMode === 'week' || viewMode === 'month') && (
-            <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm w-full sm:w-auto justify-between sm:justify-start relative">
-              <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-l-lg border-r border-gray-100 dark:border-gray-700">
+            <div className="flex items-center bg-white/80 dark:bg-gray-800/80 border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm w-full sm:w-auto justify-between sm:justify-start relative backdrop-blur-md">
+              <button onClick={() => navigateDate('prev')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-l-xl border-r border-gray-200/50 dark:border-gray-700/50 transition-colors">
                 <ChevronLeft size={18} />
               </button>
 
@@ -158,7 +158,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 )}
               </div>
 
-              <button onClick={() => navigateDate('next')} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-r-lg border-l border-gray-100 dark:border-gray-700">
+              <button onClick={() => navigateDate('next')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-r-xl border-l border-gray-200/50 dark:border-gray-700/50 transition-colors">
                 <ChevronRight size={18} />
               </button>
             </div>
@@ -193,15 +193,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             size="sm"
             onClick={() => setShowArchived(!showArchived)}
             title={showArchived ? 'Hide Archived' : 'Show Archived'}
-            className="flex-shrink-0"
+            className="flex-shrink-0 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full w-10 h-10 p-0 flex items-center justify-center transition-all duration-200"
           >
-            <Archive size={20} className={showArchived ? 'text-blue-600' : 'text-gray-500'} />
+            <Archive size={20} className={showArchived ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500'} />
           </Button>
 
-          <Button onClick={onAddTask} className="w-auto justify-center flex-shrink-0">
+          <Button onClick={onAddTask} className="w-auto justify-center flex-shrink-0 shadow-glow hover:scale-105 transition-transform duration-200 bg-primary-600 hover:bg-primary-700 text-white rounded-xl">
             <Plus size={18} className="mr-2" />
-            <span className="hidden sm:inline">Add Task</span>
-            <span className="inline sm:hidden">Add</span>
+            <span className="hidden sm:inline font-semibold">Add Task</span>
+            <span className="inline sm:hidden font-semibold">Add</span>
           </Button>
         </div>
       </div>

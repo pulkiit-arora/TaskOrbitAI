@@ -11,9 +11,59 @@
     <script>
       tailwind.config = {
         darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['Outfit', 'sans-serif'],
+            },
+            colors: {
+              primary: {
+                50: '#eef2ff',
+                100: '#e0e7ff',
+                200: '#c7d2fe',
+                300: '#a5b4fc',
+                400: '#818cf8',
+                500: '#6366f1',
+                600: '#4f46e5',
+                700: '#4338ca',
+                800: '#3730a3',
+                900: '#312e81',
+                950: '#1e1b4b',
+              },
+            },
+            boxShadow: {
+              'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
+              'glass-dark': '0 4px 30px rgba(0, 0, 0, 0.5)',
+              'glow': '0 0 15px rgba(99, 102, 241, 0.5)',
+              'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.3s ease-out',
+              'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+              'scale-in': 'scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideUp: {
+                '0%': { transform: 'translateY(20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              scaleIn: {
+                '0%': { transform: 'scale(0.95)', opacity: '0' },
+                '100%': { transform: 'scale(1)', opacity: '1' },
+              }
+            }
+          }
+        }
       }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script type="importmap">
     {
       "imports": {
@@ -30,17 +80,40 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #f3f4f6;
+        background-color: #f8fafc;
         margin: 0;
         padding: 0;
+        color: #0f172a;
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
+      
+      .dark body {
+        background-color: #0f172a;
+        color: #f8fafc;
+      }
+
+      /* Base Gradients for App background */
       #root {
         width: 100%;
-        height: 100%;
+        height: 100vh;
+        background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+                    radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
       }
+      
+      .dark #root {
+        background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                    radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.1) 0%, transparent 40%);
+      }
+
+      /* Headings */
+      h1, h2, h3, h4, h5, h6, .font-heading {
+        font-family: 'Outfit', sans-serif;
+      }
+
       /* Custom scrollbar for columns */
       .custom-scrollbar::-webkit-scrollbar {
         width: 6px;
+        height: 6px;
       }
       .custom-scrollbar::-webkit-scrollbar-track {
         background: transparent;
@@ -49,23 +122,47 @@
         background-color: #cbd5e1;
         border-radius: 20px;
       }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #475569;
+      }
       
       /* Hide scrollbar for horizontal mobile strips */
       .hide-scrollbar {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
       }
       .hide-scrollbar::-webkit-scrollbar {
         display: none;
       }
       
+      /* Glassmorphism Utilities */
+      .glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+      
+      .dark .glass {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
       /* CMDK Styles */
       [data-cmdk-overlay] {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         z-index: 99;
+        animation: fadeIn 0.2s ease-out;
+      }
+      
+      [data-cmdk-dialog] {
+        animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       }
     </style>
   </head>

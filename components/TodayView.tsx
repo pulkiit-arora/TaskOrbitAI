@@ -199,40 +199,40 @@ export const TodayView: React.FC<TodayViewProps> = ({
                 </h2>
 
                 {/* Performance Metrics Dashboard */}
-                <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-                        <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Tasks Completed</span>
+                <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in">
+                    <div className="glass p-5 rounded-2xl border border-white/40 dark:border-gray-700/50 shadow-glass flex flex-col hover:-translate-y-1 transition-transform duration-300">
+                        <span className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Tasks Completed</span>
                         <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{completedTodayTasks.length}</span>
-                            <span className="text-sm text-gray-500">/ {allTodayTasks.length}</span>
+                            <span className="text-3xl font-heading font-bold text-gray-900 dark:text-gray-100">{completedTodayTasks.length}</span>
+                            <span className="text-sm font-medium text-gray-500">/ {allTodayTasks.length}</span>
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-                        <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Completion Rate</span>
+                    <div className="glass p-5 rounded-2xl border border-white/40 dark:border-gray-700/50 shadow-glass flex flex-col hover:-translate-y-1 transition-transform duration-300">
+                        <span className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Completion Rate</span>
                         <div className="mt-2 flex items-baseline gap-2">
-                            <span className={`text-2xl font-bold ${allTodayTasks.length > 0 && (completedTodayTasks.length / allTodayTasks.length) >= 0.8 ? 'text-green-600' : 'text-blue-600'}`}>
+                            <span className={`text-3xl font-heading font-bold ${allTodayTasks.length > 0 && (completedTodayTasks.length / allTodayTasks.length) >= 0.8 ? 'text-green-500' : 'text-primary-500'}`}>
                                 {allTodayTasks.length > 0 ? Math.round((completedTodayTasks.length / allTodayTasks.length) * 100) : 0}%
                             </span>
                         </div>
-                        <div className="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div className="w-full bg-gray-200/50 dark:bg-gray-700/50 h-2 rounded-full mt-3 overflow-hidden shadow-inner">
                             <div
-                                className={`h-full rounded-full ${allTodayTasks.length > 0 && (completedTodayTasks.length / allTodayTasks.length) >= 0.8 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                className={`h-full rounded-full transition-all duration-1000 ${allTodayTasks.length > 0 && (completedTodayTasks.length / allTodayTasks.length) >= 0.8 ? 'bg-green-500' : 'bg-primary-500 shadow-glow'}`}
                                 style={{ width: `${allTodayTasks.length > 0 ? (completedTodayTasks.length / allTodayTasks.length) * 100 : 0}%` }}
                             />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-                        <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Pending</span>
+                    <div className="glass p-5 rounded-2xl border border-white/40 dark:border-gray-700/50 shadow-glass flex flex-col hover:-translate-y-1 transition-transform duration-300">
+                        <span className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Pending</span>
                         <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{openTodayTasks.length}</span>
-                            <span className="text-sm text-gray-500">remaining</span>
+                            <span className="text-3xl font-heading font-bold text-gray-900 dark:text-gray-100">{openTodayTasks.length}</span>
+                            <span className="text-sm font-medium text-gray-500">remaining</span>
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-                        <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Overdue</span>
+                    <div className="glass p-5 rounded-2xl border border-white/40 dark:border-gray-700/50 shadow-glass flex flex-col hover:-translate-y-1 transition-transform duration-300">
+                        <span className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Overdue</span>
                         <div className="mt-2 flex items-baseline gap-2">
-                            <span className={`text-2xl font-bold ${overdueTasks.length > 0 ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}`}>{overdueTasks.length}</span>
-                            {overdueTasks.length === 0 && <span className="text-sm text-green-600 font-medium">On Track</span>}
+                            <span className={`text-3xl font-heading font-bold ${overdueTasks.length > 0 ? 'text-red-500' : 'text-gray-900 dark:text-gray-100'}`}>{overdueTasks.length}</span>
+                            {overdueTasks.length === 0 && <span className="text-sm text-green-500 font-bold">On Track</span>}
                         </div>
                     </div>
                 </div>
@@ -251,7 +251,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                 const isVirtual = task.id.includes('-virtual-');
                                 const baseId = isVirtual ? task.id.split('-virtual-')[0] : task.id;
                                 return (
-                                <div key={task.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-red-100 dark:border-red-900/30 overflow-hidden hover:shadow-md transition-shadow">
+                                <div key={task.id} className="animate-slide-up bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-2xl shadow-sm border border-red-100 dark:border-red-900/30 overflow-hidden hover:shadow-soft transition-all duration-300">
                                     <div className="border-l-4 border-l-red-500">
                                         <TaskCard
                                             task={task}
@@ -275,7 +275,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                 {/* Today Section */}
                 <section>
                     {overdueTasks.length === 0 && (
-                        <h3 className="text-blue-600 dark:text-blue-400 font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <h3 className="text-primary-600 dark:text-primary-400 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
                             <Circle size={10} fill="currentColor" />
                             Today's Tasks
                         </h3>
@@ -283,11 +283,11 @@ export const TodayView: React.FC<TodayViewProps> = ({
 
                     <div className="space-y-2 min-h-[100px]">
                         {openTodayTasks.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-                                <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full mb-3">
-                                    <CheckCircle2 size={32} className="text-green-600 dark:text-green-400" />
+                            <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-3xl glass">
+                                <div className="bg-green-100/50 dark:bg-green-900/30 p-4 rounded-full mb-4 shadow-sm">
+                                    <CheckCircle2 size={40} className="text-green-500" />
                                 </div>
-                                <p className="text-gray-800 dark:text-gray-200 font-medium">All caught up!</p>
+                                <p className="text-gray-800 dark:text-gray-200 font-heading font-bold text-lg">All caught up!</p>
                                 <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Enjoy your day or add a new task.</p>
                             </div>
                         ) : (
@@ -303,7 +303,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                 }
 
                                 return (
-                                    <div key={task.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
+                                    <div key={task.id} className="animate-slide-up">
                                         <TaskCard
                                             task={task}
                                             onEdit={onEditTask}
@@ -351,7 +351,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                     }
 
                                     return (
-                                        <div key={task.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50 grayscale hover:grayscale-0 transition-all">
+                                        <div key={task.id} className="glass rounded-2xl opacity-75 hover:opacity-100 transition-all duration-300">
                                             <TaskCard
                                                 task={task}
                                                 onEdit={onEditTask}

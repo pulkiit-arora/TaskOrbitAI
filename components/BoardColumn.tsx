@@ -47,7 +47,7 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({
 
   return (
     <div
-      className="flex flex-col h-full min-w-[300px] w-[300px] md:w-full bg-gray-50/50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50"
+      className="flex flex-col h-full min-w-[300px] w-[300px] md:w-full glass rounded-2xl border border-white/40 dark:border-gray-700/50 shadow-sm"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >

@@ -96,8 +96,8 @@ export const BoardView: React.FC<BoardViewProps> = ({
   };
 
   return (
-    <div className="h-full overflow-x-auto">
-      <div className="mb-3 flex items-center gap-2 flex-wrap px-1">
+    <div className="h-full overflow-x-auto p-2 pb-6">
+      <div className="mb-4 flex items-center gap-2 flex-wrap px-2 glass rounded-2xl p-3 shadow-sm border border-white/40 dark:border-gray-700/50 backdrop-blur-md">
 
         <button
           type="button"
@@ -204,7 +204,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
           <select
             value={boardSort}
             onChange={(e) => setBoardSort(e.target.value as 'priority' | 'dueDate')}
-            className="text-sm border border-gray-200 rounded-md px-2 py-1 bg-white"
+            className="text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm outline-none focus:ring-2 focus:ring-primary-500 transition-shadow"
           >
             <option value="priority">Priority</option>
             <option value="dueDate">Due Date</option>

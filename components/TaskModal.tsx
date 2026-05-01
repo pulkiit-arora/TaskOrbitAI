@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Task, Priority, Recurrence, Status, AISuggestion, Tag, Subtask, TimeEntry } from '../types';
-import { X, Sparkles, Plus, ChevronDown, Activity, AlertCircle, RotateCcw } from 'lucide-react';
+import { X, Sparkles, Plus, ChevronDown, Activity, AlertCircle, RotateCcw, Copy, Trash2 } from 'lucide-react';
 import { Button } from './Button';
 import { TagPicker } from './TagPicker';
 import { SubtaskList } from './SubtaskList';
@@ -200,9 +200,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fade-in">
+      <div className="glass bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-glass-dark w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-in border border-white/20 dark:border-gray-700/50">
+        <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50 backdrop-blur-sm">
           <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">{task?.id ? 'Edit Task' : 'New Task'}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
@@ -653,7 +653,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
           </div>
         </div>
 
-        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 space-y-4">
+        <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-200/50 dark:border-gray-700/50 space-y-4 backdrop-blur-sm">
           {/* Show recurrence scope selector if editing a recurring task */}
           {task?.id && (task.id.includes('-virtual-') || (task.recurrence && task.recurrence !== Recurrence.NONE)) && (
             <div className="flex flex-col gap-2">
@@ -683,51 +683,43 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row justify-between gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
             
-            <div className="flex gap-2 justify-center sm:justify-start w-full sm:w-auto order-2 sm:order-1 border-t sm:border-0 border-gray-100 dark:border-gray-700 pt-3 sm:pt-0">
-              {task?.id && onDelete && (
-                <Button variant="danger" className="flex-1 sm:flex-none" onClick={() => onDelete(task.id!)}>Delete</Button>
-              )}
+            {/* Left side: Secondary & Destructive Actions */}
+            <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 custom-scrollbar justify-center sm:justify-start">
               {task?.id && (
-                task.status === Status.EXPIRED ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {
-                      onSave({ id: task.id, status: Status.NEXT_ACTION }, 'single');
-                      onClose();
-                    }}
-                    className="flex-1 sm:flex-none bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
-                  >
-                    <RotateCcw size={16} className="mr-1 inline" />
-                    Restore
-                  </Button>
-                ) : (
-                  onMarkMissed && (
-                    <Button
-                      type="button"
-                      variant="danger"
-                      onClick={() => {
-                        onMarkMissed(task.id!);
-                        onClose();
-                      }}
-                      className="flex-1 sm:flex-none !bg-orange-500 !text-white !hover:bg-orange-600 !border-transparent shadow-sm"
-                    >
-                      <AlertCircle size={16} className="mr-1 inline" />
-                      Mark Missed
+                <>
+                  {onDelete && (
+                    <Button variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-2 sm:px-3 flex-shrink-0" onClick={() => onDelete(task.id!)} title="Delete Task">
+                      <Trash2 size={16} className="mr-1.5" />
+                      <span className="text-sm font-medium">Delete</span>
                     </Button>
-                  )
-                )
+                  )}
+
+                  {task.status === Status.EXPIRED ? (
+                    <Button variant="ghost" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-2 sm:px-3 flex-shrink-0" onClick={() => { onSave({ id: task.id, status: Status.NEXT_ACTION }, 'single'); onClose(); }} title="Restore Task">
+                      <RotateCcw size={16} className="mr-1.5" />
+                      <span className="text-sm font-medium">Restore</span>
+                    </Button>
+                  ) : onMarkMissed ? (
+                    <Button variant="ghost" className="text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 px-2 sm:px-3 flex-shrink-0" onClick={() => { onMarkMissed(task.id!); onClose(); }} title="Mark as Missed">
+                      <AlertCircle size={16} className="mr-1.5" />
+                      <span className="text-sm font-medium">Missed</span>
+                    </Button>
+                  ) : null}
+
+                  <Button variant="ghost" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-2 sm:px-3 flex-shrink-0" onClick={handleSaveAsCopy} title="Duplicate Task">
+                    <Copy size={16} className="mr-1.5" />
+                    <span className="text-sm font-medium">Duplicate</span>
+                  </Button>
+                </>
               )}
             </div>
 
-            <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end w-full sm:w-auto order-1 sm:order-2">
-              {task?.id && (
-                <Button variant="secondary" className="flex-1 sm:flex-none px-2 sm:px-4" onClick={handleSaveAsCopy}>Duplicate</Button>
-              )}
-              <Button variant="ghost" className="flex-1 sm:flex-none px-2 sm:px-4" onClick={onClose}>Cancel</Button>
-              <Button className="flex-1 sm:flex-none px-2 sm:px-4" onClick={handleSave}>Save</Button>
+            {/* Right side: Primary Actions */}
+            <div className="flex gap-2 w-full sm:w-auto justify-end mt-1 sm:mt-0 pt-3 sm:pt-0 border-t border-gray-200/50 dark:border-gray-700/50 sm:border-0">
+              <Button variant="ghost" className="flex-1 sm:flex-none" onClick={onClose}>Cancel</Button>
+              <Button className="flex-1 sm:flex-none bg-primary-600 hover:bg-primary-700 shadow-glow" onClick={handleSave}>Save</Button>
             </div>
 
           </div>

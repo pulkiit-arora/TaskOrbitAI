@@ -46,7 +46,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             open={open}
             onOpenChange={setOpen}
             label="Global Command Menu"
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[640px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-[100] overflow-hidden p-2"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[640px] glass bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-glass-dark border border-white/20 dark:border-gray-700/50 z-[100] overflow-hidden p-2"
         >
             <div className="flex items-center border-b border-gray-100 dark:border-gray-700 px-3 pb-2 mb-2">
                 <Search className="w-4 h-4 text-gray-400 mr-2" />
