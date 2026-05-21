@@ -5,10 +5,12 @@ const CHANNEL_NAME = 'taskorbit-sync';
 
 export function useTabSync(
     tasks: Task[],
-    setTasks: (tasks: Task[]) => void
+    setTasks: (tasks: Task[]) => void,
+    isLoading: boolean
 ) {
     const channelRef = useRef<BroadcastChannel | null>(null);
     const isExternalUpdate = useRef(false);
+    const hasInitialized = useRef(false);
 
     useEffect(() => {
         try {
@@ -33,6 +35,17 @@ export function useTabSync(
 
     // Broadcast changes to other tabs
     useEffect(() => {
+        if (isLoading) {
+            hasInitialized.current = false;
+            return;
+        }
+
+        // Skip broadcasting the very first render after loading completes
+        if (!hasInitialized.current) {
+            hasInitialized.current = true;
+            return;
+        }
+
         if (isExternalUpdate.current) return;
         try {
             channelRef.current?.postMessage({
@@ -42,5 +55,5 @@ export function useTabSync(
         } catch {
             // Ignore serialization errors
         }
-    }, [tasks]);
+    }, [tasks, isLoading]);
 }

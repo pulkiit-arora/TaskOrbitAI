@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Task, Status, Recurrence, Priority } from '../types';
 import { loadTasksFromDB, saveTasksToDB, pullTasksFromCloud } from '../services/storage';
 import { supabase } from '../lib/supabaseClient';
@@ -280,8 +280,18 @@ export const useTasks = () => {
   }, []);
 
   // Auto-Save on Change (Debounced)
+  const isFirstSaveAfterLoad = useRef(true);
+
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading) {
+      isFirstSaveAfterLoad.current = true;
+      return;
+    }
+
+    if (isFirstSaveAfterLoad.current) {
+      isFirstSaveAfterLoad.current = false;
+      return;
+    }
 
     const timer = setTimeout(() => {
       saveTasksToDB(tasks).catch(e => console.error("Auto-save failed", e));
@@ -292,6 +302,8 @@ export const useTasks = () => {
 
   // Save on Visibility Change
   useEffect(() => {
+    if (isLoading) return;
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         saveTasksToDB(tasks);
@@ -299,7 +311,7 @@ export const useTasks = () => {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [tasks]);
+  }, [tasks, isLoading]);
 
 
 

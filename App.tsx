@@ -38,7 +38,7 @@ const App: React.FC = () => {
   const { tasks, isLoading, setTasks, updateTaskStatus } = useTasks();
   const { isModalOpen, editingTask, openModal, closeModal, openModalWithDate } = useTaskModal();
   const undoManager = useUndoManager();
-  useTabSync(tasks, setTasks);
+  useTabSync(tasks, setTasks, isLoading);
   
   const { session, isSyncEnabled, toggleSync, signOut } = useCloudSync();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
