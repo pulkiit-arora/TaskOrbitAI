@@ -3,7 +3,7 @@ import { Task, Priority, Recurrence, Status } from '../types';
 import { formatRecurrenceSummary } from '../utils/taskUtils';
 import Tooltip from './Tooltip';
 import { CommentPopover } from './CommentPopover';
-import { Calendar, RefreshCw, MoreVertical, Archive, ArrowRight, ArrowLeft, Trash2, ArrowUp, ArrowDown, Minus, MessageSquare, Check, Circle, XCircle } from 'lucide-react';
+import { Calendar, RefreshCw, MoreVertical, Archive, ArrowRight, ArrowLeft, Trash2, ArrowUp, ArrowDown, Minus, MessageSquare, Check, Circle, XCircle, Paperclip } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -167,6 +167,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   <MessageSquare size={10} className="text-gray-400 flex-shrink-0 cursor-pointer hover:text-blue-600 transition-colors" />
                 </CommentPopover>
               )}
+              {task.attachments && task.attachments.length > 0 && (
+                <Tooltip content={`${task.attachments.length} attachment${task.attachments.length === 1 ? '' : 's'}`}>
+                  <Paperclip size={10} className="text-gray-400 flex-shrink-0 ml-1.5" />
+                </Tooltip>
+              )}
             </h3>
 
             {/* Footer Row: Date & Tags */}
@@ -282,6 +287,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   <span className="text-[10px] font-medium">{task.comments.length}</span>
                 </span>
               </CommentPopover>
+            )}
+            {task.attachments && task.attachments.length > 0 && (
+              <Tooltip content={`${task.attachments.length} attachment${task.attachments.length === 1 ? '' : 's'}`}>
+                <span className="ml-2 text-gray-400 flex items-center gap-1 text-xs hover:text-blue-600 transition-colors bg-gray-50 dark:bg-gray-700/50 px-1.5 py-0.5 rounded-full border border-gray-100 dark:border-gray-700">
+                  <Paperclip size={12} />
+                  <span className="text-[10px] font-medium">{task.attachments.length}</span>
+                </span>
+              </Tooltip>
             )}
             {showFutureIndicator && <span className="ml-2 text-[10px] font-normal text-gray-400 bg-gray-100 px-1 rounded flex-shrink-0">(Future)</span>}
           </h3>

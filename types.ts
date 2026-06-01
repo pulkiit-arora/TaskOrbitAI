@@ -85,6 +85,17 @@ export interface Task {
   planOrder?: number;
   // Custom board status
   customStatus?: string;
+  // File attachments
+  attachments?: TaskAttachment[];
+}
+
+export interface TaskAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  data: string; // Base64 representation
+  createdAt: number;
 }
 
 export interface AISuggestion {

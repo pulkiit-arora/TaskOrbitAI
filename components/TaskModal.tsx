@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Task, Priority, Recurrence, Status, AISuggestion, Tag, Subtask, TimeEntry } from '../types';
-import { X, Sparkles, Plus, ChevronDown, Activity, AlertCircle, RotateCcw, Copy, Trash2 } from 'lucide-react';
+import { Task, Priority, Recurrence, Status, AISuggestion, Tag, Subtask, TimeEntry, TaskAttachment } from '../types';
+import { X, Sparkles, Plus, ChevronDown, Activity, AlertCircle, RotateCcw, Copy, Trash2, Paperclip, File, FileText, Image, Music, Video, Download, Edit2 } from 'lucide-react';
 import { Button } from './Button';
 import { TagPicker } from './TagPicker';
 import { SubtaskList } from './SubtaskList';
@@ -50,6 +50,97 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [estimatedMinutes, setEstimatedMinutes] = useState<number>(25);
 
+  const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [editingAttachmentId, setEditingAttachmentId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    setUploadError(null);
+
+    Array.from(files).forEach((file: File) => {
+      if (file.size > MAX_FILE_SIZE) {
+        setUploadError(`File "${file.name}" exceeds the 5MB limit.`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Data = event.target?.result as string;
+        if (base64Data) {
+          const newAttachment: TaskAttachment = {
+            id: crypto.randomUUID(),
+            name: file.name,
+            size: file.size,
+            type: file.type || 'application/octet-stream',
+            data: base64Data,
+            createdAt: Date.now(),
+          };
+          setAttachments((prev) => [...prev, newAttachment]);
+        }
+      };
+      reader.onerror = () => {
+        setUploadError(`Failed to read file "${file.name}".`);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Clear input so the same file can be uploaded again
+    e.target.value = '';
+  };
+
+  const handleDeleteAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((att) => att.id !== id));
+  };
+
+  const handleRenameStart = (att: TaskAttachment) => {
+    setEditingAttachmentId(att.id);
+    setRenameValue(att.name);
+  };
+
+  const handleRenameSave = (id: string) => {
+    if (!renameValue.trim()) {
+      setEditingAttachmentId(null);
+      return;
+    }
+    setAttachments((prev) =>
+      prev.map((att) => (att.id === id ? { ...att, name: renameValue.trim() } : att))
+    );
+    setEditingAttachmentId(null);
+  };
+
+  const handleDownload = (att: TaskAttachment) => {
+    const link = document.createElement('a');
+    link.href = att.data;
+    link.download = att.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith('image/')) return Image;
+    if (mimeType.startsWith('video/')) return Video;
+    if (mimeType.startsWith('audio/')) return Music;
+    if (mimeType.includes('pdf')) return FileText;
+    if (mimeType.includes('msword') || mimeType.includes('officedocument.wordprocessingml')) return FileText;
+    if (mimeType.includes('excel') || mimeType.includes('officedocument.spreadsheetml') || mimeType.includes('csv')) return FileText;
+    return File;
+  };
+
   // 'single' = update only this instance (exception). 'series' = update base task.
   const [saveScope, setSaveScope] = useState<'single' | 'series'>('single');
 
@@ -75,6 +166,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       setSubtasks(task.subtasks || []);
       setTimeEntries(task.timeEntries || []);
       setEstimatedMinutes(task.estimatedMinutes || 25);
+      setAttachments(task.attachments || []);
     } else {
       resetForm();
     }
@@ -113,6 +205,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setSubtasks([]);
     setTimeEntries([]);
     setEstimatedMinutes(25);
+    setAttachments([]);
+    setUploadError(null);
   };
 
   const executeSave = (isCopy: boolean = false) => {
@@ -153,6 +247,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       subtasks: isCopy ? subtasks.map(st => ({ ...st, id: crypto.randomUUID() })) : subtasks,
       timeEntries: isCopy ? [] : timeEntries,
       estimatedMinutes: estimatedMinutes,
+      attachments: isCopy ? attachments.map(att => ({ ...att, id: crypto.randomUUID() })) : attachments,
     }, isCopy ? 'single' : saveScope);
     onClose();
   };
@@ -398,6 +493,113 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                   >Add</Button>
                 </div>
               </div>
+            </div>
+
+            {/* Attachments Section */}
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                  <Paperclip size={16} /> Attachments
+                </label>
+                <label className="cursor-pointer text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
+                  <Plus size={14} /> Add Files
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </label>
+              </div>
+
+              {uploadError && (
+                <div className="text-xs text-red-500 flex items-center gap-1 mb-2 bg-red-50 dark:bg-red-950/20 p-2 rounded-lg border border-red-150 dark:border-red-900/50">
+                  <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              {attachments.length === 0 ? (
+                <div className="text-xs text-gray-400 italic">No attachments yet. Upload documents or images.</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                  {attachments.map((att) => {
+                    const FileIcon = getFileIcon(att.type);
+                    const isImg = att.type.startsWith('image/');
+
+                    return (
+                      <div
+                        key={att.id}
+                        className="flex items-center gap-2.5 bg-gray-50 dark:bg-gray-700/20 p-2.5 rounded-xl border border-gray-200/50 dark:border-gray-700/50 group relative hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+                      >
+                        {isImg ? (
+                          <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                            <img src={att.data} alt={att.name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg border border-gray-200 dark:border-gray-700 flex-shrink-0 bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 dark:text-blue-400">
+                            <FileIcon size={20} />
+                          </div>
+                        )}
+
+                        <div className="flex-1 min-w-0 pr-20">
+                          {editingAttachmentId === att.id ? (
+                            <input
+                              type="text"
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              onBlur={() => handleRenameSave(att.id)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRenameSave(att.id);
+                                if (e.key === 'Escape') setEditingAttachmentId(null);
+                              }}
+                              className="w-full px-1.5 py-0.5 text-xs border border-blue-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 outline-none"
+                              autoFocus
+                            />
+                          ) : (
+                            <>
+                              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate" title={att.name}>
+                                {att.name}
+                              </p>
+                              <p className="text-[10px] text-gray-400">
+                                {formatFileSize(att.size)}
+                              </p>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="absolute right-2 flex items-center gap-1 bg-gradient-to-l from-gray-50 via-gray-50 to-transparent dark:from-gray-800/80 pl-4 py-1 rounded-r-xl">
+                          <button
+                            onClick={() => handleDownload(att)}
+                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                            title="Download"
+                            type="button"
+                          >
+                            <Download size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleRenameStart(att)}
+                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                            title="Rename"
+                            type="button"
+                          >
+                            <Edit2 size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAttachment(att.id)}
+                            className="p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-gray-455 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                            title="Delete"
+                            type="button"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
