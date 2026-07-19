@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Task, Status, Priority, Tag, Recurrence } from '../types';
 import { TaskCard } from './TaskCard';
 import { Calendar, ChevronDown, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
-import { doesTaskOccurOnDate, isOpen } from '../utils/taskUtils';
+import { doesTaskOccurOnDate, isOpen, isSameDay } from '../utils/taskUtils';
 import { StatusFilter } from './StatusFilter';
 
 interface TodayViewProps {
@@ -67,12 +67,12 @@ export const TodayView: React.FC<TodayViewProps> = ({
 
             for (let d = new Date(scanStart); d < today; d.setDate(d.getDate() + 1)) {
                 if (doesTaskOccurOnDate(task, d)) {
-                    const dateTime = new Date(d).setHours(0, 0, 0, 0);
+                    const dateTime = new Date(d); dateTime.setHours(0, 0, 0, 0);
                     const hasHistoryRecord = tasks.some(t =>
                         (t.status === Status.DONE || t.status === Status.EXPIRED) &&
-                        t.title === task.title &&
+                        t.seriesId === task.id &&
                         t.dueDate &&
-                        new Date(t.dueDate).setHours(0, 0, 0, 0) === dateTime
+                        isSameDay(t.dueDate, dateTime)
                     );
                     if (!hasHistoryRecord) {
                         result.push({
@@ -114,8 +114,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                 if (!isRealInstance) {
                     const hasHistory = tasks.some(tt => {
                         if (!tt.dueDate) return false;
-                        const dd = new Date(tt.dueDate); dd.setHours(0, 0, 0, 0);
-                        return dd.getTime() === today.getTime() && tt.title === task.title && tt.recurrence === Recurrence.NONE && tt.id !== task.id;
+                        return isSameDay(tt.dueDate, today) && tt.seriesId === task.id && (tt.status === Status.DONE || tt.status === Status.EXPIRED);
                     });
                     if (hasHistory) return;
                 }

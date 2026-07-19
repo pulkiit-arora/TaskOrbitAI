@@ -1,6 +1,6 @@
 import React from 'react';
 import { Task, Priority, Status, Recurrence, Tag } from '../types';
-import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
+import { isNthWeekdayOfMonth, doesTaskOccurOnDate, isSameDay } from '../utils/taskUtils';
 import { TaskCard } from './TaskCard';
 import { Plus, Filter, Tag as TagIcon, ChevronRight, Pin } from 'lucide-react';
 import { StatusFilter } from './StatusFilter';
@@ -83,12 +83,12 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
 
       for (let d = new Date(scanStart); d < today; d.setDate(d.getDate() + 1)) {
         if (doesTaskOccurOnDate(task, d)) {
-          const dateTime = new Date(d).setHours(0, 0, 0, 0);
+          const dateTime = new Date(d); dateTime.setHours(0, 0, 0, 0);
           const hasHistoryRecord = tasks.some(t =>
             (t.status === Status.DONE || t.status === Status.EXPIRED) &&
-            t.title === task.title &&
+            t.seriesId === task.id &&
             t.dueDate &&
-            new Date(t.dueDate).setHours(0, 0, 0, 0) === dateTime
+            isSameDay(t.dueDate, dateTime)
           );
           if (!hasHistoryRecord) {
             result.push({
@@ -109,11 +109,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
     if (!t.dueDate || !isOpen(t)) return false;
     const d = new Date(t.dueDate);
     d.setHours(0, 0, 0, 0);
-    if (t.excludedDates && t.excludedDates.some(exDate => {
-      const ex = new Date(exDate);
-      ex.setHours(0, 0, 0, 0);
-      return ex.getTime() === d.getTime();
-    })) {
+    if (t.excludedDates && t.excludedDates.some(exDate => isSameDay(exDate, d))) {
       return false;
     }
     return d >= weekStart && d <= weekEnd;
@@ -145,9 +141,9 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
       if (doesTaskOccurOnDate(task, d)) {
         const hasDoneInstance = tasks.some(t =>
           t.status === Status.DONE &&
-          t.title === task.title &&
+          t.seriesId === task.id &&
           t.dueDate &&
-          new Date(t.dueDate).setHours(0, 0, 0, 0) === d.getTime()
+          isSameDay(t.dueDate, d)
         );
 
         if (!hasDoneInstance) {
@@ -204,8 +200,7 @@ export const WeekView: React.FC<WeekViewProps> = ({ currentDate, tasks, onEditTa
           const occStart = new Date(date); occStart.setHours(0, 0, 0, 0);
           const hasHistoryRecord = tasks.some(tt => {
             if (!tt.dueDate) return false;
-            const dd = new Date(tt.dueDate); dd.setHours(0, 0, 0, 0);
-            return dd.getTime() === occStart.getTime() && tt.title === task.title && tt.recurrence === Recurrence.NONE && tt.id !== task.id;
+            return isSameDay(tt.dueDate, occStart) && tt.seriesId === task.id && (tt.status === Status.DONE || tt.status === Status.EXPIRED);
           });
           if (hasHistoryRecord) {
             return;

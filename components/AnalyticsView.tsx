@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Task, Status, Priority, Recurrence } from '../types';
 import { CheckCircle, Clock, AlertCircle, Activity, TrendingUp, Calendar, Filter } from 'lucide-react';
-import { doesTaskOccurOnDate } from '../utils/taskUtils';
+import { doesTaskOccurOnDate, isSameDay } from '../utils/taskUtils';
 import { HeatmapPanel } from './HeatmapPanel';
 import { TagAnalyticsPanel } from './TagAnalyticsPanel';
 import { WeeklyReport } from './WeeklyReport';
@@ -213,11 +213,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ tasks, onEditTask,
                         //  But I shouldn't count it as "Active" if I already have a DONE task for it.)
 
                         const hasHistory = tasks.some(t =>
-                            t.status === Status.DONE &&
-                            t.title === task.title &&
+                            (t.status === Status.DONE || t.status === Status.EXPIRED) &&
+                            t.seriesId === task.id &&
                             t.dueDate &&
-                            new Date(t.dueDate).setHours(0, 0, 0, 0) === currentDayStart.getTime()
-                            && t.id !== task.id // different ID (the history item)
+                            isSameDay(t.dueDate, currentDayStart)
                         );
 
                         if (!hasHistory) {

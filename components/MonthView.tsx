@@ -1,6 +1,6 @@
 import React from 'react';
 import { Task, Priority, Status, Recurrence, Tag } from '../types';
-import { isNthWeekdayOfMonth, doesTaskOccurOnDate } from '../utils/taskUtils';
+import { isNthWeekdayOfMonth, doesTaskOccurOnDate, isSameDay } from '../utils/taskUtils';
 import { Check, Circle, Plus, ArrowUp, ArrowDown, Minus, RefreshCw, Filter, Tag as TagIcon, XCircle, LayoutGrid, List, MessageSquare, Flame, Clock } from 'lucide-react';
 import { StatusFilter } from './StatusFilter';
 import { TagFilterBar } from './TagFilterBar';
@@ -75,12 +75,12 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
 
       for (let d = new Date(scanStart); d < today; d.setDate(d.getDate() + 1)) {
         if (doesTaskOccurOnDate(task, d)) {
-          const dateTime = new Date(d).setHours(0, 0, 0, 0);
+          const dateTime = new Date(d); dateTime.setHours(0, 0, 0, 0);
           const hasHistoryRecord = tasks.some(t =>
             (t.status === Status.DONE || t.status === Status.EXPIRED) &&
-            t.title === task.title &&
+            t.seriesId === task.id &&
             t.dueDate &&
-            new Date(t.dueDate).setHours(0, 0, 0, 0) === dateTime
+            isSameDay(t.dueDate, dateTime)
           );
           if (!hasHistoryRecord) {
             result.push({
@@ -117,9 +117,9 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
       if (doesTaskOccurOnDate(task, d)) {
         const hasDoneInstance = tasks.some(t =>
           t.status === Status.DONE &&
-          t.title === task.title &&
+          t.seriesId === task.id &&
           t.dueDate &&
-          new Date(t.dueDate).setHours(0, 0, 0, 0) === d.getTime()
+          isSameDay(t.dueDate, d)
         );
         if (!hasDoneInstance) {
           occurrences++;
@@ -185,8 +185,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
           const occStart = new Date(occurrenceISO); occStart.setHours(0, 0, 0, 0);
           const hasHistoryRecord = tasks.some(tt => {
             if (!tt.dueDate) return false;
-            const dd = new Date(tt.dueDate); dd.setHours(0, 0, 0, 0);
-            return dd.getTime() === occStart.getTime() && tt.title === task.title && tt.recurrence === Recurrence.NONE && tt.id !== task.id;
+            return isSameDay(tt.dueDate, occStart) && tt.seriesId === task.id && (tt.status === Status.DONE || tt.status === Status.EXPIRED);
           });
           if (hasHistoryRecord) {
             return;
@@ -487,7 +486,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ currentDate, tasks, onEdit
               tasks.forEach(task => {
                 if (task.status === Status.ARCHIVED) return;
                 if (doesTaskOccurOnDate(task, d)) {
-                  const hasDone = tasks.some(t => t.status === Status.DONE && t.title === task.title && t.dueDate && new Date(t.dueDate).setHours(0, 0, 0, 0) === d.getTime());
+                  const hasDone = tasks.some(t => t.status === Status.DONE && t.seriesId === task.id && t.dueDate && isSameDay(t.dueDate, d));
                   if (hasDone) return;
                   if (task.status === Status.DONE && task.recurrence !== Recurrence.NONE && task.dueDate && new Date(task.dueDate).setHours(0, 0, 0, 0) !== d.getTime()) return;
 

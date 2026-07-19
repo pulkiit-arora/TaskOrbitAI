@@ -256,19 +256,39 @@ export const formatRecurrenceSummary = (task: Task): string => {
 };
 
 
+export const isSameDay = (dateString: string | undefined | null, checkDate: Date): boolean => {
+  if (!dateString) return false;
+  try {
+    const ex = new Date(dateString);
+    if (ex.toDateString() === checkDate.toDateString()) return true;
+    
+    ex.setHours(0, 0, 0, 0);
+    if (ex.getTime() === checkDate.getTime()) return true;
+    
+    if (dateString.includes('T00:00:00.000Z') || dateString.includes('T12:00:00.000Z')) {
+        const utcStr = dateString.split('T')[0];
+        const localMonth = (checkDate.getMonth() + 1).toString().padStart(2, '0');
+        const localDay = checkDate.getDate().toString().padStart(2, '0');
+        const localStr = `${checkDate.getFullYear()}-${localMonth}-${localDay}`;
+        if (utcStr === localStr) return true;
+    }
+
+    const isoPrefix = dateString.split('T')[0];
+    const localMonth = (checkDate.getMonth() + 1).toString().padStart(2, '0');
+    const localDay = checkDate.getDate().toString().padStart(2, '0');
+    const localStr = `${checkDate.getFullYear()}-${localMonth}-${localDay}`;
+    if (isoPrefix === localStr) return true;
+  } catch(e) {}
+
+  return false;
+};
+
 export const doesTaskOccurOnDate = (task: Task, date: Date): boolean => {
   const checkDate = new Date(date);
   checkDate.setHours(0, 0, 0, 0);
 
   // Check for exclusions (deleted/moved occurrences)
-  if (task.excludedDates && task.excludedDates.some(d => {
-    const ex = new Date(d);
-    // Robust check: Compare local date strings to avoid timestamp/hour issues
-    if (ex.toDateString() === checkDate.toDateString()) return true;
-
-    ex.setHours(0, 0, 0, 0);
-    return ex.getTime() === checkDate.getTime();
-  })) {
+  if (task.excludedDates && task.excludedDates.some(d => isSameDay(d, checkDate))) {
     return false;
   }
 
