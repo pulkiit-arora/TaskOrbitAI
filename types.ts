@@ -85,8 +85,10 @@ export interface Task {
   planOrder?: number;
   // Custom board status
   customStatus?: string;
-  // File attachments
   attachments?: TaskAttachment[];
+  // CRDT sync fields
+  updatedAt?: number;
+  isDeleted?: boolean;
 }
 
 export interface TaskAttachment {

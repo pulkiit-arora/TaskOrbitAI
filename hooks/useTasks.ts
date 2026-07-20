@@ -170,9 +170,43 @@ const INITIAL_TASKS: Task[] = [
   }
 ];
 
+const mergeTasks = (local: Task[], cloud: Task[]): Task[] => {
+  const taskMap = new Map<string, Task>();
+  local.forEach(t => taskMap.set(t.id, t));
+  cloud.forEach(cloudTask => {
+    const localTask = taskMap.get(cloudTask.id);
+    if (!localTask) {
+      taskMap.set(cloudTask.id, cloudTask);
+    } else {
+      const localTime = localTask.updatedAt || localTask.createdAt || 0;
+      const cloudTime = cloudTask.updatedAt || cloudTask.createdAt || 0;
+      if (cloudTime > localTime) {
+        taskMap.set(cloudTask.id, cloudTask);
+      }
+    }
+  });
+  return Array.from(taskMap.values());
+};
+
 export const useTasks = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setInternalTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const setTasks = (action: React.SetStateAction<Task[]>) => {
+    setInternalTasks(prev => {
+      const next = typeof action === 'function' ? (action as (prevState: Task[]) => Task[])(prev) : action;
+      return next.map(t => {
+        const old = prev.find(p => p.id === t.id);
+        if (old && old !== t) {
+          return { ...t, updatedAt: Date.now() };
+        }
+        if (!old && !t.updatedAt) {
+          return { ...t, updatedAt: Date.now() };
+        }
+        return t;
+      });
+    });
+  };
 
   // Load from DB on Mount
   useEffect(() => {
@@ -219,8 +253,8 @@ export const useTasks = () => {
                 if ((t.status as any) === 'NEXT_ACTION') return { ...t, status: Status.INBOX };
                 return t;
               });
-              loadedTasks = patchedCloud;
-              saveTasksToDB(patchedCloud); // Persist down to local DB
+              loadedTasks = mergeTasks(loadedTasks, patchedCloud);
+              saveTasksToDB(loadedTasks); // Persist merged down to local DB
             }
           }
         }
@@ -268,8 +302,11 @@ export const useTasks = () => {
                  }
              }
              if (cloudRes.tasks && cloudRes.tasks.length > 0) {
-               setTasks(cloudRes.tasks);
-               saveTasksToDB(cloudRes.tasks);
+               setInternalTasks(prev => {
+                 const merged = mergeTasks(prev, cloudRes.tasks);
+                 saveTasksToDB(merged);
+                 return merged;
+               });
              }
            }
          });

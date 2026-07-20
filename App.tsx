@@ -698,7 +698,7 @@ const App: React.FC = () => {
         if (scope === 'series') {
           // Delete the BASE task (entire series) AND all related history items
           const baseTaskId = deleteConfirmation.taskId.split('-virtual-')[0];
-          setTasks(prev => prev.filter(t => t.id !== baseTaskId && t.seriesId !== baseTaskId));
+          setTasks(prev => prev.map(t => (t.id === baseTaskId || t.seriesId === baseTaskId) ? { ...t, isDeleted: true } : t));
         } else {
           // Delete just this occurrence (default) - add to excluded dates
           const baseTaskId = deleteConfirmation.taskId.split('-virtual-')[0];
@@ -722,11 +722,11 @@ const App: React.FC = () => {
         if (task && task.recurrence !== Recurrence.NONE && scope === 'series') {
           // User wants to delete the entire series of a base recurring task
           // Delete the base task AND all related history items
-          setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId && t.seriesId !== deleteConfirmation.taskId));
+          setTasks(prev => prev.map(t => (t.id === deleteConfirmation.taskId || t.seriesId === deleteConfirmation.taskId) ? { ...t, isDeleted: true } : t));
         } else {
           // Single occurrence delete OR history item delete OR non-recurring task
           // Only delete this specific task, not related items
-          setTasks(prev => prev.filter(t => t.id !== deleteConfirmation.taskId));
+          setTasks(prev => prev.map(t => t.id === deleteConfirmation.taskId ? { ...t, isDeleted: true } : t));
         }
       }
 
@@ -866,8 +866,10 @@ const App: React.FC = () => {
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
+  const activeTasks = React.useMemo(() => tasks.filter(t => !t.isDeleted), [tasks]);
+
   const filteredTasks = React.useMemo(() => {
-    let list = tasks.filter(t => showArchived ? true : t.status !== Status.ARCHIVED);
+    let list = activeTasks.filter(t => showArchived ? true : t.status !== Status.ARCHIVED);
 
     if (priorityFilter.length > 0) {
       list = list.filter(t => priorityFilter.includes(t.priority));
@@ -894,7 +896,7 @@ const App: React.FC = () => {
     }
 
     return list;
-  }, [tasks, showArchived, searchQuery, priorityFilter, selectedStatuses, tagFilter]);
+  }, [activeTasks, showArchived, searchQuery, priorityFilter, selectedStatuses, tagFilter]);
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -928,7 +930,7 @@ const App: React.FC = () => {
 
         {/* Right: XP Bar, Legend & Settings */}
         <div className="flex items-center gap-4">
-          <XPBar tasks={tasks} />
+          <XPBar tasks={activeTasks} />
           <Legend />
           <SettingsMenu
             darkMode={darkMode}
@@ -962,7 +964,7 @@ const App: React.FC = () => {
         showArchived={showArchived}
         setShowArchived={setShowArchived}
         onAddTask={() => openModal()}
-        tasks={tasks}
+        tasks={activeTasks}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
@@ -1053,7 +1055,7 @@ const App: React.FC = () => {
           />
         )}
 
-        {viewMode === 'analytics' && <AnalyticsView tasks={tasks} onEditTask={openModal} onToggleDone={(id) => updateTaskStatus(id, tasks.find(t => t.id === id)?.status === Status.DONE ? Status.NEXT_ACTION : Status.DONE)} />}
+        {viewMode === 'analytics' && <AnalyticsView tasks={activeTasks} onEditTask={openModal} onToggleDone={(id) => updateTaskStatus(id, tasks.find(t => t.id === id)?.status === Status.DONE ? Status.NEXT_ACTION : Status.DONE)} />}
 
         {viewMode === 'planner' && (
           <PlannerView
