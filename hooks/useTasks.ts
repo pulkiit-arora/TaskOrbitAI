@@ -180,7 +180,7 @@ const mergeTasks = (local: Task[], cloud: Task[]): Task[] => {
     } else {
       const localTime = localTask.updatedAt || localTask.createdAt || 0;
       const cloudTime = cloudTask.updatedAt || cloudTask.createdAt || 0;
-      if (cloudTime > localTime) {
+      if (cloudTime >= localTime) {
         taskMap.set(cloudTask.id, cloudTask);
       }
     }
