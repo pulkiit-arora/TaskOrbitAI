@@ -337,17 +337,47 @@ export const useTasks = () => {
     return () => clearTimeout(timer);
   }, [tasks, isLoading]);
 
-  // Save on Visibility Change
+  // Save on Visibility Change & Auto-fetch on Focus
   useEffect(() => {
     if (isLoading) return;
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        saveTasksToDB(tasks);
+    const pullAndMerge = async () => {
+      const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
+      if (!isSyncEnabled) return;
+      
+      try {
+        const cloudRes = await pullTasksFromCloud();
+        if (cloudRes && cloudRes.tasks && cloudRes.tasks.length > 0) {
+          setInternalTasks(prev => {
+            const merged = mergeTasks(prev, cloudRes.tasks);
+            saveTasksToDB(merged).catch(e => console.error("Auto-save post-merge failed", e));
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error("Focus sync failed", err);
       }
     };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        saveTasksToDB(tasks).catch(e => console.error("Visibility save failed", e));
+      } else if (document.visibilityState === 'visible') {
+        pullAndMerge();
+      }
+    };
+
+    const handleFocus = () => {
+      pullAndMerge();
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [tasks, isLoading]);
 
 
