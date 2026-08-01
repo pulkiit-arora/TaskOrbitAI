@@ -9,12 +9,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder',
-  {
-    global: {
-      fetch: (...args) => {
-        return fetch(args[0], { ...args[1], keepalive: true });
-      }
-    }
-  }
+  supabaseAnonKey || 'placeholder'
 );

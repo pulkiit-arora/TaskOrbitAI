@@ -168,6 +168,34 @@ const syncTasksToCloud = async (tasks: Task[]) => {
   }
 };
 
+export const checkCloudUpdates = async (lastSyncTime: number): Promise<boolean> => {
+  try {
+    const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
+    if (!isSyncEnabled) return false;
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return false;
+    
+    const { data, error } = await supabase
+       .from('tasks')
+       .select('updated_at')
+       .eq('user_id', session.user.id)
+       .order('updated_at', { ascending: false })
+       .limit(1);
+       
+    if (error) return false;
+    
+    if (data && data.length > 0) {
+       const cloudTime = new Date(data[0].updated_at).getTime();
+       // Add a small buffer (e.g. 1 second) to account for slight timezone/clock skews
+       return cloudTime > (lastSyncTime + 1000); 
+    }
+  } catch (e) {
+    // Ignore background check errors
+  }
+  return false;
+};
+
 export const pullTasksFromCloud = async (): Promise<{tasks: Task[], preferences: any} | null> => {
   try {
     const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Task, Status, Recurrence, Priority } from '../types';
-import { loadTasksFromDB, saveTasksToDB, pullTasksFromCloud } from '../services/storage';
+import { loadTasksFromDB, saveTasksToDB, pullTasksFromCloud, checkCloudUpdates } from '../services/storage';
 import { supabase } from '../lib/supabaseClient';
 import { calculateNextDueDate } from '../utils/taskUtils';
 import { processTaskStatusChange } from '../utils/taskLogic';
@@ -191,11 +191,12 @@ const mergeTasks = (local: Task[], cloud: Task[]): Task[] => {
 export const useTasks = () => {
   const [tasks, setInternalTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const latestTasksRef = useRef<Task[]>([]);
 
   const setTasks = (action: React.SetStateAction<Task[]>) => {
     setInternalTasks(prev => {
       const next = typeof action === 'function' ? (action as (prevState: Task[]) => Task[])(prev) : action;
-      return next.map(t => {
+      const finalTasks = next.map(t => {
         const old = prev.find(p => p.id === t.id);
         if (old && old !== t) {
           return { ...t, updatedAt: Date.now() };
@@ -205,6 +206,8 @@ export const useTasks = () => {
         }
         return t;
       });
+      latestTasksRef.current = finalTasks;
+      return finalTasks;
     });
   };
 
@@ -302,11 +305,12 @@ export const useTasks = () => {
                  }
              }
              if (cloudRes.tasks && cloudRes.tasks.length > 0) {
-               setInternalTasks(prev => {
-                 const merged = mergeTasks(prev, cloudRes.tasks);
-                 saveTasksToDB(merged);
-                 return merged;
-               });
+                setInternalTasks(prev => {
+                  const merged = mergeTasks(prev, cloudRes.tasks);
+                  latestTasksRef.current = merged;
+                  saveTasksToDB(merged);
+                  return merged;
+                });
              }
            }
          });
@@ -337,9 +341,13 @@ export const useTasks = () => {
     return () => clearTimeout(timer);
   }, [tasks, isLoading]);
 
-  // Save on Visibility Change & Auto-fetch on Focus
+  // Removed old tasksRef that was lagging one render behind
+
+  // Save on Visibility Change, Auto-fetch on Focus, & Battery-Friendly Polling
   useEffect(() => {
     if (isLoading) return;
+
+    let lastSyncTime = Date.now();
 
     const pullAndMerge = async () => {
       const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
@@ -350,18 +358,20 @@ export const useTasks = () => {
         if (cloudRes && cloudRes.tasks && cloudRes.tasks.length > 0) {
           setInternalTasks(prev => {
             const merged = mergeTasks(prev, cloudRes.tasks);
+            latestTasksRef.current = merged;
             saveTasksToDB(merged).catch(e => console.error("Auto-save post-merge failed", e));
             return merged;
           });
         }
+        lastSyncTime = Date.now();
       } catch (err) {
-        console.error("Focus sync failed", err);
+        console.error("Sync failed", err);
       }
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        saveTasksToDB(tasks).catch(e => console.error("Visibility save failed", e));
+        saveTasksToDB(latestTasksRef.current).catch(e => console.error("Visibility save failed", e));
       } else if (document.visibilityState === 'visible') {
         pullAndMerge();
       }
@@ -374,11 +384,23 @@ export const useTasks = () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
     
+    // Battery-Friendly Polling: Only check for updates when the tab is visible and idle.
+    // Checks every 30 seconds using a lightweight request that only pulls a timestamp.
+    const pollInterval = setInterval(async () => {
+      if (document.visibilityState === 'visible') {
+        const hasUpdates = await checkCloudUpdates(lastSyncTime);
+        if (hasUpdates) {
+          pullAndMerge();
+        }
+      }
+    }, 30000);
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
+      clearInterval(pollInterval);
     };
-  }, [tasks, isLoading]);
+  }, [isLoading]);
 
 
 
