@@ -40,6 +40,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
   const [recurrenceMonthWeekday, setRecurrenceMonthWeekday] = useState<number | undefined>(undefined);
   const [recurrenceMonths, setRecurrenceMonths] = useState<number[]>([]);
 
+  const [hasReminder, setHasReminder] = useState(false);
+  const [reminderDays, setReminderDays] = useState<number>(1);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
   // Progress comments
@@ -207,6 +210,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
     setEstimatedMinutes(25);
     setAttachments([]);
     setUploadError(null);
+    setHasReminder(false);
+    setReminderDays(1);
   };
 
   const executeSave = (isCopy: boolean = false) => {
@@ -225,7 +230,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
 
     const isoRecurrenceEnd = formatISO(recurrenceEnd);
 
-    onSave({
+    const mainTask: Partial<Task> = {
       id: isCopy ? undefined : task?.id,
       title: isCopy && title === task?.title ? `${title} (Copy)` : title,
       description,
@@ -248,7 +253,51 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
       timeEntries: isCopy ? [] : timeEntries,
       estimatedMinutes: estimatedMinutes,
       attachments: isCopy ? attachments.map(att => ({ ...att, id: crypto.randomUUID() })) : attachments,
-    }, isCopy ? 'single' : saveScope);
+    };
+
+    let reminderTask: Partial<Task> | null = null;
+    if (hasReminder && dueDate) {
+      const reminderTag = availableTags?.find(t => t.label.toLowerCase() === 'reminder') || {
+        id: crypto.randomUUID(),
+        label: 'Reminder',
+        color: '#f59e0b'
+      };
+
+      const d = new Date(`${dueDate}T12:00:00`);
+      d.setDate(d.getDate() - reminderDays);
+
+      reminderTask = {
+        title: `Reminder: ${mainTask.title}`,
+        description: `Reminder for task: ${mainTask.title}`,
+        priority: Priority.HIGH,
+        status: Status.INBOX,
+        dueDate: d.toISOString(),
+        createdAt: Date.now(),
+        tags: [reminderTag],
+        recurrence: mainTask.recurrence || Recurrence.NONE,
+        recurrenceInterval: mainTask.recurrenceInterval,
+        recurrenceWeekdays: mainTask.recurrenceWeekdays,
+        recurrenceMonthDay: mainTask.recurrenceMonthDay,
+        recurrenceMonthNth: mainTask.recurrenceMonthNth,
+        recurrenceMonthWeekday: mainTask.recurrenceMonthWeekday,
+        recurrenceMonths: mainTask.recurrenceMonths,
+        recurrenceStart: d.toISOString(),
+      };
+    }
+
+    if (reminderTask) {
+      if (!mainTask.id && onSaveMultiple) {
+        onSaveMultiple([mainTask, reminderTask]);
+      } else {
+        onSave(mainTask, isCopy ? 'single' : saveScope);
+        if (onSaveMultiple) {
+          onSaveMultiple([reminderTask]);
+        }
+      }
+    } else {
+      onSave(mainTask, isCopy ? 'single' : saveScope);
+    }
+
     onClose();
   };
 
@@ -650,6 +699,33 @@ export const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, o
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
+              
+              {dueDate && (
+                <div className="mt-3 p-3 border border-blue-100 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-800/30 rounded-lg">
+                  <label className="flex items-center gap-2 cursor-pointer mb-2">
+                    <input
+                      type="checkbox"
+                      checked={hasReminder}
+                      onChange={(e) => setHasReminder(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Set Reminder</span>
+                  </label>
+                  {hasReminder && (
+                    <div className="flex items-center gap-2 pl-6">
+                      <input
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={reminderDays}
+                        onChange={(e) => setReminderDays(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">days before due date</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="border-t border-gray-100 pt-4 mt-2">
