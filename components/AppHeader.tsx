@@ -168,7 +168,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <Button
               variant="secondary"
               onClick={() => navigateDate('today')}
-              className="hidden xl:flex"
+              className="hidden sm:flex"
               title="Go to Today"
             >
               Today
