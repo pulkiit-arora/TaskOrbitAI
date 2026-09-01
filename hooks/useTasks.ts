@@ -3,7 +3,7 @@ import { Task, Status, Recurrence, Priority } from '../types';
 import { loadTasksFromDB, saveTasksToDB, pullTasksFromCloud, checkCloudUpdates } from '../services/storage';
 import { supabase } from '../lib/supabaseClient';
 import { calculateNextDueDate } from '../utils/taskUtils';
-import { processTaskStatusChange } from '../utils/taskLogic';
+import { processTaskStatusChange, mergeTasks } from '../utils/taskLogic';
 
 const INITIAL_TASKS: Task[] = [
   // ── Daily Recurring ──────────────────────────────────────────────
@@ -169,24 +169,6 @@ const INITIAL_TASKS: Task[] = [
     createdAt: Date.now()
   }
 ];
-
-const mergeTasks = (local: Task[], cloud: Task[]): Task[] => {
-  const taskMap = new Map<string, Task>();
-  local.forEach(t => taskMap.set(t.id, t));
-  cloud.forEach(cloudTask => {
-    const localTask = taskMap.get(cloudTask.id);
-    if (!localTask) {
-      taskMap.set(cloudTask.id, cloudTask);
-    } else {
-      const localTime = localTask.updatedAt || localTask.createdAt || 0;
-      const cloudTime = cloudTask.updatedAt || cloudTask.createdAt || 0;
-      if (cloudTime >= localTime) {
-        taskMap.set(cloudTask.id, cloudTask);
-      }
-    }
-  });
-  return Array.from(taskMap.values());
-};
 
 export const useTasks = () => {
   const [tasks, setInternalTasks] = useState<Task[]>([]);

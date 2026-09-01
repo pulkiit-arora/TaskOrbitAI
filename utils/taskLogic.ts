@@ -123,3 +123,21 @@ export const processTaskStatusChange = (tasks: Task[], taskId: string, newStatus
         return t;
     });
 };
+
+export const mergeTasks = (local: Task[], cloud: Task[]): Task[] => {
+  const taskMap = new Map<string, Task>();
+  local.forEach(t => taskMap.set(t.id, t));
+  cloud.forEach(cloudTask => {
+    const localTask = taskMap.get(cloudTask.id);
+    if (!localTask) {
+      taskMap.set(cloudTask.id, cloudTask);
+    } else {
+      const localTime = localTask.updatedAt || localTask.createdAt || 0;
+      const cloudTime = cloudTask.updatedAt || cloudTask.createdAt || 0;
+      if (cloudTime >= localTime) {
+        taskMap.set(cloudTask.id, cloudTask);
+      }
+    }
+  });
+  return Array.from(taskMap.values());
+};

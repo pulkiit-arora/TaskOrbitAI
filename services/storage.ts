@@ -1,5 +1,6 @@
 import { Task, Status, Priority, Recurrence } from '../types';
 import { supabase } from '../lib/supabaseClient';
+import { mergeTasks } from '../utils/taskLogic';
 
 const DB_NAME = 'LifeFlowDB';
 const STORE_NAME = 'tasks';
@@ -95,16 +96,24 @@ const syncTasksToCloud = async (tasks: Task[]) => {
         recurrence: Recurrence.NONE,
         createdAt: Date.now()
     };
-    
-    // Ensure we don't duplicate it
-    const cleanTasks = tasks.filter(t => t.id !== 'sys-lifeflow-preferences');
-    const payload = [...cleanTasks, prefsTask];
-
     const { data: existingRows } = await supabase
       .from('tasks')
-      .select('id, updated_at')
+      .select('id, updated_at, task_data')
       .eq('user_id', session.user.id)
       .order('updated_at', { ascending: false });
+
+    let finalTasksToPush = tasks;
+    if (existingRows && existingRows.length > 0) {
+      const primaryRow = existingRows[0];
+      if (primaryRow.task_data && Array.isArray(primaryRow.task_data)) {
+        const cloudTasks = primaryRow.task_data.filter((t: any) => t.id !== 'sys-lifeflow-preferences');
+        finalTasksToPush = mergeTasks(tasks, cloudTasks as Task[]);
+      }
+    }
+
+    // Ensure we don't duplicate it
+    const cleanTasks = finalTasksToPush.filter(t => t.id !== 'sys-lifeflow-preferences');
+    const payload = [...cleanTasks, prefsTask];
 
     if (existingRows && existingRows.length > 0) {
       const [primaryRow, ...olderRows] = existingRows;
