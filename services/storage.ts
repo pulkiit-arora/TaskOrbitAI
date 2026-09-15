@@ -98,15 +98,23 @@ const syncTasksToCloud = async (tasks: Task[]) => {
     };
     const { data: existingRows } = await supabase
       .from('tasks')
-      .select('id, updated_at, task_data')
+      .select('id, updated_at')
       .eq('user_id', session.user.id)
       .order('updated_at', { ascending: false });
 
     let finalTasksToPush = tasks;
     if (existingRows && existingRows.length > 0) {
       const primaryRow = existingRows[0];
-      if (primaryRow.task_data && Array.isArray(primaryRow.task_data)) {
-        const cloudTasks = primaryRow.task_data.filter((t: any) => t.id !== 'sys-lifeflow-preferences');
+      
+      // Fetch the task_data only for the primary row to avoid statement timeouts
+      const { data: primaryData } = await supabase
+        .from('tasks')
+        .select('task_data')
+        .eq('id', primaryRow.id)
+        .single();
+
+      if (primaryData && primaryData.task_data && Array.isArray(primaryData.task_data)) {
+        const cloudTasks = primaryData.task_data.filter((t: any) => t.id !== 'sys-lifeflow-preferences');
         finalTasksToPush = mergeTasks(tasks, cloudTasks as Task[]);
       }
     }
