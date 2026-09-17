@@ -45,7 +45,7 @@ export const loadTasksFromDB = async (): Promise<Task[]> => {
   }
 };
 
-export const saveTasksToDB = async (tasks: Task[]): Promise<void> => {
+export const saveTasksToDB = async (tasks: Task[], skipCloudSync: boolean = false): Promise<void> => {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -68,7 +68,9 @@ export const saveTasksToDB = async (tasks: Task[]): Promise<void> => {
     throw error;
   } finally {
     // Fire-and-forget sync to Supabase
-    syncTasksToCloud(tasks);
+    if (!skipCloudSync) {
+      syncTasksToCloud(tasks);
+    }
   }
 };
 

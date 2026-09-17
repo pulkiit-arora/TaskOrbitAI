@@ -211,7 +211,7 @@ export const useTasks = () => {
           return t;
         });
         if (needsRestorePatch) {
-          saveTasksToDB(loadedTasks);
+          saveTasksToDB(loadedTasks, true);
         }
         
         // Cloud Sync hook
@@ -239,7 +239,7 @@ export const useTasks = () => {
                 return t;
               });
               loadedTasks = mergeTasks(loadedTasks, patchedCloud);
-              saveTasksToDB(loadedTasks); // Persist merged down to local DB
+              saveTasksToDB(loadedTasks, true); // Persist merged down to local DB without pushing back immediately
             }
           }
         }
@@ -290,7 +290,7 @@ export const useTasks = () => {
                 setInternalTasks(prev => {
                   const merged = mergeTasks(prev, cloudRes.tasks);
                   latestTasksRef.current = merged;
-                  saveTasksToDB(merged);
+                  saveTasksToDB(merged, true);
                   return merged;
                 });
              }
@@ -341,7 +341,7 @@ export const useTasks = () => {
           setInternalTasks(prev => {
             const merged = mergeTasks(prev, cloudRes.tasks);
             latestTasksRef.current = merged;
-            saveTasksToDB(merged).catch(e => console.error("Auto-save post-merge failed", e));
+            saveTasksToDB(merged, true).catch(e => console.error("Auto-save post-merge failed", e));
             return merged;
           });
         }

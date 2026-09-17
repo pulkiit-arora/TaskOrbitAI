@@ -94,15 +94,17 @@ const App: React.FC = () => {
 
   const isFirstRender = useRef(true);
 
+  const tagsString = JSON.stringify(tags);
   useEffect(() => {
-    localStorage.setItem('lifeflow-tags', JSON.stringify(tags));
+    localStorage.setItem('lifeflow-tags', tagsString);
     if (!isFirstRender.current && isSyncEnabled) forceCloudSync();
-  }, [tags, isSyncEnabled]);
+  }, [tagsString, isSyncEnabled]);
 
+  const selectedStatusesString = JSON.stringify(selectedStatuses);
   useEffect(() => {
-    localStorage.setItem('lifeflow-status-filters', JSON.stringify(selectedStatuses));
+    localStorage.setItem('lifeflow-status-filters', selectedStatusesString);
     if (!isFirstRender.current && isSyncEnabled) forceCloudSync();
-  }, [selectedStatuses, isSyncEnabled]);
+  }, [selectedStatusesString, isSyncEnabled]);
 
   useEffect(() => {
     isFirstRender.current = false;
