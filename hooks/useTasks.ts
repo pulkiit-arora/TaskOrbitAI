@@ -176,8 +176,10 @@ export const useTasks = () => {
   const latestTasksRef = useRef<Task[]>([]);
   const lastSyncTimeStrRef = useRef<string | null>(null);
   const [lastSyncTimeUI, setLastSyncTimeUI] = useState<string | null>(null);
+  const localChangeRef = useRef(false);
 
   const setTasks = (action: React.SetStateAction<Task[]>) => {
+    localChangeRef.current = true;
     setInternalTasks(prev => {
       const next = typeof action === 'function' ? (action as (prevState: Task[]) => Task[])(prev) : action;
       const finalTasks = next.map(t => {
@@ -326,7 +328,10 @@ export const useTasks = () => {
       return;
     }
 
+    if (!localChangeRef.current) return;
+
     const timer = setTimeout(() => {
+      localChangeRef.current = false;
       saveTasksToDB(tasks).catch(e => console.error("Auto-save failed", e));
     }, 1000);
 
