@@ -35,7 +35,7 @@ import { parseSearchQuery, SearchFilters } from './utils/searchParser';
 import { forceCloudSync } from './services/storage';
 
 const App: React.FC = () => {
-  const { tasks, isLoading, setTasks, updateTaskStatus, lastSyncTimeUI } = useTasks();
+  const { tasks, isLoading, setTasks, updateTaskStatus } = useTasks();
   const { isModalOpen, editingTask, openModal, closeModal, openModalWithDate } = useTaskModal();
   const undoManager = useUndoManager();
   useTabSync(tasks, setTasks, isLoading);
@@ -969,7 +969,6 @@ const App: React.FC = () => {
         tasks={activeTasks}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        lastSyncTimeUI={lastSyncTimeUI}
       />
 
       <main className="flex-1 overflow-hidden bg-gray-50 p-4 md:p-6">

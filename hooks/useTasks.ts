@@ -175,7 +175,6 @@ export const useTasks = () => {
   const [isLoading, setIsLoading] = useState(true);
   const latestTasksRef = useRef<Task[]>([]);
   const lastSyncTimeStrRef = useRef<string | null>(null);
-  const [lastSyncTimeUI, setLastSyncTimeUI] = useState<string | null>(null);
   const localChangeRef = useRef(false);
 
   const setTasks = (action: React.SetStateAction<Task[]>) => {
@@ -225,7 +224,6 @@ export const useTasks = () => {
           if (cloudRes) {
             if (cloudRes.lastUpdate) {
                 lastSyncTimeStrRef.current = cloudRes.lastUpdate;
-                setLastSyncTimeUI(cloudRes.lastUpdate);
             }
             let shouldSyncPrefs = false;
             if (cloudRes.preferences) {
@@ -282,7 +280,6 @@ export const useTasks = () => {
            if (cloudRes) {
              if (cloudRes.lastUpdate) {
                  lastSyncTimeStrRef.current = cloudRes.lastUpdate;
-                 setLastSyncTimeUI(cloudRes.lastUpdate);
              }
              let shouldSyncPrefs = false;
              if (cloudRes.preferences) {
@@ -353,7 +350,6 @@ export const useTasks = () => {
         if (cloudRes) {
           if (cloudRes.lastUpdate) {
               lastSyncTimeStrRef.current = cloudRes.lastUpdate;
-              setLastSyncTimeUI(cloudRes.lastUpdate);
           }
           if (cloudRes.tasks && cloudRes.tasks.length > 0) {
             setInternalTasks(prev => {
@@ -412,8 +408,7 @@ export const useTasks = () => {
     tasks,
     isLoading,
     setTasks,
-    updateTaskStatus,
-    lastSyncTimeUI
+    updateTaskStatus
   };
 };
 
