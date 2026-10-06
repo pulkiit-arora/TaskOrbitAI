@@ -174,6 +174,8 @@ export const useTasks = () => {
   const [tasks, setInternalTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const latestTasksRef = useRef<Task[]>([]);
+  const lastSyncTimeStrRef = useRef<string | null>(null);
+  const [lastSyncTimeUI, setLastSyncTimeUI] = useState<string | null>(null);
 
   const setTasks = (action: React.SetStateAction<Task[]>) => {
     setInternalTasks(prev => {
@@ -219,6 +221,10 @@ export const useTasks = () => {
         if (isSyncEnabled) {
           const cloudRes = await pullTasksFromCloud();
           if (cloudRes) {
+            if (cloudRes.lastUpdate) {
+                lastSyncTimeStrRef.current = cloudRes.lastUpdate;
+                setLastSyncTimeUI(cloudRes.lastUpdate);
+            }
             let shouldSyncPrefs = false;
             if (cloudRes.preferences) {
                 if (cloudRes.preferences.tags) {
@@ -272,6 +278,10 @@ export const useTasks = () => {
          // Pull data immediately
          pullTasksFromCloud().then(cloudRes => {
            if (cloudRes) {
+             if (cloudRes.lastUpdate) {
+                 lastSyncTimeStrRef.current = cloudRes.lastUpdate;
+                 setLastSyncTimeUI(cloudRes.lastUpdate);
+             }
              let shouldSyncPrefs = false;
              if (cloudRes.preferences) {
                  if (cloudRes.preferences.tags) {
@@ -329,23 +339,26 @@ export const useTasks = () => {
   useEffect(() => {
     if (isLoading) return;
 
-    let lastSyncTime = Date.now();
-
     const pullAndMerge = async () => {
       const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
       if (!isSyncEnabled) return;
       
       try {
         const cloudRes = await pullTasksFromCloud();
-        if (cloudRes && cloudRes.tasks && cloudRes.tasks.length > 0) {
-          setInternalTasks(prev => {
-            const merged = mergeTasks(prev, cloudRes.tasks);
-            latestTasksRef.current = merged;
-            saveTasksToDB(merged, true).catch(e => console.error("Auto-save post-merge failed", e));
-            return merged;
-          });
+        if (cloudRes) {
+          if (cloudRes.lastUpdate) {
+              lastSyncTimeStrRef.current = cloudRes.lastUpdate;
+              setLastSyncTimeUI(cloudRes.lastUpdate);
+          }
+          if (cloudRes.tasks && cloudRes.tasks.length > 0) {
+            setInternalTasks(prev => {
+              const merged = mergeTasks(prev, cloudRes.tasks);
+              latestTasksRef.current = merged;
+              saveTasksToDB(merged, true).catch(e => console.error("Auto-save post-merge failed", e));
+              return merged;
+            });
+          }
         }
-        lastSyncTime = Date.now();
       } catch (err) {
         console.error("Sync failed", err);
       }
@@ -370,7 +383,7 @@ export const useTasks = () => {
     // Checks every 30 seconds using a lightweight request that only pulls a timestamp.
     const pollInterval = setInterval(async () => {
       if (document.visibilityState === 'visible') {
-        const hasUpdates = await checkCloudUpdates(lastSyncTime);
+        const hasUpdates = await checkCloudUpdates(lastSyncTimeStrRef.current);
         if (hasUpdates) {
           pullAndMerge();
         }
@@ -394,7 +407,8 @@ export const useTasks = () => {
     tasks,
     isLoading,
     setTasks,
-    updateTaskStatus
+    updateTaskStatus,
+    lastSyncTimeUI
   };
 };
 

@@ -187,7 +187,7 @@ const syncTasksToCloud = async (tasks: Task[]) => {
   }
 };
 
-export const checkCloudUpdates = async (lastSyncTime: number): Promise<boolean> => {
+export const checkCloudUpdates = async (lastSyncTimeStr: string | null): Promise<boolean> => {
   try {
     const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
     if (!isSyncEnabled) return false;
@@ -205,9 +205,10 @@ export const checkCloudUpdates = async (lastSyncTime: number): Promise<boolean> 
     if (error) return false;
     
     if (data && data.length > 0) {
-       const cloudTime = new Date(data[0].updated_at).getTime();
-       // Add a small buffer (e.g. 1 second) to account for slight timezone/clock skews
-       return cloudTime > (lastSyncTime + 1000); 
+       const cloudTimeStr = data[0].updated_at;
+       console.log(`[Sync Debug] Local Last Sync Time: ${lastSyncTimeStr || 'none'}, Cloud Latest Time: ${cloudTimeStr}`);
+       if (!lastSyncTimeStr) return true;
+       return cloudTimeStr !== lastSyncTimeStr; 
     }
   } catch (e) {
     // Ignore background check errors
@@ -215,7 +216,7 @@ export const checkCloudUpdates = async (lastSyncTime: number): Promise<boolean> 
   return false;
 };
 
-export const pullTasksFromCloud = async (): Promise<{tasks: Task[], preferences: any} | null> => {
+export const pullTasksFromCloud = async (): Promise<{tasks: Task[], preferences: any, lastUpdate: string | null} | null> => {
   try {
     const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
     if (!isSyncEnabled) return null;
@@ -225,7 +226,7 @@ export const pullTasksFromCloud = async (): Promise<{tasks: Task[], preferences:
     
     const { data, error } = await supabase
        .from('tasks')
-       .select('task_data')
+       .select('task_data, updated_at')
        .eq('user_id', session.user.id)
        .order('updated_at', { ascending: false })
        .limit(1);
@@ -243,7 +244,8 @@ export const pullTasksFromCloud = async (): Promise<{tasks: Task[], preferences:
            
            return {
                tasks: actualTasks,
-               preferences: prefsTask ? JSON.parse(prefsTask.description) : null
+               preferences: prefsTask ? JSON.parse(prefsTask.description) : null,
+               lastUpdate: data[0].updated_at
            };
        }
     }

@@ -17,6 +17,7 @@ interface AppHeaderProps {
   tasks: Task[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  lastSyncTimeUI?: string | null;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -29,7 +30,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onAddTask,
   tasks,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  lastSyncTimeUI
 }) => {
   const [isDateNavOpen, setIsDateNavOpen] = useState(false);
   const dateNavRef = useRef<HTMLDivElement>(null);
@@ -178,6 +180,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
         {/* Right Section: Search & Actions */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-shrink-0 z-10">
+          {lastSyncTimeUI && (
+            <div className="text-xs text-gray-500 flex flex-col hidden sm:flex items-end justify-center mr-2" title={`Last Sync: ${lastSyncTimeUI}`}>
+              <span className="leading-tight">Last Sync</span>
+              <span className="font-mono font-medium leading-tight">{new Date(lastSyncTimeUI).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            </div>
+          )}
+
           {viewMode !== 'analytics' && (
             <div className="w-full md:w-48 lg:w-64">
               <SearchInput
