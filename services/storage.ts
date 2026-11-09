@@ -5,6 +5,7 @@ import { mergeTasks } from '../utils/taskLogic';
 const DB_NAME = 'LifeFlowDB';
 const STORE_NAME = 'tasks';
 const DB_VERSION = 1;
+const MAX_OLD_BACKUPS = 1; // Keep only 1 historical backup row (plus the current active row) to conserve Supabase storage
 
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
@@ -98,11 +99,16 @@ const syncTasksToCloud = async (tasks: Task[]) => {
         recurrence: Recurrence.NONE,
         createdAt: Date.now()
     };
-    const { data: existingRows } = await supabase
+    const { data: existingRows, error: fetchError } = await supabase
       .from('tasks')
       .select('id, updated_at')
       .eq('user_id', session.user.id)
       .order('updated_at', { ascending: false });
+
+    if (fetchError) {
+      console.error("[Storage] Failed to check existing rows in cloud:", fetchError);
+      return; // Abort sync rather than blindly inserting a duplicate row
+    }
 
     let finalTasksToPush = tasks;
     if (existingRows && existingRows.length > 0) {
@@ -140,11 +146,14 @@ const syncTasksToCloud = async (tasks: Task[]) => {
           .from('tasks')
           .insert({ user_id: session.user.id, task_data: payload, updated_at: now.toISOString() });
           
-        // Keep a max of 7 backups (the newly inserted one replaces the oldest if we exceed 7)
-        if (existingRows.length > 6) {
-           const rowsToDelete = existingRows.slice(6);
+        // Keep a max of MAX_OLD_BACKUPS old backups (newly inserted row is current, slice from MAX_OLD_BACKUPS onward to delete)
+        if (existingRows.length > MAX_OLD_BACKUPS) {
+           const rowsToDelete = existingRows.slice(MAX_OLD_BACKUPS);
            const idsToDelete = rowsToDelete.map(r => r.id);
-           await supabase.from('tasks').delete().in('id', idsToDelete);
+           const { error: delError } = await supabase.from('tasks').delete().in('id', idsToDelete);
+           if (delError) {
+             console.error("[Storage] Failed to delete old backup rows in Supabase (check RLS DELETE policy):", delError);
+           }
         }
       } else {
         // Same day: just update the primary row
@@ -167,14 +176,17 @@ const syncTasksToCloud = async (tasks: Task[]) => {
 
         let idsToDelete = [...duplicateIds];
 
-        // Also enforce the 7-row max limit on the remaining valid history
-        if (validOlderRows.length > 6) {
-           const exceedanceIds = validOlderRows.slice(6).map(r => r.id);
+        // Enforce MAX_OLD_BACKUPS limit on the remaining valid history
+        if (validOlderRows.length > MAX_OLD_BACKUPS) {
+           const exceedanceIds = validOlderRows.slice(MAX_OLD_BACKUPS).map(r => r.id);
            idsToDelete = [...idsToDelete, ...exceedanceIds];
         }
 
         if (idsToDelete.length > 0) {
-           await supabase.from('tasks').delete().in('id', idsToDelete);
+           const { error: delError } = await supabase.from('tasks').delete().in('id', idsToDelete);
+           if (delError) {
+             console.error("[Storage] Failed to delete old backup rows in Supabase (check RLS DELETE policy):", delError);
+           }
         }
       }
     } else {
