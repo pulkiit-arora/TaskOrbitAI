@@ -6,11 +6,106 @@ const DB_NAME = 'LifeFlowDB';
 const STORE_NAME = 'tasks';
 const DB_VERSION = 1;
 const MAX_OLD_BACKUPS = 1; // Keep only 1 historical backup row (plus the current active row) to conserve Supabase storage
+const TOMBSTONE_RETENTION_MS = 14 * 24 * 60 * 60 * 1000; // 14 days retention for deleted task tombstones
+
+// Safe LocalStorage helpers for both Browser and Node/Vitest environments
+const getStorageItem = (key: string): string | null => {
+  try {
+    return typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem(key) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setStorageItem = (key: string, value: string): void => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'disabled';
+
+export interface SyncStatusInfo {
+  status: SyncStatus;
+  lastSyncTime: number | null;
+  error: string | null;
+}
+
+type SyncListener = (info: SyncStatusInfo) => void;
+const syncListeners = new Set<SyncListener>();
+
+let currentSyncInfo: SyncStatusInfo = {
+  status: getStorageItem('lifeflow-sync-enabled') === 'true' ? 'idle' : 'disabled',
+  lastSyncTime: (() => {
+    const saved = getStorageItem('lifeflow-last-sync-time');
+    return saved ? Number(saved) : null;
+  })(),
+  error: null
+};
+
+export const getSyncStatus = (): SyncStatusInfo => currentSyncInfo;
+
+export const subscribeSyncStatus = (listener: SyncListener): (() => void) => {
+  syncListeners.add(listener);
+  listener(currentSyncInfo);
+  return () => {
+    syncListeners.delete(listener);
+  };
+};
+
+export const updateSyncStatus = (patch: Partial<SyncStatusInfo>): void => {
+  currentSyncInfo = { ...currentSyncInfo, ...patch };
+  if (patch.lastSyncTime !== undefined && patch.lastSyncTime !== null) {
+    setStorageItem('lifeflow-last-sync-time', String(patch.lastSyncTime));
+  }
+  syncListeners.forEach(fn => {
+    try {
+      fn(currentSyncInfo);
+    } catch (e) {
+      console.error("Sync listener error", e);
+    }
+  });
+};
+
+export const formatSyncErrorMessage = (err: any): string => {
+  if (!err) return 'Unknown sync error';
+  const text = typeof err === 'string' ? err : err.message || JSON.stringify(err);
+  if (text.includes('exceed_db_size_quota') || text.includes('402')) {
+    return 'Supabase database storage quota exceeded. Please clean old data in dashboard.';
+  }
+  if (text.includes('JWT') || text.includes('auth') || text.includes('token') || text.includes('session')) {
+    return 'Authentication session expired. Please sign in again.';
+  }
+  if (text.includes('Failed to fetch') || text.includes('Network') || text.includes('ENOTFOUND')) {
+    return 'Network offline. Changes saved locally.';
+  }
+  if (text.includes('row-level security') || text.includes('policy')) {
+    return 'Database permission error (RLS policy check required).';
+  }
+  return text.length > 80 ? text.slice(0, 80) + '...' : text;
+};
+
+const pruneOldTombstones = (tasks: Task[]): Task[] => {
+  const now = Date.now();
+  return tasks.filter(t => {
+    if (t.isDeleted) {
+      const deletedAt = t.updatedAt || t.createdAt || 0;
+      if (now - deletedAt > TOMBSTONE_RETENTION_MS) {
+        return false;
+      }
+    }
+    return true;
+  });
+};
 
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     // Check if indexedDB is supported
-    if (!('indexedDB' in window)) {
+    if (typeof window === 'undefined' || !('indexedDB' in window)) {
         reject(new Error("IndexedDB not supported"));
         return;
     }
@@ -46,17 +141,19 @@ export const loadTasksFromDB = async (): Promise<Task[]> => {
   }
 };
 
-export const saveTasksToDB = async (tasks: Task[], skipCloudSync: boolean = false): Promise<void> => {
+export const saveTasksToDB = async (
+  tasks: Task[], 
+  skipCloudSync: boolean = false, 
+  forceWipeCloud: boolean = false
+): Promise<void> => {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
       
-      // We clear and rewrite to ensure the DB exactly matches the in-memory state.
-      // For personal task managers (thousands of items), this is performant enough.
+      // Clear and rewrite
       const clearRequest = store.clear();
-      
       clearRequest.onsuccess = () => {
           tasks.forEach(task => store.put(task));
       };
@@ -68,28 +165,50 @@ export const saveTasksToDB = async (tasks: Task[], skipCloudSync: boolean = fals
     console.error("Error saving to DB:", error);
     throw error;
   } finally {
-    // Fire-and-forget sync to Supabase
+    // Sync to Supabase
     if (!skipCloudSync) {
-      syncTasksToCloud(tasks);
+      syncTasksToCloud(tasks, forceWipeCloud);
     }
   }
 };
 
-const syncTasksToCloud = async (tasks: Task[]) => {
+export const syncTasksToCloud = async (
+  tasks: Task[], 
+  forceWipeCloud: boolean = false,
+  isManualSync: boolean = false
+): Promise<boolean> => {
   try {
-    const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
-    if (!isSyncEnabled) return;
-
-    // Prevent blind overrides on new devices: MUST have pulled from cloud at least once
-    // physically in this browser before we ever allow pushing up local data.
-    const hasPulled = localStorage.getItem('lifeflow-last-pull-success') === 'true';
-    if (!hasPulled) return;
+    const isSyncEnabled = getStorageItem('lifeflow-sync-enabled') === 'true';
+    if (!isSyncEnabled) {
+      updateSyncStatus({ status: 'disabled', error: null });
+      return false;
+    }
 
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) {
+      updateSyncStatus({ status: 'error', error: 'Not signed in. Sign in to enable cloud sync.' });
+      return false;
+    }
 
-    const prefsTagStr = localStorage.getItem('lifeflow-tags') || '[]';
-    const prefsStatusesStr = localStorage.getItem('lifeflow-status-filters') || '[]';
+    // Check if we have pulled yet. If not, try pulling first so we never blindly clobber cloud tasks
+    const hasPulled = getStorageItem('lifeflow-last-pull-success') === 'true';
+    if (!hasPulled && !forceWipeCloud) {
+      try {
+        const pullRes = await pullTasksFromCloud();
+        if (pullRes) {
+          setStorageItem('lifeflow-last-pull-success', 'true');
+        }
+      } catch {
+        if (!isManualSync) {
+          return false;
+        }
+      }
+    }
+
+    updateSyncStatus({ status: 'syncing', error: null });
+
+    const prefsTagStr = getStorageItem('lifeflow-tags') || '[]';
+    const prefsStatusesStr = getStorageItem('lifeflow-status-filters') || '[]';
     const prefsTask: Task = {
         id: 'sys-lifeflow-preferences',
         title: 'System Preferences (Do Not Delete)',
@@ -99,6 +218,7 @@ const syncTasksToCloud = async (tasks: Task[]) => {
         recurrence: Recurrence.NONE,
         createdAt: Date.now()
     };
+
     const { data: existingRows, error: fetchError } = await supabase
       .from('tasks')
       .select('id, updated_at')
@@ -106,16 +226,18 @@ const syncTasksToCloud = async (tasks: Task[]) => {
       .order('updated_at', { ascending: false });
 
     if (fetchError) {
+      const errMsg = formatSyncErrorMessage(fetchError);
       console.error("[Storage] Failed to check existing rows in cloud:", fetchError);
-      return; // Abort sync rather than blindly inserting a duplicate row
+      updateSyncStatus({ status: 'error', error: errMsg });
+      return false;
     }
 
     let finalTasksToPush = tasks;
-    if (existingRows && existingRows.length > 0) {
+    if (!forceWipeCloud && existingRows && existingRows.length > 0) {
       const primaryRow = existingRows[0];
       
       // Fetch the task_data only for the primary row to avoid statement timeouts
-      const { data: primaryData } = await supabase
+      const { data: primaryData, error: primaryErr } = await supabase
         .from('tasks')
         .select('task_data')
         .eq('id', primaryRow.id)
@@ -127,13 +249,16 @@ const syncTasksToCloud = async (tasks: Task[]) => {
       }
     }
 
-    // Ensure we don't duplicate it
+    // Prune expired tombstones
+    finalTasksToPush = pruneOldTombstones(finalTasksToPush);
+
+    // Ensure we don't duplicate preferences task
     const cleanTasks = finalTasksToPush.filter(t => t.id !== 'sys-lifeflow-preferences');
     const payload = [...cleanTasks, prefsTask];
 
+    const now = new Date();
     if (existingRows && existingRows.length > 0) {
       const [primaryRow, ...olderRows] = existingRows;
-      const now = new Date();
       const lastUpdate = primaryRow.updated_at ? new Date(primaryRow.updated_at) : new Date(0);
       
       const isNewDay = now.getUTCFullYear() !== lastUpdate.getUTCFullYear() || 
@@ -142,11 +267,13 @@ const syncTasksToCloud = async (tasks: Task[]) => {
 
       // Create a daily rolling backup in the same table
       if (isNewDay) {
-        await supabase
+        const { error: insErr } = await supabase
           .from('tasks')
           .insert({ user_id: session.user.id, task_data: payload, updated_at: now.toISOString() });
           
-        // Keep a max of MAX_OLD_BACKUPS old backups (newly inserted row is current, slice from MAX_OLD_BACKUPS onward to delete)
+        if (insErr) throw insErr;
+
+        // Keep a max of MAX_OLD_BACKUPS old backups
         if (existingRows.length > MAX_OLD_BACKUPS) {
            const rowsToDelete = existingRows.slice(MAX_OLD_BACKUPS);
            const idsToDelete = rowsToDelete.map(r => r.id);
@@ -157,10 +284,12 @@ const syncTasksToCloud = async (tasks: Task[]) => {
         }
       } else {
         // Same day: just update the primary row
-        await supabase
+        const { error: updErr } = await supabase
           .from('tasks')
           .update({ task_data: payload, updated_at: now.toISOString() })
           .eq('id', primaryRow.id);
+
+        if (updErr) throw updErr;
 
         // Identify any race-condition rows from the SAME day to clean up
         const isSameDay = (dateStr: string) => {
@@ -190,18 +319,26 @@ const syncTasksToCloud = async (tasks: Task[]) => {
         }
       }
     } else {
-      await supabase
+      const { error: initInsErr } = await supabase
         .from('tasks')
-        .insert({ user_id: session.user.id, task_data: payload, updated_at: new Date().toISOString() });
+        .insert({ user_id: session.user.id, task_data: payload, updated_at: now.toISOString() });
+      if (initInsErr) throw initInsErr;
     }
-  } catch (e) {
+
+    setStorageItem('lifeflow-last-pull-success', 'true');
+    updateSyncStatus({ status: 'synced', lastSyncTime: Date.now(), error: null });
+    return true;
+  } catch (e: any) {
+    const errMsg = formatSyncErrorMessage(e);
     console.error("Cloud sync push failed", e);
+    updateSyncStatus({ status: 'error', error: errMsg });
+    return false;
   }
 };
 
 export const checkCloudUpdates = async (lastSyncTimeStr: string | null): Promise<boolean> => {
   try {
-    const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
+    const isSyncEnabled = getStorageItem('lifeflow-sync-enabled') === 'true';
     if (!isSyncEnabled) return false;
     
     const { data: { session } } = await supabase.auth.getSession();
@@ -218,7 +355,6 @@ export const checkCloudUpdates = async (lastSyncTimeStr: string | null): Promise
     
     if (data && data.length > 0) {
        const cloudTimeStr = data[0].updated_at;
-       console.log(`[Sync Debug] Local Last Sync Time: ${lastSyncTimeStr || 'none'}, Cloud Latest Time: ${cloudTimeStr}`);
        if (!lastSyncTimeStr) return true;
        return cloudTimeStr !== lastSyncTimeStr; 
     }
@@ -230,11 +366,17 @@ export const checkCloudUpdates = async (lastSyncTimeStr: string | null): Promise
 
 export const pullTasksFromCloud = async (): Promise<{tasks: Task[], preferences: any, lastUpdate: string | null} | null> => {
   try {
-    const isSyncEnabled = localStorage.getItem('lifeflow-sync-enabled') === 'true';
-    if (!isSyncEnabled) return null;
+    const isSyncEnabled = getStorageItem('lifeflow-sync-enabled') === 'true';
+    if (!isSyncEnabled) {
+      updateSyncStatus({ status: 'disabled', error: null });
+      return null;
+    }
     
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return null;
+    if (!session) {
+      updateSyncStatus({ status: 'error', error: 'Not signed in' });
+      return null;
+    }
     
     const { data, error } = await supabase
        .from('tasks')
@@ -245,8 +387,7 @@ export const pullTasksFromCloud = async (): Promise<{tasks: Task[], preferences:
        
     if (error) throw error;
        
-    // Mark that we have successfully communicated with the cloud to prevent blind overwrites
-    localStorage.setItem('lifeflow-last-pull-success', 'true');
+    setStorageItem('lifeflow-last-pull-success', 'true');
        
     if (data && data.length > 0) {
        const taskData = data[0].task_data as Task[];
@@ -254,17 +395,61 @@ export const pullTasksFromCloud = async (): Promise<{tasks: Task[], preferences:
            const prefsTask = taskData.find(t => t.id === 'sys-lifeflow-preferences');
            const actualTasks = taskData.filter(t => t.id !== 'sys-lifeflow-preferences');
            
+           const lastTime = data[0].updated_at ? new Date(data[0].updated_at).getTime() : Date.now();
+           updateSyncStatus({ status: 'synced', lastSyncTime: lastTime, error: null });
+
            return {
                tasks: actualTasks,
                preferences: prefsTask ? JSON.parse(prefsTask.description) : null,
                lastUpdate: data[0].updated_at
            };
        }
+    } else {
+       updateSyncStatus({ status: 'synced', lastSyncTime: Date.now(), error: null });
     }
-  } catch (e) {
+  } catch (e: any) {
+    const errMsg = formatSyncErrorMessage(e);
     console.error("Cloud pull failed", e);
+    updateSyncStatus({ status: 'error', error: errMsg });
   }
   return null;
+};
+
+export const performManualSync = async (tasksOverride?: Task[]): Promise<{ success: boolean; message?: string }> => {
+  const isSyncEnabled = getStorageItem('lifeflow-sync-enabled') === 'true';
+  if (!isSyncEnabled) {
+    updateSyncStatus({ status: 'disabled', error: 'Cloud sync is turned off' });
+    return { success: false, message: 'Cloud sync is disabled. Enable it in Settings.' };
+  }
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    updateSyncStatus({ status: 'error', error: 'Not signed in' });
+    return { success: false, message: 'You are not signed in. Please sign in to sync.' };
+  }
+
+  updateSyncStatus({ status: 'syncing', error: null });
+
+  try {
+    const cloudRes = await pullTasksFromCloud();
+    const currentLocalTasks = tasksOverride || await loadTasksFromDB();
+
+    let mergedTasks = currentLocalTasks;
+    if (cloudRes && cloudRes.tasks && cloudRes.tasks.length > 0) {
+      mergedTasks = mergeTasks(currentLocalTasks, cloudRes.tasks);
+      await saveTasksToDB(mergedTasks, true); // persist to local IDB without triggering sync loop
+    }
+
+    const success = await syncTasksToCloud(mergedTasks, false, true);
+    if (!success) {
+      return { success: false, message: currentSyncInfo.error || 'Failed to sync with cloud.' };
+    }
+    return { success: true, message: 'All tasks synced successfully!' };
+  } catch (err: any) {
+    const msg = formatSyncErrorMessage(err);
+    updateSyncStatus({ status: 'error', error: msg });
+    return { success: false, message: msg };
+  }
 };
 
 export const forceCloudSync = async () => {

@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { processTaskStatusChange } from '../utils/taskLogic';
+import { processTaskStatusChange, mergeTasks } from '../utils/taskLogic';
 import { Task, Status, Priority, Recurrence } from '../types';
 
 describe('processTaskStatusChange', () => {
@@ -145,5 +145,59 @@ describe('processTaskStatusChange', () => {
         const updated = processTaskStatusChange(tasks, '1', Status.ARCHIVED);
         expect(updated[0].status).toBe(Status.ARCHIVED);
         expect(updated).toHaveLength(1);
+    });
+});
+
+describe('mergeTasks', () => {
+    const makeTask = (id: string, title: string, updatedAt: number, isDeleted?: boolean): Task => ({
+        id,
+        title,
+        description: '',
+        status: Status.NEXT_ACTION,
+        priority: Priority.MEDIUM,
+        recurrence: Recurrence.NONE,
+        createdAt: 1000,
+        updatedAt,
+        isDeleted
+    });
+
+    it('should prefer local task when local updatedAt is newer', () => {
+        const local = [makeTask('1', 'Local Newer', 2000)];
+        const cloud = [makeTask('1', 'Cloud Older', 1500)];
+        const merged = mergeTasks(local, cloud);
+        expect(merged).toHaveLength(1);
+        expect(merged[0].title).toBe('Local Newer');
+    });
+
+    it('should prefer cloud task when cloud updatedAt is newer', () => {
+        const local = [makeTask('1', 'Local Older', 1500)];
+        const cloud = [makeTask('1', 'Cloud Newer', 2000)];
+        const merged = mergeTasks(local, cloud);
+        expect(merged).toHaveLength(1);
+        expect(merged[0].title).toBe('Cloud Newer');
+    });
+
+    it('should preserve local deletion tombstone if deleted after cloud update', () => {
+        const local = [makeTask('1', 'Task to Delete', 2500, true)];
+        const cloud = [makeTask('1', 'Active in Cloud', 2000, false)];
+        const merged = mergeTasks(local, cloud);
+        expect(merged).toHaveLength(1);
+        expect(merged[0].isDeleted).toBe(true);
+    });
+
+    it('should accept cloud deletion tombstone if deleted in cloud after local update', () => {
+        const local = [makeTask('1', 'Active Locally', 2000, false)];
+        const cloud = [makeTask('1', 'Deleted in Cloud', 2500, true)];
+        const merged = mergeTasks(local, cloud);
+        expect(merged).toHaveLength(1);
+        expect(merged[0].isDeleted).toBe(true);
+    });
+
+    it('should merge independent tasks from local and cloud', () => {
+        const local = [makeTask('1', 'Task 1', 1000)];
+        const cloud = [makeTask('2', 'Task 2', 1200)];
+        const merged = mergeTasks(local, cloud);
+        expect(merged).toHaveLength(2);
+        expect(merged.map(t => t.id).sort()).toEqual(['1', '2']);
     });
 });

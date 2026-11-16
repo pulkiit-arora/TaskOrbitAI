@@ -17,6 +17,8 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { ShortcutsModal } from './components/ShortcutsModal';
 import { QuickAddBar } from './components/QuickAddBar';
 import { UndoToast } from './components/UndoToast';
+import { SyncToast } from './components/SyncToast';
+import { SyncStatusBadge } from './components/SyncStatusBadge';
 import { AuthModal } from './components/AuthModal';
 import { PomodoroTimer } from './components/PomodoroTimer';
 import { PlannerView } from './components/PlannerView';
@@ -32,7 +34,7 @@ import { useTabSync } from './hooks/useTabSync';
 import { useCloudSync } from './hooks/useCloudSync';
 import { calculateNextDueDate } from './utils/taskUtils';
 import { parseSearchQuery, SearchFilters } from './utils/searchParser';
-import { forceCloudSync } from './services/storage';
+import { forceCloudSync, saveTasksToDB } from './services/storage';
 
 const App: React.FC = () => {
   const { tasks, isLoading, setTasks, updateTaskStatus } = useTasks();
@@ -40,8 +42,28 @@ const App: React.FC = () => {
   const undoManager = useUndoManager();
   useTabSync(tasks, setTasks, isLoading);
   
-  const { session, isSyncEnabled, toggleSync, signOut } = useCloudSync();
+  const { 
+    session, 
+    isSyncEnabled, 
+    toggleSync, 
+    signOut,
+    syncStatus,
+    lastSyncTime,
+    syncError,
+    syncNow
+  } = useCloudSync();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [syncToast, setSyncToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const handleManualSync = async () => {
+    const res = await syncNow(tasks);
+    if (res.success) {
+      setSyncToast({ message: res.message || 'Tasks synced with cloud', type: 'success' });
+    } else {
+      setSyncToast({ message: res.message || 'Sync failed', type: 'error' });
+    }
+    return res;
+  };
 
   // Pomodoro state
   const [pomodoroTaskId, setPomodoroTaskId] = useState<string | null>(null);
@@ -176,8 +198,12 @@ const App: React.FC = () => {
 
   const handleToggleSync = (enabled: boolean) => {
     toggleSync(enabled);
-    if (enabled && !session) {
-      setIsAuthModalOpen(true);
+    if (enabled) {
+      if (!session) {
+        setIsAuthModalOpen(true);
+      } else {
+        handleManualSync();
+      }
     }
   };
 
@@ -930,9 +956,16 @@ const App: React.FC = () => {
           <p className="text-xs text-gray-500 font-medium hidden sm:block mt-0.5">Personal Task Manager</p>
         </div>
 
-        {/* Right: XP Bar, Legend & Settings */}
-        <div className="flex items-center gap-4">
+        {/* Right: XP Bar, Sync Badge, Legend & Settings */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <XPBar tasks={activeTasks} />
+          <SyncStatusBadge
+            status={syncStatus}
+            lastSyncTime={lastSyncTime}
+            error={syncError}
+            onSyncNow={handleManualSync}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+          />
           <Legend />
           <SettingsMenu
             darkMode={darkMode}
@@ -945,6 +978,10 @@ const App: React.FC = () => {
             onToggleSync={handleToggleSync}
             session={session}
             onSignOut={signOut}
+            syncStatus={syncStatus}
+            lastSyncTime={lastSyncTime}
+            syncError={syncError}
+            onSyncNow={handleManualSync}
           />
         </div>
       </div>
@@ -955,7 +992,11 @@ const App: React.FC = () => {
           setIsAuthModalOpen(false);
           if (!session) toggleSync(false); // Revert sync if they close without logging in
         }} 
-        onAuthSuccess={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={() => {
+          setIsAuthModalOpen(false);
+          toggleSync(true);
+          handleManualSync();
+        }}
       />
 
       <AppHeader
@@ -1149,9 +1190,15 @@ const App: React.FC = () => {
       />
       <DeleteConfirmationModal
         isOpen={isDeleteAllOpen}
-        onConfirm={() => {
+        onConfirm={async () => {
           setTasks([]);
           setIsDeleteAllOpen(false);
+          try {
+            await saveTasksToDB([], false, true); // true = forceWipeCloud
+            setSyncToast({ message: 'All tasks deleted and cloud cleared', type: 'success' });
+          } catch (e) {
+            console.error("Failed to wipe cloud data", e);
+          }
         }}
         onCancel={() => setIsDeleteAllOpen(false)}
         title="Delete All Tasks?"
@@ -1193,6 +1240,14 @@ const App: React.FC = () => {
           message={undoManager.lastAction.description}
           onUndo={() => undoManager.undo(setTasks)}
           onDismiss={undoManager.dismiss}
+        />
+      )}
+      {/* Sync Feedback Toast */}
+      {syncToast && (
+        <SyncToast
+          message={syncToast.message}
+          type={syncToast.type}
+          onDismiss={() => setSyncToast(null)}
         />
       )}
       {/* Pomodoro Timer */}

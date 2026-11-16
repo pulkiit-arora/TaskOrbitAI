@@ -1,7 +1,8 @@
 import React from 'react';
-import { Settings, Moon, Sun, Download, Upload, Trash2, HelpCircle, Mail, FileCode } from 'lucide-react';
+import { Settings, Moon, Sun, Download, Upload, Trash2, HelpCircle, Mail, FileCode, RefreshCw } from 'lucide-react';
 import { DropdownMenu, DropdownItem, DropdownDivider, DropdownHeader } from './DropdownMenu';
 import { Session } from '@supabase/supabase-js';
+import { SyncStatus } from '../services/storage';
 
 interface SettingsMenuProps {
     darkMode: boolean;
@@ -14,6 +15,10 @@ interface SettingsMenuProps {
     onToggleSync: (enabled: boolean) => void;
     session: Session | null;
     onSignOut: () => void;
+    syncStatus?: SyncStatus;
+    lastSyncTime?: number | null;
+    syncError?: string | null;
+    onSyncNow?: () => Promise<{ success: boolean; message?: string }>;
 }
 
 export const SettingsMenu: React.FC<SettingsMenuProps> = ({
@@ -26,7 +31,11 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     isSyncEnabled,
     onToggleSync,
     session,
-    onSignOut
+    onSignOut,
+    syncStatus,
+    lastSyncTime,
+    syncError,
+    onSyncNow
 }) => {
     return (
         <DropdownMenu
@@ -53,11 +62,39 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
             {isSyncEnabled && session && (
                 <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800/50 flex flex-col gap-1 mx-1 my-1 rounded-md text-xs">
-                    <span className="text-gray-500 dark:text-gray-400">Signed in as:</span>
+                    <div className="flex items-center justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">Signed in:</span>
+                        <button onClick={onSignOut} className="text-red-600 dark:text-red-400 font-medium hover:underline">
+                            Sign Out
+                        </button>
+                    </div>
                     <span className="font-medium text-gray-700 dark:text-gray-300 truncate">{session.user.email}</span>
-                    <button onClick={onSignOut} className="text-red-600 dark:text-red-400 font-medium text-left mt-1 hover:underline">
-                        Sign Out
-                    </button>
+                    
+                    {lastSyncTime && (
+                        <span className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                            Last synced: {new Date(lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                    )}
+
+                    {syncError && (
+                        <div className="text-[11px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 p-1.5 rounded mt-1 border border-red-200 dark:border-red-900/60 leading-tight">
+                            {syncError}
+                        </div>
+                    )}
+
+                    {onSyncNow && (
+                        <button 
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                await onSyncNow();
+                            }}
+                            disabled={syncStatus === 'syncing'}
+                            className="mt-1.5 flex items-center justify-center gap-1.5 py-1 px-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded font-medium transition-colors"
+                        >
+                            <RefreshCw size={12} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
+                            {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Now'}
+                        </button>
+                    )}
                 </div>
             )}
 

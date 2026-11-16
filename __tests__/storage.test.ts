@@ -1,14 +1,16 @@
-
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { loadTasksFromDB, saveTasksToDB } from '../services/storage';
+import { describe, it, expect, vi } from 'vitest';
+import { 
+  loadTasksFromDB, 
+  saveTasksToDB,
+  getSyncStatus,
+  updateSyncStatus,
+  subscribeSyncStatus,
+  formatSyncErrorMessage
+} from '../services/storage';
 import { Task, Status, Priority, Recurrence } from '../types';
 import 'fake-indexeddb/auto'; // Polyfills IndexedDB
 
 describe('storage service', () => {
-    // Clearing IDB between tests is tricky with simple imports, 
-    // but fake-indexeddb generally resets or we can just use new IDs?
-    // Actually, let's try to trust the clear() in saveTasksToDB or explicit check.
-
     const mockTask: Task = {
         id: '1',
         title: 'Test Task',
@@ -27,10 +29,47 @@ describe('storage service', () => {
     });
 
     it('should return empty array if no tasks found', async () => {
-        // If we can't easily clear the DB, this test might be flaky if run after the previous one.
-        // Ideally we'd have a clearDB helper, but saveTasksToDB([]) clears it!
         await saveTasksToDB([]);
         const tasks = await loadTasksFromDB();
         expect(tasks).toEqual([]);
+    });
+
+    describe('sync status management', () => {
+        it('should get and update sync status', () => {
+            updateSyncStatus({ status: 'syncing', error: null });
+            expect(getSyncStatus().status).toBe('syncing');
+
+            const now = Date.now();
+            updateSyncStatus({ status: 'synced', lastSyncTime: now, error: null });
+            expect(getSyncStatus().status).toBe('synced');
+            expect(getSyncStatus().lastSyncTime).toBe(now);
+        });
+
+        it('should notify subscribers when sync status changes', () => {
+            const listener = vi.fn();
+            const unsubscribe = subscribeSyncStatus(listener);
+
+            expect(listener).toHaveBeenCalled(); // Initial call
+            const callsBefore = listener.mock.calls.length;
+
+            updateSyncStatus({ status: 'error', error: 'Test Error' });
+            expect(listener.mock.calls.length).toBe(callsBefore + 1);
+            expect(listener).toHaveBeenLastCalledWith(expect.objectContaining({
+                status: 'error',
+                error: 'Test Error'
+            }));
+
+            unsubscribe();
+            updateSyncStatus({ status: 'idle', error: null });
+            expect(listener.mock.calls.length).toBe(callsBefore + 1); // Not called after unsubscribe
+        });
+
+        it('should format sync error messages nicely', () => {
+            expect(formatSyncErrorMessage('402 exceed_db_size_quota')).toContain('quota exceeded');
+            expect(formatSyncErrorMessage(new Error('JWT expired'))).toContain('session expired');
+            expect(formatSyncErrorMessage('Failed to fetch')).toContain('offline');
+            expect(formatSyncErrorMessage('row-level security policy violation')).toContain('permission');
+            expect(formatSyncErrorMessage('Custom short error')).toBe('Custom short error');
+        });
     });
 });
