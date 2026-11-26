@@ -218,7 +218,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     >
       <div className="flex gap-2">
         {(onToggleDone || (onMarkMissed && !isDone && !isExpired && task.status !== Status.ARCHIVED)) && (
-          <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5 self-start">
+          <div className="flex flex-col items-center gap-1.5 flex-shrink-0 mt-0.5 self-start">
             {onToggleDone && (
               <button
                 type="button"
