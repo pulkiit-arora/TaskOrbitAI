@@ -1021,6 +1021,7 @@ const App: React.FC = () => {
             onArchiveTask={handleArchiveTask}
             onDeleteTask={handleDeleteTask}
             onToggleDone={handleToggleDone}
+            onMarkMissed={handleMarkMissed}
             onDropTask={handleDropTaskDate}
             onAddTask={() => openModalWithDate(new Date())}
             onSnoozeTask={handleSnoozeTask}

@@ -18,6 +18,7 @@ interface TaskCardProps {
   completedCount?: number;
   missedCount?: number;
   onToggleDone?: (id: string) => void;
+  onMarkMissed?: (id: string) => void;
   compactPriority?: boolean;
   layoutMode?: 'default' | 'sidebar';
 }
@@ -35,6 +36,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   completedCount,
   missedCount,
   onToggleDone,
+  onMarkMissed,
   compactPriority = false,
   layoutMode = 'default'
 }) => {
@@ -57,6 +59,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     e.stopPropagation();
     if (onToggleDone) {
       onToggleDone(task.id);
+    }
+  };
+
+  const handleMarkMissedClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onMarkMissed) {
+      onMarkMissed(task.id);
     }
   };
 
@@ -208,16 +217,37 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       `}
     >
       <div className="flex gap-2">
-        {onToggleDone && (
-          <button
-            onClick={handleToggle}
-            onMouseDown={handleButtonMouseDown}
-            className={`flex-shrink-0 mt-0.5 transition-colors 
-              ${isDone ? 'text-green-500' : 'text-gray-300 hover:text-green-500'}
-              ${isExpired ? 'text-orange-500' : ''}`}
-          >
-            {isDone ? <Check size={20} className="stroke-[3]" /> : (isExpired ? <XCircle size={20} /> : <Circle size={20} />)}
-          </button>
+        {(onToggleDone || (onMarkMissed && !isDone && !isExpired && task.status !== Status.ARCHIVED)) && (
+          <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5 self-start">
+            {onToggleDone && (
+              <button
+                type="button"
+                onClick={handleToggle}
+                onMouseDown={handleButtonMouseDown}
+                onPointerDown={handleButtonMouseDown}
+                title={isDone ? 'Mark as To Do' : 'Mark as Done'}
+                aria-label={isDone ? 'Mark as To Do' : 'Mark as Done'}
+                className={`transition-colors 
+                  ${isDone ? 'text-green-500' : 'text-gray-300 hover:text-green-500'}
+                  ${isExpired ? 'text-orange-500' : ''}`}
+              >
+                {isDone ? <Check size={20} className="stroke-[3]" /> : (isExpired ? <XCircle size={20} /> : <Circle size={20} />)}
+              </button>
+            )}
+            {onMarkMissed && !isDone && !isExpired && task.status !== Status.ARCHIVED && (
+              <button
+                type="button"
+                onClick={handleMarkMissedClick}
+                onMouseDown={handleButtonMouseDown}
+                onPointerDown={handleButtonMouseDown}
+                title="Mark as Missed"
+                aria-label="Mark as Missed"
+                className="transition-colors text-gray-300 hover:text-orange-500"
+              >
+                <XCircle size={20} />
+              </button>
+            )}
+          </div>
         )}
         <div className="flex-1 min-w-0">
           <h3

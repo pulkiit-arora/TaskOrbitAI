@@ -12,6 +12,7 @@ interface TodayViewProps {
     onArchiveTask: (taskId: string) => void;
     onDeleteTask: (taskId: string) => void;
     onToggleDone: (taskId: string, onDate?: string) => void;
+    onMarkMissed?: (taskId: string) => void;
     onDropTask?: (taskId: string, date: Date) => void;
     onAddTask: () => void;
     onSnoozeTask?: (taskId: string, until: string) => void;
@@ -26,6 +27,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
     onArchiveTask,
     onDeleteTask,
     onToggleDone,
+    onMarkMissed,
     onDropTask,
     onAddTask,
     onSnoozeTask,
@@ -262,6 +264,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                             compact={false} // Use full rows
                                             isVirtual={isVirtual}
                                             onToggleDone={() => onToggleDone(baseId, task.dueDate)}
+                                            onMarkMissed={onMarkMissed ? () => onMarkMissed(task.id) : undefined}
                                         />
                                     </div>
                                 </div>
@@ -317,6 +320,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                             completedCount={completedCount}
                                             missedCount={missedCount}
                                             onToggleDone={() => onToggleDone(baseId, task.dueDate)}
+                                            onMarkMissed={onMarkMissed ? () => onMarkMissed(task.id) : undefined}
                                         />
                                     </div>
                                 );
@@ -388,6 +392,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                                         onArchive={onArchiveTask}
                                         onDelete={onDeleteTask}
                                         onToggleDone={() => onToggleDone(task.id)}
+                                        onMarkMissed={onMarkMissed ? () => onMarkMissed(task.id) : undefined}
                                     />
                                 </div>
                             ))}
